@@ -4,8 +4,16 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from news_ranker.schemas import Claim, Entities, StructuredArticle
-from news_ranker.score import centrality, coverage, density, minmax_normalize
+from news_ranker.schemas import Claim, Entities, Entity, StructuredArticle
+from news_ranker.score import (
+    ScoreVector,
+    centrality,
+    combine,
+    coverage,
+    density,
+    entity_coverage,
+    minmax_normalize,
+)
 
 
 def test_minmax_normalize_scales_values_to_unit_interval() -> None:
@@ -141,6 +149,97 @@ def test_density_row_count_mismatch_raises() -> None:
         density([_article("a", 1), _article("b", 1)], np.ones((1, 1), dtype=np.int_))
 
 
+def test_entity_coverage_handles_shared_and_missing_entities() -> None:
+    articles = [
+        _article("a", 0, people=[" Alice Smith "], organizations=["ACME"]),
+        _article("b", 0, people=["alice smith"], locations=["Paris"]),
+        _article("c", 0),
+    ]
+
+    scores = entity_coverage(articles)
+
+    np.testing.assert_allclose(scores.raw, [0.75, 0.75, 0.0])
+    np.testing.assert_allclose(scores.normalized, [1.0, 1.0, 0.0])
+    assert scores.defined is True
+
+
+def test_no_entity_corpora_return_undefined_entity_coverage_zeros() -> None:
+    scores = entity_coverage([_article("a", 0), _article("b", 0)])
+
+    np.testing.assert_allclose(scores.raw, [0.0, 0.0])
+    np.testing.assert_allclose(scores.normalized, [0.0, 0.0])
+    assert scores.defined is False
+
+
+def test_grouped_entity_keys_avoid_cross_type_collisions() -> None:
+    articles = [
+        _article("person", 0, people=["Jordan"]),
+        _article("location", 0, locations=["Jordan"]),
+        _article("both", 0, people=["Jordan"], locations=["Jordan"]),
+    ]
+
+    scores = entity_coverage(articles)
+
+    np.testing.assert_allclose(scores.raw, [0.5, 0.5, 1.0])
+    np.testing.assert_allclose(scores.normalized, [0.0, 0.0, 1.0])
+    assert scores.defined is True
+
+
+def test_composite_scoring_uses_normalized_component_values() -> None:
+    components = {
+        "coverage": ScoreVector(
+            raw=np.asarray([100.0, 200.0], dtype=np.float32),
+            normalized=np.asarray([0.0, 1.0], dtype=np.float32),
+            defined=True,
+        ),
+        "density": ScoreVector(
+            raw=np.asarray([0.1, 0.2], dtype=np.float32),
+            normalized=np.asarray([1.0, 0.0], dtype=np.float32),
+            defined=True,
+        ),
+    }
+
+    scores = combine(components, {"coverage": 0.75, "density": 0.25})
+
+    np.testing.assert_allclose(scores, [0.25, 0.75])
+
+
+def test_undefined_weighted_components_are_renormalized_by_default() -> None:
+    components = {
+        "coverage": ScoreVector(
+            raw=np.asarray([0.0, 1.0], dtype=np.float32),
+            normalized=np.asarray([0.0, 1.0], dtype=np.float32),
+            defined=True,
+        ),
+        "entities": ScoreVector(
+            raw=np.asarray([0.0, 0.0], dtype=np.float32),
+            normalized=np.asarray([0.0, 0.0], dtype=np.float32),
+            defined=False,
+        ),
+    }
+
+    scores = combine(components, {"coverage": 0.5, "entities": 0.5})
+
+    np.testing.assert_allclose(scores, [0.0, 1.0])
+
+
+def test_invalid_combine_weights_raise() -> None:
+    components = {"coverage": _score_vector([0.0, 1.0])}
+
+    with pytest.raises(ValueError, match="nonnegative"):
+        combine(components, {"coverage": -1.0})
+
+
+def test_mismatched_component_lengths_raise() -> None:
+    components = {
+        "coverage": _score_vector([0.0, 1.0]),
+        "density": _score_vector([1.0]),
+    }
+
+    with pytest.raises(ValueError, match="lengths"):
+        combine(components, {"coverage": 0.5, "density": 0.5})
+
+
 @pytest.mark.parametrize(
     ("article_embeddings", "error_type", "match"),
     [
@@ -156,12 +255,23 @@ def test_invalid_centrality_embeddings_raise(
         centrality(article_embeddings)
 
 
-def _article(article_id: str, entry_count: int) -> StructuredArticle:
+def _article(
+    article_id: str,
+    entry_count: int,
+    *,
+    people: list[str] | None = None,
+    organizations: list[str] | None = None,
+    locations: list[str] | None = None,
+) -> StructuredArticle:
     return StructuredArticle(
         article_id=article_id,
         headline_neutral="Neutral headline",
         topic="test",
-        entities=Entities(people=[], organizations=[], locations=[]),
+        entities=Entities(
+            people=_entities(people),
+            organizations=_entities(organizations),
+            locations=_entities(locations),
+        ),
         events=[],
         claims=[
             Claim(
@@ -174,3 +284,12 @@ def _article(article_id: str, entry_count: int) -> StructuredArticle:
         ],
         context=[],
     )
+
+
+def _entities(names: list[str] | None) -> list[Entity]:
+    return [Entity(name=name, role="fixture") for name in names or []]
+
+
+def _score_vector(values: list[float]) -> ScoreVector:
+    array = np.asarray(values, dtype=np.float32)
+    return ScoreVector(raw=array, normalized=array, defined=True)
