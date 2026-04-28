@@ -231,7 +231,11 @@ def _validate_fact_embeddings(
         msg = "fact_embeddings row count must match flattened fact count"
         raise ValueError(msg)
 
-    numeric_embeddings = np.asarray(embeddings, dtype=np.float32)
+    with np.errstate(over="ignore", invalid="ignore"):
+        numeric_embeddings = np.asarray(embeddings, dtype=np.float32)
+    if not np.isfinite(numeric_embeddings).all():
+        msg = "fact_embeddings must remain finite after float32 conversion"
+        raise ValueError(msg)
     if row_count > 0:
         norms = np.linalg.norm(numeric_embeddings, axis=1)
         if (norms == 0).any():

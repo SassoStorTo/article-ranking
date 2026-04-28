@@ -52,6 +52,11 @@ def test_undefined_components_normalize_to_zeros() -> None:
     assert scores.defined is False
 
 
+def test_minmax_rejects_values_that_overflow_float32_conversion() -> None:
+    with pytest.raises(ValueError, match="float32"):
+        minmax_normalize(np.asarray([1e100, 2e100], dtype=np.float64))
+
+
 def test_central_article_receives_highest_normalized_centrality() -> None:
     article_embeddings = np.asarray(
         [
@@ -257,6 +262,7 @@ def test_mismatched_component_lengths_raise() -> None:
     [
         (np.ones((2,), dtype=np.float32), ValueError, "2-D"),
         (np.array([[np.nan, 1.0]], dtype=np.float32), ValueError, "finite"),
+        (np.array([[1e100, 0.0]], dtype=np.float64), ValueError, "float32"),
         (np.array([[object()]], dtype=object), TypeError, "numeric"),
     ],
 )
@@ -265,6 +271,11 @@ def test_invalid_centrality_embeddings_raise(
 ) -> None:
     with pytest.raises(error_type, match=match):
         centrality(article_embeddings)
+
+
+def test_coverage_rejects_values_that_overflow_float32_conversion() -> None:
+    with pytest.raises(ValueError, match="float32"):
+        coverage(np.asarray([[1e100]], dtype=np.float64))
 
 
 def test_fixture_clustering_to_scoring_smoke_path() -> None:

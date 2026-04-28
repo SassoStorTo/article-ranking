@@ -94,6 +94,7 @@ def test_embedding_row_count_mismatch_fails() -> None:
     [
         (np.ones((1,), dtype=np.float32), ValueError, "2-D"),
         (np.array([[np.nan, 1.0]], dtype=np.float32), ValueError, "finite"),
+        (np.array([[1e100, 0.0]], dtype=np.float64), ValueError, "float32"),
         (np.array([[0.0, 0.0]], dtype=np.float32), ValueError, "nonzero"),
         (np.array([[object()]], dtype=object), TypeError, "numeric"),
     ],

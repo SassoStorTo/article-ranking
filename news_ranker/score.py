@@ -260,7 +260,12 @@ def _validate_score_values(values: NDArray[Any], *, name: str) -> NDArray[np.flo
     if not np.isfinite(array).all():
         msg = f"{name} must contain only finite values"
         raise ValueError(msg)
-    return np.asarray(array, dtype=np.float32)
+    with np.errstate(over="ignore", invalid="ignore"):
+        converted = np.asarray(array, dtype=np.float32)
+    if not np.isfinite(converted).all():
+        msg = f"{name} must remain finite after float32 conversion"
+        raise ValueError(msg)
+    return converted
 
 
 def _validate_embeddings(values: NDArray[Any], *, name: str) -> NDArray[np.float32]:
@@ -274,7 +279,12 @@ def _validate_embeddings(values: NDArray[Any], *, name: str) -> NDArray[np.float
     if not np.isfinite(array).all():
         msg = f"{name} must contain only finite values"
         raise ValueError(msg)
-    return np.asarray(array, dtype=np.float32)
+    with np.errstate(over="ignore", invalid="ignore"):
+        converted = np.asarray(array, dtype=np.float32)
+    if not np.isfinite(converted).all():
+        msg = f"{name} must remain finite after float32 conversion"
+        raise ValueError(msg)
+    return converted
 
 
 def _validate_coverage_matrix(
@@ -293,7 +303,12 @@ def _validate_coverage_matrix(
     if (array < 0).any():
         msg = f"{name} must contain only nonnegative values"
         raise ValueError(msg)
-    return np.asarray(array, dtype=np.float32)
+    with np.errstate(over="ignore", invalid="ignore"):
+        converted = np.asarray(array, dtype=np.float32)
+    if not np.isfinite(converted).all():
+        msg = f"{name} must remain finite after float32 conversion"
+        raise ValueError(msg)
+    return converted
 
 
 def _binary_coverage_matrix(matrix: NDArray[np.float32]) -> NDArray[np.float32]:
