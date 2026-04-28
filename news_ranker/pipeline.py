@@ -54,6 +54,16 @@ class RankResult:
     diagnostics: RankDiagnostics
 
 
+@dataclass(frozen=True)
+class SelectionResult:
+    """Top-score article selection result."""
+
+    profile: str
+    m: int
+    selected: tuple[RankingEntry, ...]
+    ranking: RankResult
+
+
 class NewsRanker:
     """Public orchestrator for fixture-backed article ranking."""
 
@@ -108,6 +118,28 @@ class NewsRanker:
                 components=components,
                 article_embeddings=article_embeddings,
             ),
+        )
+
+    def select(
+        self, articles: ArticleInput, m: int, profile: str = "representative"
+    ) -> SelectionResult:
+        """Select top-m ranked articles by score."""
+
+        if not isinstance(m, int) or isinstance(m, bool):
+            msg = "m must be an integer"
+            raise TypeError(msg)
+
+        ranking = self.rank(articles, profile=profile)
+        article_count = len(ranking.entries)
+        if not 1 <= m <= article_count:
+            msg = f"m must satisfy 1 <= m <= article_count ({article_count})"
+            raise ValueError(msg)
+
+        return SelectionResult(
+            profile=profile,
+            m=m,
+            selected=ranking.entries[:m],
+            ranking=ranking,
         )
 
     def _load_structured_articles(

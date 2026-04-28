@@ -225,6 +225,45 @@ def test_rank_tie_scores_keep_input_order() -> None:
     assert [entry.score for entry in result.entries] == [pytest.approx(1.0)] * 2
 
 
+def test_select_returns_first_m_ranked_entries() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+
+    ranking = ranker.rank(ARTICLE_DIR)
+    selection = ranker.select(ARTICLE_DIR, m=2)
+
+    assert selection.profile == "representative"
+    assert selection.m == 2
+    assert [entry.article_id for entry in selection.selected] == [
+        entry.article_id for entry in ranking.entries[:2]
+    ]
+    assert selection.selected == selection.ranking.entries[:2]
+
+
+def test_select_invalid_m_values_fail() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+
+    with pytest.raises(TypeError, match="m must be an integer"):
+        ranker.select(ARTICLE_DIR, m=1.5)  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="m must be an integer"):
+        ranker.select(ARTICLE_DIR, m=True)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="1 <= m <= article_count"):
+        ranker.select(ARTICLE_DIR, m=0)
+    with pytest.raises(ValueError, match="1 <= m <= article_count"):
+        ranker.select(ARTICLE_DIR, m=len(ARTICLE_PATHS) + 1)
+
+
+def test_selected_entries_retain_rank_score_and_component_data() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+
+    selection = ranker.select(ARTICLE_DIR, m=2)
+
+    for entry in selection.selected:
+        assert isinstance(entry.rank, int)
+        assert np.isfinite(entry.score)
+        assert set(entry.components) == EXPECTED_COMPONENT_KEYS
+        assert all(np.isfinite(score) for score in entry.components.values())
+
+
 def _article(article_id: str, fact_count: int) -> StructuredArticle:
     return StructuredArticle(
         article_id=article_id,
