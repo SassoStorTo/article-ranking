@@ -239,6 +239,25 @@ def test_select_returns_first_m_ranked_entries() -> None:
     assert selection.selected == selection.ranking.entries[:2]
 
 
+def test_top_score_selection_returns_first_m_ranked_entries() -> None:
+    ranker = NewsRanker(
+        FakeEmbedder(), config=RankerConfig(selection_mode="top_score")
+    )
+
+    selection = ranker.select(ARTICLE_DIR, m=2)
+
+    assert selection.selected == selection.ranking.entries[:2]
+
+
+def test_mmr_selection_warns_and_returns_first_m_ranked_entries() -> None:
+    ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(selection_mode="mmr"))
+
+    with pytest.warns(RuntimeWarning, match="mmr.*not implemented.*top_score"):
+        selection = ranker.select(ARTICLE_DIR, m=2)
+
+    assert selection.selected == selection.ranking.entries[:2]
+
+
 def test_select_uses_configured_top_m_when_m_omitted() -> None:
     ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(top_m=2))
 

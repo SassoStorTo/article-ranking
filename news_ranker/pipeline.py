@@ -1,5 +1,6 @@
 """Fixture-backed public ranking pipeline."""
 
+import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -146,6 +147,14 @@ class NewsRanker:
         if not 1 <= final_m <= article_count:
             msg = f"m must satisfy 1 <= m <= article_count ({article_count})"
             raise ValueError(msg)
+
+        if self._config.selection_mode == "mmr":
+            warnings.warn(
+                "selection_mode='mmr' is not implemented yet; "
+                "falling back to top_score selection without diversity",
+                RuntimeWarning,
+                stacklevel=2,
+            )
 
         return SelectionResult(
             profile=profile,
