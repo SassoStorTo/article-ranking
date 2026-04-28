@@ -64,6 +64,13 @@ class SelectionResult:
     ranking: RankResult
 
 
+@dataclass(frozen=True)
+class ProfileComparison:
+    """Rankings for multiple configured scoring profiles."""
+
+    rankings: Mapping[str, RankResult]
+
+
 class NewsRanker:
     """Public orchestrator for fixture-backed article ranking."""
 
@@ -140,6 +147,29 @@ class NewsRanker:
             m=m,
             selected=ranking.entries[:m],
             ranking=ranking,
+        )
+
+    def compare_profiles(
+        self, articles: ArticleInput, profiles: Sequence[str] | str | None = None
+    ) -> ProfileComparison:
+        """Rank articles for requested scoring profiles."""
+
+        if profiles is None:
+            requested_profiles = tuple(self._config.profiles)
+        elif isinstance(profiles, str):
+            requested_profiles = (profiles,)
+        else:
+            requested_profiles = tuple(profiles)
+
+        if not requested_profiles:
+            msg = "profiles must not be empty"
+            raise ValueError(msg)
+
+        return ProfileComparison(
+            rankings={
+                profile: self.rank(articles, profile=profile)
+                for profile in requested_profiles
+            }
         )
 
     def _load_structured_articles(

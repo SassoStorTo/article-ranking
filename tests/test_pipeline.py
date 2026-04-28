@@ -264,6 +264,46 @@ def test_selected_entries_retain_rank_score_and_component_data() -> None:
         assert all(np.isfinite(score) for score in entry.components.values())
 
 
+def test_compare_profiles_defaults_to_configured_profiles() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+
+    comparison = ranker.compare_profiles(ARTICLE_DIR)
+
+    assert set(comparison.rankings) == {"representative", "comprehensive", "concise"}
+    assert all(
+        ranking.profile == profile for profile, ranking in comparison.rankings.items()
+    )
+
+
+def test_compare_profiles_accepts_explicit_profile_subset() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+
+    comparison = ranker.compare_profiles(
+        ARTICLE_DIR, profiles=["concise", "representative"]
+    )
+
+    assert list(comparison.rankings) == ["concise", "representative"]
+
+
+def test_compare_profiles_unknown_profile_fails() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+
+    with pytest.raises(ValueError, match="unknown ranking profile"):
+        ranker.compare_profiles(ARTICLE_DIR, profiles=["missing"])
+
+
+def test_compare_profiles_rankings_use_same_article_ids() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+
+    comparison = ranker.compare_profiles(ARTICLE_DIR)
+    ranked_id_sets = {
+        tuple(entry.article_id for entry in ranking.entries)
+        for ranking in comparison.rankings.values()
+    }
+
+    assert len(ranked_id_sets) == 1
+
+
 def _article(article_id: str, fact_count: int) -> StructuredArticle:
     return StructuredArticle(
         article_id=article_id,
