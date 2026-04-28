@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from news_ranker.embed import embed_facts
+from news_ranker.embed import embed_article_from_clusters, embed_facts
 
 
 class FakeEmbedder:
@@ -62,3 +62,93 @@ def test_embed_facts_rejects_non_2d_output() -> None:
 def test_embed_facts_rejects_non_finite_output() -> None:
     with pytest.raises(ValueError, match="finite"):
         embed_facts(["fact"], NonFiniteEmbedder())
+
+
+def test_embed_article_from_clusters_means_unique_covered_clusters() -> None:
+    article_ids = ["article-a", "article-b"]
+    coverage_matrix = np.array(
+        [
+            [2, 0, 1],
+            [0, 1, 0],
+        ],
+    )
+    cluster_vectors = np.array(
+        [
+            [1.0, 3.0],
+            [100.0, 100.0],
+            [5.0, 7.0],
+        ],
+        dtype=np.float32,
+    )
+
+    article_vector = embed_article_from_clusters(
+        "article-a",
+        article_ids,
+        coverage_matrix,
+        cluster_vectors,
+    )
+
+    np.testing.assert_array_equal(
+        article_vector,
+        np.array([3.0, 5.0], dtype=np.float32),
+    )
+
+
+def test_embed_article_from_clusters_rejects_unknown_article_id() -> None:
+    with pytest.raises(ValueError, match="unknown article_id"):
+        embed_article_from_clusters(
+            "missing",
+            ["article-a"],
+            np.array([[1]]),
+            np.array([[1.0, 2.0]], dtype=np.float32),
+        )
+
+
+def test_embed_article_from_clusters_rejects_non_2d_coverage_matrix() -> None:
+    with pytest.raises(ValueError, match="coverage_matrix must be a 2-D array"):
+        embed_article_from_clusters(
+            "article-a",
+            ["article-a"],
+            np.array([1]),
+            np.array([[1.0, 2.0]], dtype=np.float32),
+        )
+
+
+def test_embed_article_from_clusters_rejects_non_2d_cluster_vectors() -> None:
+    with pytest.raises(ValueError, match="cluster_vectors must be a 2-D array"):
+        embed_article_from_clusters(
+            "article-a",
+            ["article-a"],
+            np.array([[1]]),
+            np.array([1.0, 2.0], dtype=np.float32),
+        )
+
+
+def test_embed_article_from_clusters_rejects_article_row_mismatch() -> None:
+    with pytest.raises(ValueError, match="row count"):
+        embed_article_from_clusters(
+            "article-a",
+            ["article-a", "article-b"],
+            np.array([[1]]),
+            np.array([[1.0, 2.0]], dtype=np.float32),
+        )
+
+
+def test_embed_article_from_clusters_rejects_cluster_row_mismatch() -> None:
+    with pytest.raises(ValueError, match="column count"):
+        embed_article_from_clusters(
+            "article-a",
+            ["article-a"],
+            np.array([[1, 0]]),
+            np.array([[1.0, 2.0]], dtype=np.float32),
+        )
+
+
+def test_embed_article_from_clusters_rejects_no_covered_clusters() -> None:
+    with pytest.raises(ValueError, match="covers no clusters"):
+        embed_article_from_clusters(
+            "article-a",
+            ["article-a"],
+            np.array([[0, 0]]),
+            np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float32),
+        )
