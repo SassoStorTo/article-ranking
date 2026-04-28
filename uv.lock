@@ -536,6 +536,7 @@ source = { editable = "." }
 dependencies = [
     { name = "numpy" },
     { name = "pydantic" },
+    { name = "scikit-learn" },
     { name = "sentence-transformers" },
 ]
 
@@ -550,6 +551,7 @@ dev = [
 requires-dist = [
     { name = "numpy", specifier = ">=2.4.4" },
     { name = "pydantic", specifier = ">=2.13.3" },
+    { name = "scikit-learn", specifier = ">=1.8.0" },
     { name = "sentence-transformers", specifier = ">=5.4.1" },
 ]
 
