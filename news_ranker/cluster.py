@@ -2,10 +2,11 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 from numpy.typing import NDArray
+from sklearn.cluster import AgglomerativeClustering  # type: ignore[import-untyped]
 
 from news_ranker.schemas import StructuredArticle
 
@@ -56,7 +57,7 @@ def build_fact_universe(
     similarity_threshold: float = 0.85,
     linkage: Linkage = "average",
 ) -> FactUniverse:
-    """Validate inputs and build an identity fact universe placeholder."""
+    """Validate inputs and build a clustered fact universe."""
 
     _validate_similarity_threshold(similarity_threshold)
     _validate_linkage(linkage)
@@ -79,22 +80,120 @@ def build_fact_universe(
             coverage_matrix=np.zeros((len(article_ids), 0), dtype=np.int_),
         )
 
-    article_index = {article_id: index for index, article_id in enumerate(article_ids)}
-    coverage_matrix = np.zeros((len(article_ids), fact_count), dtype=np.int_)
-    for fact_index, raw_fact in enumerate(raw_facts):
-        coverage_matrix[article_index[raw_fact.article_id], fact_index] = 1
+    cluster_assignments = _cluster_assignments(
+        embeddings,
+        similarity_threshold=similarity_threshold,
+        linkage=linkage,
+    )
+    cluster_members = _cluster_members(cluster_assignments)
+    cluster_vectors = _cluster_vectors(embeddings, cluster_members)
+    canonical_fact_texts = _canonical_fact_texts(
+        raw_facts,
+        embeddings,
+        cluster_members,
+        cluster_vectors,
+    )
+    coverage_matrix = _coverage_matrix(article_ids, raw_facts, cluster_assignments)
 
     return FactUniverse(
         article_ids=article_ids,
         raw_fact_article_ids=tuple(fact.article_id for fact in raw_facts),
         raw_fact_ids=tuple(fact.fact_id for fact in raw_facts),
         raw_fact_texts=tuple(fact.text for fact in raw_facts),
-        canonical_fact_texts=tuple(fact.text for fact in raw_facts),
-        cluster_vectors=np.asarray(embeddings, dtype=np.float32),
-        cluster_assignments=np.arange(fact_count, dtype=np.int_),
-        cluster_members=tuple((fact_index,) for fact_index in range(fact_count)),
+        canonical_fact_texts=canonical_fact_texts,
+        cluster_vectors=cluster_vectors,
+        cluster_assignments=cluster_assignments,
+        cluster_members=cluster_members,
         coverage_matrix=coverage_matrix,
     )
+
+
+def _cluster_assignments(
+    embeddings: NDArray[np.float32],
+    *,
+    similarity_threshold: float,
+    linkage: Linkage,
+) -> NDArray[np.int_]:
+    if embeddings.shape[0] == 1:
+        return np.zeros((1,), dtype=np.int_)
+
+    # sklearn cuts at distances strictly below threshold; nextafter keeps <=.
+    clustering = AgglomerativeClustering(
+        n_clusters=None,
+        metric="cosine",
+        linkage=linkage,
+        distance_threshold=float(
+            np.nextafter(1.0 - float(similarity_threshold), np.inf)
+        ),
+    )
+    labels = cast(NDArray[np.int_], clustering.fit_predict(embeddings))
+    return _remap_labels_by_first_occurrence(labels)
+
+
+def _remap_labels_by_first_occurrence(labels: NDArray[np.int_]) -> NDArray[np.int_]:
+    first_indices: dict[int, int] = {}
+    for index, label in enumerate(labels):
+        first_indices.setdefault(int(label), index)
+
+    remap = {
+        label: new_label
+        for new_label, label in enumerate(
+            sorted(first_indices, key=lambda label: first_indices[label])
+        )
+    }
+    return np.asarray([remap[int(label)] for label in labels], dtype=np.int_)
+
+
+def _cluster_members(assignments: NDArray[np.int_]) -> tuple[tuple[int, ...], ...]:
+    cluster_count = int(assignments.max()) + 1
+    return tuple(
+        tuple(int(index) for index in np.flatnonzero(assignments == cluster_index))
+        for cluster_index in range(cluster_count)
+    )
+
+
+def _cluster_vectors(
+    embeddings: NDArray[np.float32], cluster_members: tuple[tuple[int, ...], ...]
+) -> NDArray[np.float32]:
+    vectors = [embeddings[list(members)].mean(axis=0) for members in cluster_members]
+    return np.asarray(vectors, dtype=np.float32)
+
+
+def _canonical_fact_texts(
+    raw_facts: list[RawFact],
+    embeddings: NDArray[np.float32],
+    cluster_members: tuple[tuple[int, ...], ...],
+    cluster_vectors: NDArray[np.float32],
+) -> tuple[str, ...]:
+    texts: list[str] = []
+    embedding_norms = np.linalg.norm(embeddings, axis=1)
+    for cluster_index, members in enumerate(cluster_members):
+        centroid = cluster_vectors[cluster_index]
+        centroid_norm = float(np.linalg.norm(centroid))
+        if centroid_norm == 0.0:
+            medoid_index = members[0]
+        else:
+            member_indices = np.asarray(members, dtype=np.int_)
+            similarities = (embeddings[member_indices] @ centroid) / (
+                embedding_norms[member_indices] * centroid_norm
+            )
+            medoid_index = members[int(np.argmax(similarities))]
+        texts.append(raw_facts[medoid_index].text)
+    return tuple(texts)
+
+
+def _coverage_matrix(
+    article_ids: tuple[str, ...],
+    raw_facts: list[RawFact],
+    cluster_assignments: NDArray[np.int_],
+) -> NDArray[np.int_]:
+    cluster_count = int(cluster_assignments.max()) + 1
+    article_index = {article_id: index for index, article_id in enumerate(article_ids)}
+    coverage_matrix = np.zeros((len(article_ids), cluster_count), dtype=np.int_)
+    for fact_index, raw_fact in enumerate(raw_facts):
+        cluster_index = int(cluster_assignments[fact_index])
+        coverage_matrix[article_index[raw_fact.article_id], cluster_index] = 1
+    return coverage_matrix
 
 
 def _validate_article_ids(articles: Sequence[StructuredArticle]) -> list[str]:

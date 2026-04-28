@@ -6,7 +6,7 @@ import pytest
 from numpy.typing import NDArray
 
 from news_ranker.cluster import build_fact_universe, flatten_fact_items
-from news_ranker.schemas import StructuredArticle, load_structured_article
+from news_ranker.schemas import Claim, StructuredArticle, load_structured_article
 
 ARTICLE_DIR = Path(__file__).resolve().parents[1] / "articles" / "trump-shooting"
 ARTICLE_PATHS = sorted(ARTICLE_DIR.glob("*.json"))
@@ -17,7 +17,28 @@ def _fixture_articles() -> list[StructuredArticle]:
 
 
 def _fact_embeddings(row_count: int) -> NDArray[np.float32]:
-    return np.ones((row_count, 2), dtype=np.float32)
+    if row_count == 0:
+        return np.empty((0, 2), dtype=np.float32)
+    return np.eye(row_count, dtype=np.float32)
+
+
+def _article(article_id: str, statements: list[str]) -> StructuredArticle:
+    base_article = load_structured_article(ARTICLE_DIR / "bbc.json")
+    return base_article.model_copy(
+        update={
+            "article_id": article_id,
+            "events": [],
+            "claims": [
+                Claim(
+                    id=f"c{index}",
+                    statement=statement,
+                    type="fact",
+                    attributed_to="fixture",
+                )
+                for index, statement in enumerate(statements)
+            ],
+        }
+    )
 
 
 def test_fixture_backed_articles_flatten_in_article_order() -> None:
@@ -134,3 +155,92 @@ def test_empty_facts_return_empty_coverage_with_known_article_ids() -> None:
     assert universe.cluster_assignments.shape == (0,)
     assert universe.cluster_members == ()
     assert universe.coverage_matrix.shape == (2, 0)
+
+
+def test_near_duplicate_facts_merge_and_distant_facts_remain_split() -> None:
+    articles = [
+        _article("a", ["same fact one"]),
+        _article("b", ["same fact two"]),
+        _article("c", ["different fact"]),
+    ]
+    embeddings = np.asarray(
+        [
+            [1.0, 0.0],
+            [0.99, 0.10],
+            [0.0, 1.0],
+        ],
+        dtype=np.float32,
+    )
+
+    universe = build_fact_universe(articles, embeddings, similarity_threshold=0.95)
+
+    assert universe.cluster_assignments.tolist() == [0, 0, 1]
+    assert universe.cluster_members == ((0, 1), (2,))
+    assert universe.coverage_matrix.tolist() == [[1, 0], [1, 0], [0, 1]]
+
+
+def test_average_linkage_avoids_chaining_merge_that_single_linkage_permits() -> None:
+    angle = np.deg2rad(36.0)
+    embeddings = np.asarray(
+        [
+            [1.0, 0.0],
+            [np.cos(angle), np.sin(angle)],
+            [np.cos(angle * 2.0), np.sin(angle * 2.0)],
+        ],
+        dtype=np.float32,
+    )
+    articles = [
+        _article("a", ["first fact"]),
+        _article("b", ["bridge fact"]),
+        _article("c", ["third fact"]),
+    ]
+
+    average = build_fact_universe(
+        articles, embeddings, similarity_threshold=0.8, linkage="average"
+    )
+    single = build_fact_universe(
+        articles, embeddings, similarity_threshold=0.8, linkage="single"
+    )
+
+    assert average.cluster_members == ((0, 1), (2,))
+    assert single.cluster_members == ((0, 1, 2),)
+
+
+def test_repeated_facts_from_one_article_set_binary_coverage_not_counts() -> None:
+    articles = [_article("a", ["repeat", "repeat again"])]
+    embeddings = np.asarray([[1.0, 0.0], [1.0, 0.0]], dtype=np.float32)
+
+    universe = build_fact_universe(articles, embeddings, similarity_threshold=0.99)
+
+    assert universe.cluster_members == ((0, 1),)
+    assert universe.coverage_matrix.tolist() == [[1]]
+
+
+def test_canonical_medoid_text_is_deterministic() -> None:
+    articles = [_article("a", ["center fact", "left fact", "right fact"])]
+    embeddings = np.asarray([[1.0, 0.0], [0.98, 0.20], [0.98, -0.20]], dtype=np.float32)
+
+    universe = build_fact_universe(articles, embeddings, similarity_threshold=0.9)
+
+    assert universe.canonical_fact_texts == ("center fact",)
+
+
+def test_label_order_is_remapped_by_first_raw_fact_occurrence() -> None:
+    articles = [_article("a", ["cluster one", "cluster two", "cluster one again"])]
+    embeddings = np.asarray([[1.0, 0.0], [0.0, 1.0], [0.99, 0.10]], dtype=np.float32)
+
+    universe = build_fact_universe(articles, embeddings, similarity_threshold=0.95)
+
+    assert universe.cluster_assignments.tolist() == [0, 1, 0]
+    assert universe.cluster_members == ((0, 2), (1,))
+    assert universe.canonical_fact_texts == ("cluster one", "cluster two")
+
+
+def test_cluster_vector_means_are_float32() -> None:
+    articles = [_article("a", ["one", "two"])]
+    embeddings = np.asarray([[1.0, 0.0], [0.5, 0.5]], dtype=np.float32)
+
+    universe = build_fact_universe(articles, embeddings, similarity_threshold=0.7)
+
+    np.testing.assert_allclose(universe.cluster_vectors, [[0.75, 0.25]])
+    assert universe.cluster_vectors.dtype == np.float32
