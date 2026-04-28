@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
+from news_ranker.cluster import flatten_fact_items
 from news_ranker.config import RankerConfig
 from news_ranker.pipeline import NewsRanker
 from news_ranker.schemas import StructuredArticle, load_structured_article
@@ -15,7 +16,11 @@ EXPECTED_COMPONENT_KEYS = {"centrality", "coverage", "density", "entity_coverage
 
 
 class FakeEmbedder:
+    def __init__(self) -> None:
+        self.texts: list[str] = []
+
     def embed(self, texts: list[str]) -> NDArray[np.float32]:
+        self.texts = list(texts)
         return np.ones((len(texts), 2), dtype=np.float32)
 
 
@@ -133,6 +138,55 @@ def test_raw_article_dict_input_reports_decomposition_not_implemented() -> None:
 
     with pytest.raises(NotImplementedError, match="decomposition.*not implemented"):
         ranker._load_structured_articles([{"id": "raw-1", "body": "text"}])
+
+
+def test_rank_folder_returns_ranked_fixture_articles() -> None:
+    embedder = FakeEmbedder()
+    ranker = NewsRanker(embedder)
+    loaded_articles = [load_structured_article(path) for path in ARTICLE_PATHS]
+
+    result = ranker.rank(ARTICLE_DIR)
+
+    assert result.profile == "representative"
+    assert len(result.entries) == 5
+    assert [entry.rank for entry in result.entries] == [1, 2, 3, 4, 5]
+    assert {entry.article_id for entry in result.entries} == {
+        article.article_id for article in loaded_articles
+    }
+    assert all(np.isfinite(entry.score) for entry in result.entries)
+    for entry in result.entries:
+        assert set(entry.components) == EXPECTED_COMPONENT_KEYS
+        assert all(np.isfinite(score) for score in entry.components.values())
+    assert embedder.texts == [fact.text for fact in flatten_fact_items(loaded_articles)]
+    assert result.diagnostics.fact_universe.article_ids == tuple(
+        article.article_id for article in loaded_articles
+    )
+    assert set(result.diagnostics.components) == EXPECTED_COMPONENT_KEYS
+    assert result.diagnostics.article_embeddings.shape[0] == len(loaded_articles)
+
+
+def test_rank_unknown_profile_fails() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+
+    with pytest.raises(ValueError, match="unknown ranking profile"):
+        ranker.rank(ARTICLE_DIR, profile="missing")
+
+
+def test_rank_tie_scores_keep_input_order() -> None:
+    config = RankerConfig(
+        profiles={
+            "coverage_only": _profile_weights(centrality=0.0, coverage=1.0, density=0.0)
+        }
+    )
+    ranker = NewsRanker(FakeEmbedder(), config=config)
+    articles = [load_structured_article(path) for path in reversed(ARTICLE_PATHS[:2])]
+
+    result = ranker.rank(articles, profile="coverage_only")
+
+    assert [entry.article_id for entry in result.entries] == [
+        article.article_id for article in articles
+    ]
+    assert [entry.score for entry in result.entries] == [pytest.approx(1.0)] * 2
 
 
 def _profile_weights(
