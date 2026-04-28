@@ -83,7 +83,10 @@ class NewsRanker:
         loaded_articles = self._load_structured_articles(articles)
         raw_facts = flatten_fact_items(loaded_articles)
         fact_texts = [fact.text for fact in raw_facts]
-        fact_embeddings = embed_facts(fact_texts, self._embedder)
+        if fact_texts:
+            fact_embeddings = embed_facts(fact_texts, self._embedder)
+        else:
+            fact_embeddings = np.empty((0, 0), dtype=np.float32)
         fact_universe = build_fact_universe(
             loaded_articles,
             fact_embeddings,
@@ -165,18 +168,22 @@ class NewsRanker:
         raise FileNotFoundError(msg)
 
     def _embed_articles(self, fact_universe: FactUniverse) -> NDArray[np.float32]:
-        article_embeddings: NDArray[np.float32] = np.asarray(
-            [
-                embed_article_from_clusters(
-                    article_id,
-                    fact_universe.article_ids,
-                    fact_universe.coverage_matrix,
-                    fact_universe.cluster_vectors,
-                )
-                for article_id in fact_universe.article_ids
-            ],
-            dtype=np.float32,
-        )
+        article_count = len(fact_universe.article_ids)
+        cluster_dim = fact_universe.cluster_vectors.shape[1]
+        if fact_universe.coverage_matrix.shape[1] == 0:
+            return np.zeros((article_count, cluster_dim), dtype=np.float32)
+
+        covered_counts = fact_universe.coverage_matrix.sum(axis=1)
+        article_embeddings = np.zeros((article_count, cluster_dim), dtype=np.float32)
+        for index, article_id in enumerate(fact_universe.article_ids):
+            if covered_counts[index] == 0:
+                continue
+            article_embeddings[index] = embed_article_from_clusters(
+                article_id,
+                fact_universe.article_ids,
+                fact_universe.coverage_matrix,
+                fact_universe.cluster_vectors,
+            )
         return article_embeddings
 
     def _score_components(
@@ -185,8 +192,20 @@ class NewsRanker:
         fact_universe: FactUniverse,
         article_embeddings: NDArray[np.float32],
     ) -> dict[str, ScoreVector]:
+        if (
+            fact_universe.coverage_matrix.shape[1] == 0
+            or (fact_universe.coverage_matrix.sum(axis=1) == 0).any()
+        ):
+            centrality_scores = ScoreVector(
+                raw=np.zeros((len(articles),), dtype=np.float32),
+                normalized=np.zeros((len(articles),), dtype=np.float32),
+                defined=False,
+            )
+        else:
+            centrality_scores = centrality(article_embeddings)
+
         return {
-            "centrality": centrality(article_embeddings),
+            "centrality": centrality_scores,
             "coverage": coverage(
                 fact_universe.coverage_matrix,
                 mode=self._config.coverage_weighting,

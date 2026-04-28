@@ -7,7 +7,12 @@ from numpy.typing import NDArray
 from news_ranker.cluster import flatten_fact_items
 from news_ranker.config import RankerConfig
 from news_ranker.pipeline import NewsRanker
-from news_ranker.schemas import StructuredArticle, load_structured_article
+from news_ranker.schemas import (
+    Claim,
+    Entities,
+    StructuredArticle,
+    load_structured_article,
+)
 
 ARTICLE_DIR = Path(__file__).resolve().parents[1] / "articles" / "trump-shooting"
 ARTICLE_PATHS = sorted(ARTICLE_DIR.glob("*.json"))
@@ -17,9 +22,11 @@ EXPECTED_COMPONENT_KEYS = {"centrality", "coverage", "density", "entity_coverage
 
 class FakeEmbedder:
     def __init__(self) -> None:
+        self.calls = 0
         self.texts: list[str] = []
 
     def embed(self, texts: list[str]) -> NDArray[np.float32]:
+        self.calls += 1
         self.texts = list(texts)
         return np.ones((len(texts), 2), dtype=np.float32)
 
@@ -172,6 +179,35 @@ def test_rank_unknown_profile_fails() -> None:
         ranker.rank(ARTICLE_DIR, profile="missing")
 
 
+def test_rank_all_empty_articles_skips_embedder_and_returns_finite_scores() -> None:
+    embedder = FakeEmbedder()
+    ranker = NewsRanker(embedder)
+    articles = [_article("empty-1", 0), _article("empty-2", 0)]
+
+    result = ranker.rank(articles)
+
+    assert embedder.calls == 0
+    assert [entry.article_id for entry in result.entries] == ["empty-1", "empty-2"]
+    assert all(np.isfinite(entry.score) for entry in result.entries)
+    assert result.diagnostics.fact_universe.coverage_matrix.shape == (2, 0)
+    assert result.diagnostics.fact_universe.coverage_matrix.sum() == 0
+    assert result.diagnostics.fact_universe.cluster_vectors.shape == (0, 0)
+    assert not result.diagnostics.components["centrality"].defined
+    assert not result.diagnostics.components["coverage"].defined
+    assert not result.diagnostics.components["density"].defined
+
+
+def test_rank_mixed_empty_articles_marks_centrality_undefined() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+    articles = [_article("empty", 0), _article("covered", 1)]
+
+    result = ranker.rank(articles)
+
+    assert all(np.isfinite(entry.score) for entry in result.entries)
+    assert result.diagnostics.fact_universe.coverage_matrix.tolist() == [[0], [1]]
+    assert result.diagnostics.components["centrality"].defined is False
+
+
 def test_rank_tie_scores_keep_input_order() -> None:
     config = RankerConfig(
         profiles={
@@ -187,6 +223,26 @@ def test_rank_tie_scores_keep_input_order() -> None:
         article.article_id for article in articles
     ]
     assert [entry.score for entry in result.entries] == [pytest.approx(1.0)] * 2
+
+
+def _article(article_id: str, fact_count: int) -> StructuredArticle:
+    return StructuredArticle(
+        article_id=article_id,
+        headline_neutral="Neutral headline",
+        topic="test",
+        entities=Entities(people=[], organizations=[], locations=[]),
+        events=[],
+        claims=[
+            Claim(
+                id=f"c{index}",
+                statement=f"claim {index}",
+                type="fact",
+                attributed_to="fixture",
+            )
+            for index in range(fact_count)
+        ],
+        context=[],
+    )
 
 
 def _profile_weights(
