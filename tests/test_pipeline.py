@@ -239,6 +239,63 @@ def test_select_returns_first_m_ranked_entries() -> None:
     assert selection.selected == selection.ranking.entries[:2]
 
 
+def test_top_score_selection_returns_first_m_ranked_entries() -> None:
+    ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(selection_mode="top_score"))
+
+    selection = ranker.select(ARTICLE_DIR, m=2)
+
+    assert selection.selected == selection.ranking.entries[:2]
+
+
+def test_mmr_selection_warns_and_returns_first_m_ranked_entries() -> None:
+    ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(selection_mode="mmr"))
+
+    with pytest.warns(RuntimeWarning, match="mmr.*not implemented.*top_score"):
+        selection = ranker.select(ARTICLE_DIR, m=2)
+
+    assert selection.selected == selection.ranking.entries[:2]
+
+
+def test_select_uses_configured_top_m_when_m_omitted() -> None:
+    ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(top_m=2))
+
+    ranking = ranker.rank(ARTICLE_DIR)
+    selection = ranker.select(ARTICLE_DIR)
+
+    assert selection.m == 2
+    assert selection.selected == ranking.entries[:2]
+
+
+def test_select_explicit_m_overrides_configured_top_m() -> None:
+    ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(top_m=3))
+
+    selection = ranker.select(ARTICLE_DIR, m=2)
+
+    assert selection.m == 2
+    assert selection.selected == selection.ranking.entries[:2]
+
+
+def test_select_omitted_m_without_config_fails() -> None:
+    ranker = NewsRanker(FakeEmbedder())
+
+    with pytest.raises(TypeError, match="m must be an integer"):
+        ranker.select(ARTICLE_DIR)
+
+
+def test_non_integer_configured_top_m_fails_config_validation() -> None:
+    with pytest.raises(TypeError, match="top_m must be an integer"):
+        RankerConfig(top_m=1.5)  # type: ignore[arg-type]
+
+
+def test_configured_top_m_greater_than_article_count_fails_at_call_time() -> None:
+    ranker = NewsRanker(
+        FakeEmbedder(), config=RankerConfig(top_m=len(ARTICLE_PATHS) + 1)
+    )
+
+    with pytest.raises(ValueError, match="1 <= m <= article_count"):
+        ranker.select(ARTICLE_DIR)
+
+
 def test_select_invalid_m_values_fail() -> None:
     ranker = NewsRanker(FakeEmbedder())
 
