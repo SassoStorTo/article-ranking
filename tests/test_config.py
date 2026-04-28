@@ -87,9 +87,7 @@ def test_cache_dir_accepts_path_like_value(tmp_path: Path) -> None:
 
 
 def test_multilingual_embedding_model_can_be_configured() -> None:
-    config = RankerConfig(
-        embedding_model_name="paraphrase-multilingual-mpnet-base-v2"
-    )
+    config = RankerConfig(embedding_model_name="paraphrase-multilingual-mpnet-base-v2")
 
     assert config.embedding_model_name == "paraphrase-multilingual-mpnet-base-v2"
 

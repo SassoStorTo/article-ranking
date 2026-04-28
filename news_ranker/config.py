@@ -126,7 +126,9 @@ def _validate_selection_mode(selection_mode: SelectionMode) -> None:
 
 
 def _validate_selection_lambda(selection_lambda: float) -> None:
-    if isinstance(selection_lambda, bool) or not isinstance(selection_lambda, int | float):
+    if isinstance(selection_lambda, bool) or not isinstance(
+        selection_lambda, int | float
+    ):
         msg = "selection_lambda must be numeric"
         raise TypeError(msg)
     scalar = float(selection_lambda)

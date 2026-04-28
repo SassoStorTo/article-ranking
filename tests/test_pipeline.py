@@ -240,9 +240,7 @@ def test_select_returns_first_m_ranked_entries() -> None:
 
 
 def test_top_score_selection_returns_first_m_ranked_entries() -> None:
-    ranker = NewsRanker(
-        FakeEmbedder(), config=RankerConfig(selection_mode="top_score")
-    )
+    ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(selection_mode="top_score"))
 
     selection = ranker.select(ARTICLE_DIR, m=2)
 
