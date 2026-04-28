@@ -1,10 +1,19 @@
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from news_ranker.schemas import Claim, Entities, Entity, StructuredArticle
+from news_ranker.cluster import build_fact_universe, flatten_fact_items
+from news_ranker.embed import embed_article_from_clusters
+from news_ranker.schemas import (
+    Claim,
+    Entities,
+    Entity,
+    StructuredArticle,
+    load_structured_article,
+)
 from news_ranker.score import (
     ScoreVector,
     centrality,
@@ -14,6 +23,9 @@ from news_ranker.score import (
     entity_coverage,
     minmax_normalize,
 )
+
+ARTICLE_DIR = Path(__file__).resolve().parents[1] / "articles" / "trump-shooting"
+ARTICLE_PATHS = sorted(ARTICLE_DIR.glob("*.json"))
 
 
 def test_minmax_normalize_scales_values_to_unit_interval() -> None:
@@ -253,6 +265,58 @@ def test_invalid_centrality_embeddings_raise(
 ) -> None:
     with pytest.raises(error_type, match=match):
         centrality(article_embeddings)
+
+
+def test_fixture_clustering_to_scoring_smoke_path() -> None:
+    articles = _fixture_articles()
+    raw_facts = flatten_fact_items(articles)
+    fact_embeddings = np.eye(len(raw_facts), dtype=np.float32)
+
+    universe = build_fact_universe(articles, fact_embeddings)
+    article_vectors = np.asarray(
+        [
+            embed_article_from_clusters(
+                article.article_id or "",
+                universe.article_ids,
+                universe.coverage_matrix,
+                universe.cluster_vectors,
+            )
+            for article in articles
+        ],
+        dtype=np.float32,
+    )
+
+    centrality_scores = centrality(article_vectors)
+    coverage_scores = coverage(universe.coverage_matrix)
+    density_scores = density(articles, universe.coverage_matrix)
+    entity_scores = entity_coverage(articles)
+    combined_scores = combine(
+        {
+            "centrality": centrality_scores,
+            "coverage": coverage_scores,
+            "density": density_scores,
+            "entities": entity_scores,
+        },
+        {
+            "centrality": 0.25,
+            "coverage": 0.25,
+            "density": 0.25,
+            "entities": 0.25,
+        },
+    )
+
+    assert len(articles) == 5
+    assert universe.coverage_matrix.shape[0] == 5
+    assert article_vectors.shape == (5, universe.cluster_vectors.shape[1])
+    for scores in (centrality_scores, coverage_scores, density_scores, entity_scores):
+        assert scores.raw.shape == (5,)
+        assert scores.normalized.shape == (5,)
+    assert combined_scores.shape == (5,)
+    assert np.isfinite(combined_scores).all()
+
+
+def _fixture_articles() -> list[StructuredArticle]:
+    return [load_structured_article(path) for path in ARTICLE_PATHS]
 
 
 def _article(
