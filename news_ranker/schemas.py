@@ -38,6 +38,23 @@ class Event(_StrictModel):
     how: str | None
     depends_on: list[str]
 
+    @property
+    def fact_text(self) -> str:
+        """Return stable event text suitable for fact embedding."""
+
+        parts = [
+            f"who: {', '.join(self.who)}",
+            f"what: {self.what}",
+            f"when: {self.when}",
+        ]
+        if self.where is not None:
+            parts.append(f"where: {self.where}")
+        if self.why is not None:
+            parts.append(f"why: {self.why}")
+        if self.how is not None:
+            parts.append(f"how: {self.how}")
+        return "; ".join(parts)
+
 
 class Claim(_StrictModel):
     """Atomic claim in article decomposition."""
@@ -46,6 +63,12 @@ class Claim(_StrictModel):
     statement: str
     type: str
     attributed_to: str
+
+    @property
+    def fact_text(self) -> str:
+        """Return stable claim text suitable for fact embedding."""
+
+        return self.statement
 
 
 class StructuredArticle(_StrictModel):
@@ -58,6 +81,22 @@ class StructuredArticle(_StrictModel):
     events: list[Event]
     claims: list[Claim]
     context: list[str]
+
+    @property
+    def fact_texts(self) -> list[str]:
+        """Return event fact texts followed by claim fact texts."""
+
+        return [event.fact_text for event in self.events] + [
+            claim.fact_text for claim in self.claims
+        ]
+
+    @property
+    def fact_items(self) -> list[tuple[str, str]]:
+        """Return stable fact IDs paired with embedding text."""
+
+        return [(event.id, event.fact_text) for event in self.events] + [
+            (claim.id, claim.fact_text) for claim in self.claims
+        ]
 
 
 def derive_article_id(path_like_id: str | Path) -> str:

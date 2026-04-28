@@ -36,6 +36,36 @@ def test_loader_derives_missing_runtime_article_ids_from_paths() -> None:
     assert derive_article_id("trump-shooting/bbc") == "trump-shooting/bbc"
 
 
+def test_fixture_fact_texts_keep_event_then_claim_order_and_ids() -> None:
+    for article_path in ARTICLE_PATHS:
+        article = load_structured_article(article_path)
+
+        assert article.article_id == derive_article_id(article_path)
+        assert len(article.fact_texts) == len(article.events) + len(article.claims)
+        assert [fact_id for fact_id, _ in article.fact_items] == [
+            event.id for event in article.events
+        ] + [claim.id for claim in article.claims]
+        assert article.fact_texts[: len(article.events)] == [
+            event.fact_text for event in article.events
+        ]
+        assert article.fact_texts[len(article.events) :] == [
+            claim.statement for claim in article.claims
+        ]
+        assert all(text for text in article.fact_texts)
+
+
+def test_loader_preserves_article_id_supplied_in_json(tmp_path: Path) -> None:
+    data = json.loads((ARTICLE_DIR / "bbc.json").read_text(encoding="utf-8"))
+    data["article_id"] = "trump-shooting/json-id"
+    article_path = tmp_path / "article.json"
+    article_path.write_text(json.dumps(data), encoding="utf-8")
+
+    article = load_structured_article(article_path)
+
+    assert article.article_id == "trump-shooting/json-id"
+    assert len(article.fact_texts) == len(article.events) + len(article.claims)
+
+
 def test_unknown_top_level_fields_are_rejected() -> None:
     data = json.loads((ARTICLE_DIR / "bbc.json").read_text(encoding="utf-8"))
     data["unexpected"] = "not allowed"
