@@ -128,24 +128,29 @@ class NewsRanker:
         )
 
     def select(
-        self, articles: ArticleInput, m: int, profile: str = "representative"
+        self,
+        articles: ArticleInput,
+        m: int | None = None,
+        profile: str = "representative",
     ) -> SelectionResult:
         """Select top-m ranked articles by score."""
 
-        if not isinstance(m, int) or isinstance(m, bool):
+        final_m = self._config.top_m if m is None else m
+        ranking = self.rank(articles, profile=profile)
+
+        if not isinstance(final_m, int) or isinstance(final_m, bool):
             msg = "m must be an integer"
             raise TypeError(msg)
 
-        ranking = self.rank(articles, profile=profile)
         article_count = len(ranking.entries)
-        if not 1 <= m <= article_count:
+        if not 1 <= final_m <= article_count:
             msg = f"m must satisfy 1 <= m <= article_count ({article_count})"
             raise ValueError(msg)
 
         return SelectionResult(
             profile=profile,
-            m=m,
-            selected=ranking.entries[:m],
+            m=final_m,
+            selected=ranking.entries[:final_m],
             ranking=ranking,
         )
 
