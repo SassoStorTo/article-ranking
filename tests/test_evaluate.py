@@ -1,9 +1,26 @@
+from pathlib import Path
+
 import numpy as np
 import pytest
+from numpy.typing import NDArray
 
 from news_ranker.cluster import FactUniverse
-from news_ranker.evaluate import rank_correlation, top_m_overlap
-from news_ranker.pipeline import RankDiagnostics, RankingEntry, RankResult
+from news_ranker.evaluate import component_score_table, rank_correlation, top_m_overlap
+from news_ranker.pipeline import (
+    NewsRanker,
+    ProfileComparison,
+    RankDiagnostics,
+    RankingEntry,
+    RankResult,
+)
+
+ARTICLE_DIR = Path(__file__).resolve().parents[1] / "articles" / "trump-shooting"
+EXPECTED_COMPONENT_KEYS = {"centrality", "coverage", "density", "entity_coverage"}
+
+
+class FakeEmbedder:
+    def embed(self, texts: list[str]) -> NDArray[np.float32]:
+        return np.ones((len(texts), 2), dtype=np.float32)
 
 
 def test_top_m_overlap_reports_counts_fractions_and_ids() -> None:
@@ -61,6 +78,83 @@ def test_rank_correlation_aligns_common_ids_and_reports_only_diagnostics() -> No
     assert result.coefficient == pytest.approx(-1 / 3)
 
 
+def test_component_score_table_sorts_by_profile_input_order_then_rank() -> None:
+    first = _rank_result(
+        "first",
+        ["b", "a"],
+        {
+            "b": {"coverage": 0.7},
+            "a": {"coverage": 0.2, "density": 0.4},
+        },
+    )
+    second = _rank_result(
+        "second",
+        ["c"],
+        {"c": {"entity_coverage": 1.0}},
+    )
+
+    rows = component_score_table([first, second])
+
+    assert [row["profile"] for row in rows] == ["first", "first", "second"]
+    assert [row["article_id"] for row in rows] == ["b", "a", "c"]
+    assert [row["rank"] for row in rows] == [1, 2, 1]
+    assert set(rows[0]) == {
+        "profile",
+        "article_id",
+        "rank",
+        "score",
+        "coverage",
+        "density",
+        "entity_coverage",
+    }
+    assert rows[0]["coverage"] == pytest.approx(0.7)
+    assert rows[0]["density"] is None
+    assert rows[0]["entity_coverage"] is None
+    assert rows[1]["density"] == pytest.approx(0.4)
+    assert rows[2]["coverage"] is None
+    assert rows[2]["entity_coverage"] == pytest.approx(1.0)
+
+
+def test_component_score_table_accepts_single_result_and_profile_comparison() -> None:
+    first = _rank_result("first", ["a"], {"a": {"coverage": 1.0}})
+    second = _rank_result("second", ["b"], {"b": {"density": 0.5}})
+
+    assert component_score_table(first) == [
+        {
+            "profile": "first",
+            "article_id": "a",
+            "rank": 1,
+            "score": 0.0,
+            "coverage": 1.0,
+        }
+    ]
+
+    rows = component_score_table(
+        ProfileComparison(rankings={"first": first, "second": second})
+    )
+
+    assert [row["profile"] for row in rows] == ["first", "second"]
+    assert rows[0]["coverage"] == pytest.approx(1.0)
+    assert rows[0]["density"] is None
+    assert rows[1]["coverage"] is None
+    assert rows[1]["density"] == pytest.approx(0.5)
+
+
+def test_component_score_table_preserves_fixture_backed_scores_and_components() -> None:
+    result = NewsRanker(FakeEmbedder()).rank(ARTICLE_DIR)
+
+    rows = component_score_table(result)
+
+    assert len(rows) == len(result.entries)
+    assert [row["rank"] for row in rows] == [entry.rank for entry in result.entries]
+    for row in rows:
+        assert row["profile"] == "representative"
+        assert isinstance(row["article_id"], str)
+        assert np.isfinite(row["score"])
+        assert EXPECTED_COMPONENT_KEYS < set(row)
+        assert all(np.isfinite(row[name]) for name in EXPECTED_COMPONENT_KEYS)
+
+
 @pytest.mark.parametrize("m", [0, 4])
 def test_top_m_overlap_rejects_out_of_range_m(m: int) -> None:
     left = _rank_result("left", ["a", "b", "c"])
@@ -106,13 +200,17 @@ def test_helpers_reject_duplicate_article_ids() -> None:
         rank_correlation(left, right)
 
 
-def _rank_result(profile: str, article_ids: list[str]) -> RankResult:
+def _rank_result(
+    profile: str,
+    article_ids: list[str],
+    components_by_article_id: dict[str, dict[str, float]] | None = None,
+) -> RankResult:
     entries = tuple(
         RankingEntry(
             article_id=article_id,
             rank=rank,
             score=float(len(article_ids) - rank),
-            components={},
+            components=(components_by_article_id or {}).get(article_id, {}),
         )
         for rank, article_id in enumerate(article_ids, start=1)
     )

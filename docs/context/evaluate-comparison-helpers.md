@@ -39,7 +39,7 @@ Accepts two `RankResult` objects and compares ranks over common article IDs only
 
 ### `component_score_table(results)`
 
-Planned rows flatten one `RankResult`, a sequence of `RankResult`, or a `ProfileComparison`. Rows should preserve profile input order, then rank order. Base columns: profile, article ID, rank, score. Component columns come from entry component keys, with missing profile/component values represented as `None`.
+Implemented rows flatten one `RankResult`, a sequence of `RankResult`, or a `ProfileComparison`. Returns `list[dict[str, str | int | float | None]]` with base columns `profile`, `article_id`, `rank`, and `score`, plus one dynamic column for each component key seen across entries. Rows preserve profile input order, then sort entries by `rank`. Component columns preserve first-seen component-key order. Missing component values are `None`.
 
 ### `cluster_inspection_rows(rank_result, rare_threshold=1)`
 
@@ -60,7 +60,7 @@ Accepts `SelectionResult` and sanitized article materials keyed by original arti
 
 ## Deviations from plan
 
-None so far. Step 2 record names are `TopMOverlap` and `RankCorrelation`, matching planned fields.
+None so far. Step 2 record names are `TopMOverlap` and `RankCorrelation`, matching planned fields. Step 3 uses dynamic row dictionaries for component columns.
 
 ## Verification
 
@@ -71,6 +71,12 @@ test -f docs/context/evaluate-comparison-helpers.md && uv run ruff format --chec
 ```
 
 Step 2 verification command:
+
+```sh
+uv run pytest tests/test_evaluate.py
+```
+
+Step 3 verification command:
 
 ```sh
 uv run pytest tests/test_evaluate.py

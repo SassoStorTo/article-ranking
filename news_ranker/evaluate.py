@@ -1,11 +1,14 @@
 """Helpers for comparing ranking results."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, TypeAlias
 
-from news_ranker.pipeline import RankResult, RankingEntry
+from news_ranker.pipeline import ProfileComparison, RankResult, RankingEntry
 
 CorrelationMethod = Literal["kendall", "spearman"]
+ComponentScoreValue: TypeAlias = str | int | float | None
+ComponentScoreRow: TypeAlias = dict[str, ComponentScoreValue]
 
 
 @dataclass(frozen=True)
@@ -108,6 +111,30 @@ def rank_correlation(
     )
 
 
+def component_score_table(
+    results: RankResult | Sequence[RankResult] | ProfileComparison,
+) -> list[ComponentScoreRow]:
+    """Flatten ranking scores and component values into deterministic rows."""
+
+    rankings = _coerce_rank_results(results)
+    component_names = _component_names(rankings)
+    rows: list[ComponentScoreRow] = []
+
+    for ranking in rankings:
+        for entry in sorted(ranking.entries, key=lambda entry: entry.rank):
+            row: ComponentScoreRow = {
+                "profile": ranking.profile,
+                "article_id": entry.article_id,
+                "rank": entry.rank,
+                "score": entry.score,
+            }
+            for component_name in component_names:
+                row[component_name] = entry.components.get(component_name)
+            rows.append(row)
+
+    return rows
+
+
 def _validate_m(m: int, left: RankResult, right: RankResult) -> None:
     if not isinstance(m, int) or isinstance(m, bool):
         msg = "m must be an integer"
@@ -129,6 +156,25 @@ def _validate_unique_article_ids(result: RankResult) -> None:
 
 def _rank_by_article_id(entries: tuple[RankingEntry, ...]) -> dict[str, int]:
     return {entry.article_id: entry.rank for entry in entries}
+
+
+def _coerce_rank_results(
+    results: RankResult | Sequence[RankResult] | ProfileComparison,
+) -> tuple[RankResult, ...]:
+    if isinstance(results, RankResult):
+        return (results,)
+    if isinstance(results, ProfileComparison):
+        return tuple(results.rankings.values())
+    return tuple(results)
+
+
+def _component_names(rankings: tuple[RankResult, ...]) -> tuple[str, ...]:
+    names: dict[str, None] = {}
+    for ranking in rankings:
+        for entry in sorted(ranking.entries, key=lambda entry: entry.rank):
+            for component_name in entry.components:
+                names.setdefault(component_name, None)
+    return tuple(names)
 
 
 def _kendall_tau_a(
