@@ -4,7 +4,7 @@
 
 Planned work adds pure evaluation helpers in `news_ranker/evaluate.py`. Helpers consume existing result dataclasses from `news_ranker/pipeline.py`; they do not call embedders, scrape content, deduplicate URLs, fact-check externally, or mutate ranking behavior.
 
-Step 2 implementation now exists for overlap and correlation. This artifact records source context for later steps and should be updated as helper record names, fields, and edge cases land.
+Implementation now covers overlap, correlation, component tables, cluster inspection rows, user-study bundles, submodule imports, and verification state. This artifact records source context, helper record names, fields, edge cases, constraints, and verification results.
 
 ## Relevant source files
 
