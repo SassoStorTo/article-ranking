@@ -6,6 +6,7 @@ from numpy.typing import NDArray
 
 from news_ranker.cluster import FactUniverse
 from news_ranker.evaluate import (
+    anonymized_user_study_bundle,
     cluster_inspection_rows,
     component_score_table,
     rank_correlation,
@@ -17,6 +18,7 @@ from news_ranker.pipeline import (
     RankDiagnostics,
     RankingEntry,
     RankResult,
+    SelectionResult,
 )
 
 ARTICLE_DIR = Path(__file__).resolve().parents[1] / "articles" / "trump-shooting"
@@ -241,6 +243,113 @@ def test_cluster_inspection_rows_reject_non_integer_rare_threshold(
 
     with pytest.raises(TypeError, match="integer"):
         cluster_inspection_rows(result, rare_threshold=rare_threshold)  # type: ignore[arg-type]
+
+
+def test_anonymized_user_study_bundle_uses_ranking_order_labels() -> None:
+    ranking = _rank_result(
+        "profile",
+        ["source-a", "source-b", "source-c"],
+        {
+            "source-a": {"coverage": 1.0},
+            "source-b": {"coverage": 0.5},
+            "source-c": {"density": 0.25},
+        },
+    )
+    selection = SelectionResult(
+        profile="profile",
+        m=2,
+        selected=(ranking.entries[2], ranking.entries[0]),
+        ranking=ranking,
+    )
+
+    bundle = anonymized_user_study_bundle(
+        selection,
+        {
+            "source-a": {"title": "Alpha", "snippet": "Alpha summary"},
+            "source-c": {"summary": "Charlie summary"},
+        },
+    )
+
+    assert bundle == {
+        "profile": "profile",
+        "m": 2,
+        "selected_article_labels": ("article_3", "article_1"),
+        "article_materials": {
+            "article_3": {"summary": "Charlie summary"},
+            "article_1": {"title": "Alpha", "snippet": "Alpha summary"},
+        },
+    }
+    assert "source-a" not in repr(bundle)
+    assert "source-c" not in repr(bundle)
+
+
+def test_anonymized_user_study_bundle_include_scores_controls_score_payload() -> None:
+    ranking = _rank_result(
+        "profile",
+        ["a", "b"],
+        {"a": {"coverage": 1.0}, "b": {"density": 0.25}},
+    )
+    selection = SelectionResult(
+        profile="profile",
+        m=2,
+        selected=ranking.entries,
+        ranking=ranking,
+    )
+    article_materials = {
+        "a": {"title": "Alpha"},
+        "b": {"snippet": "Bravo"},
+    }
+
+    without_scores = anonymized_user_study_bundle(selection, article_materials)
+    with_scores = anonymized_user_study_bundle(
+        selection, article_materials, include_scores=True
+    )
+
+    assert "scores" not in without_scores
+    assert set(with_scores["article_materials"]) == {"article_1", "article_2"}
+    assert with_scores["scores"] == (
+        {
+            "label": "article_1",
+            "rank": 1,
+            "score": 1.0,
+            "components": {"coverage": 1.0},
+        },
+        {
+            "label": "article_2",
+            "rank": 2,
+            "score": 0.0,
+            "components": {"density": 0.25},
+        },
+    )
+
+
+def test_anonymized_user_study_bundle_rejects_missing_material() -> None:
+    ranking = _rank_result("profile", ["a", "b"])
+    selection = SelectionResult(
+        profile="profile",
+        m=2,
+        selected=ranking.entries,
+        ranking=ranking,
+    )
+
+    with pytest.raises(ValueError, match="missing article material"):
+        anonymized_user_study_bundle(selection, {"a": {"title": "Alpha"}})
+
+
+def test_anonymized_user_study_bundle_rejects_unexpected_material_fields() -> None:
+    ranking = _rank_result("profile", ["a"])
+    selection = SelectionResult(
+        profile="profile",
+        m=1,
+        selected=ranking.entries,
+        ranking=ranking,
+    )
+
+    with pytest.raises(ValueError, match="unexpected material fields"):
+        anonymized_user_study_bundle(
+            selection,
+            {"a": {"title": "Alpha", "source": "Publisher"}},
+        )
 
 
 @pytest.mark.parametrize("m", [0, 4])

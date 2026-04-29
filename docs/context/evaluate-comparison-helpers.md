@@ -47,7 +47,7 @@ Implemented rows inspect `rank_result.diagnostics.fact_universe`. Returns `list[
 
 ### `anonymized_user_study_bundle(selection, article_materials, *, include_scores=False)`
 
-Accepts `SelectionResult` and sanitized article materials keyed by original article ID. Materials may contain only `title`, `snippet`, and/or `summary`; unexpected keys or missing selected materials should fail validation. Output should assign stable labels like `article_1` in ranking order and must not include original article IDs or answer-key mapping. Scores/components are omitted by default and included only when `include_scores=True`.
+Implemented helper accepts `SelectionResult` and sanitized article materials keyed by original article ID. Materials may contain only `title`, `snippet`, and/or `summary`; unexpected keys or missing selected materials fail validation. Output is a plain dictionary with `profile`, `m`, `selected_article_labels`, and `article_materials`. Labels are assigned from `selection.ranking.entries` order and selected labels follow `selection.selected` order. Bundles omit original article IDs and answer-key mapping. Scores/components are omitted by default; when `include_scores=True`, bundle includes `scores` rows with anonymized `label`, `rank`, `score`, and `components`. Anonymization only replaces IDs and filters fields; caller-provided text can still identify sources.
 
 ## Constraints
 
@@ -60,7 +60,7 @@ Accepts `SelectionResult` and sanitized article materials keyed by original arti
 
 ## Deviations from plan
 
-None so far. Step 2 record names are `TopMOverlap` and `RankCorrelation`, matching planned fields. Step 3 uses dynamic row dictionaries for component columns. Step 4 uses dynamic row dictionaries for cluster inspection rows.
+None so far. Step 2 record names are `TopMOverlap` and `RankCorrelation`, matching planned fields. Step 3 uses dynamic row dictionaries for component columns. Step 4 uses dynamic row dictionaries for cluster inspection rows. Step 5 uses dynamic dictionary bundles for user-study materials.
 
 ## Verification
 
@@ -83,6 +83,12 @@ uv run pytest tests/test_evaluate.py
 ```
 
 Step 4 verification command:
+
+```sh
+uv run pytest tests/test_evaluate.py
+```
+
+Step 5 verification command:
 
 ```sh
 uv run pytest tests/test_evaluate.py

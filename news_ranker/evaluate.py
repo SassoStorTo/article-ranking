@@ -1,16 +1,24 @@
 """Helpers for comparing ranking results."""
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal, TypeAlias
 
-from news_ranker.pipeline import ProfileComparison, RankResult, RankingEntry
+from news_ranker.pipeline import (
+    ProfileComparison,
+    RankResult,
+    RankingEntry,
+    SelectionResult,
+)
 
 CorrelationMethod = Literal["kendall", "spearman"]
 ComponentScoreValue: TypeAlias = str | int | float | None
 ComponentScoreRow: TypeAlias = dict[str, ComponentScoreValue]
 ClusterInspectionValue: TypeAlias = str | int | bool | tuple[int, ...] | tuple[str, ...]
 ClusterInspectionRow: TypeAlias = dict[str, ClusterInspectionValue]
+ArticleMaterial: TypeAlias = Mapping[str, str]
+UserStudyBundle: TypeAlias = dict[str, object]
+_ALLOWED_MATERIAL_KEYS = frozenset({"title", "snippet", "summary"})
 
 
 @dataclass(frozen=True)
@@ -157,26 +165,94 @@ def cluster_inspection_rows(
             if int(covered) > 0
         )
         support_count = len(support_article_ids)
-        rows.append(
-            {
-                "cluster_index": cluster_index,
-                "canonical_fact_text": fact_universe.canonical_fact_texts[
-                    cluster_index
-                ],
-                "support_article_ids": support_article_ids,
-                "support_count": support_count,
-                "member_raw_indices": member_indices,
-                "member_fact_ids": tuple(
-                    fact_universe.raw_fact_ids[index] for index in member_indices
-                ),
-                "member_texts": tuple(
-                    fact_universe.raw_fact_texts[index] for index in member_indices
-                ),
-                "is_rare": support_count <= rare_threshold,
-            }
-        )
+        rows.append({
+            "cluster_index": cluster_index,
+            "canonical_fact_text": fact_universe.canonical_fact_texts[cluster_index],
+            "support_article_ids": support_article_ids,
+            "support_count": support_count,
+            "member_raw_indices": member_indices,
+            "member_fact_ids": tuple(
+                fact_universe.raw_fact_ids[index] for index in member_indices
+            ),
+            "member_texts": tuple(
+                fact_universe.raw_fact_texts[index] for index in member_indices
+            ),
+            "is_rare": support_count <= rare_threshold,
+        })
 
     return rows
+
+
+def anonymized_user_study_bundle(
+    selection: SelectionResult,
+    article_materials: Mapping[str, ArticleMaterial],
+    *,
+    include_scores: bool = False,
+) -> UserStudyBundle:
+    """Build anonymized review materials for selected articles."""
+
+    _validate_article_materials(article_materials)
+    label_by_article_id = _selected_label_by_article_id(selection)
+    selected_article_labels = tuple(
+        label_by_article_id[entry.article_id] for entry in selection.selected
+    )
+    missing_article_ids = tuple(
+        entry.article_id
+        for entry in selection.selected
+        if entry.article_id not in article_materials
+    )
+    if missing_article_ids:
+        msg = f"missing article material for selected articles: {missing_article_ids}"
+        raise ValueError(msg)
+
+    bundle: UserStudyBundle = {
+        "profile": selection.profile,
+        "m": selection.m,
+        "selected_article_labels": selected_article_labels,
+        "article_materials": {
+            label_by_article_id[entry.article_id]: dict(
+                article_materials[entry.article_id]
+            )
+            for entry in selection.selected
+        },
+    }
+
+    if include_scores:
+        bundle["scores"] = tuple(
+            {
+                "label": label_by_article_id[entry.article_id],
+                "rank": entry.rank,
+                "score": entry.score,
+                "components": dict(entry.components),
+            }
+            for entry in selection.selected
+        )
+
+    return bundle
+
+
+def _validate_article_materials(
+    article_materials: Mapping[str, ArticleMaterial],
+) -> None:
+    for article_id, material in article_materials.items():
+        unexpected_keys = tuple(
+            key for key in material if key not in _ALLOWED_MATERIAL_KEYS
+        )
+        if unexpected_keys:
+            msg = (
+                f"unexpected material fields for article {article_id}: "
+                f"{unexpected_keys}"
+            )
+            raise ValueError(msg)
+
+
+def _selected_label_by_article_id(selection: SelectionResult) -> dict[str, str]:
+    selected_article_ids = {entry.article_id for entry in selection.selected}
+    return {
+        entry.article_id: f"article_{index}"
+        for index, entry in enumerate(selection.ranking.entries, start=1)
+        if entry.article_id in selected_article_ids
+    }
 
 
 def _validate_m(m: int, left: RankResult, right: RankResult) -> None:
@@ -265,5 +341,7 @@ def _spearman_rho(
         for left_value, right_value in zip(left_values, right_values, strict=True)
     )
     left_variance = sum((left_value - left_mean) ** 2 for left_value in left_values)
-    right_variance = sum((right_value - right_mean) ** 2 for right_value in right_values)
+    right_variance = sum(
+        (right_value - right_mean) ** 2 for right_value in right_values
+    )
     return covariance / (left_variance * right_variance) ** 0.5
