@@ -32,6 +32,15 @@ class FakeEmbedder:
         return np.ones((len(texts), 2), dtype=np.float32)
 
 
+class FakeDecomposer:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def __call__(self, article: dict[str, object]) -> StructuredArticle:
+        self.calls.append(article)
+        return _article(str(article["id"]), 1)
+
+
 class StubRanker(NewsRanker):
     def __init__(
         self,
@@ -163,6 +172,65 @@ def test_raw_article_dict_input_reports_decomposition_not_implemented() -> None:
 
     with pytest.raises(NotImplementedError, match="decomposition.*not implemented"):
         ranker._load_structured_articles([{"id": "raw-1", "body": "text"}])
+
+
+
+def test_raw_article_dicts_decompose_through_injected_decomposer() -> None:
+    decomposer = FakeDecomposer()
+    ranker = NewsRanker(FakeEmbedder(), decomposer=decomposer)
+    raw_articles = [
+        {"id": "raw-1", "title": "one", "body": "body one"},
+        {"id": "raw-2", "title": "two", "body": "body two"},
+    ]
+
+    articles = ranker._load_structured_articles(raw_articles)
+
+    assert [article.article_id for article in articles] == ["raw-1", "raw-2"]
+    assert decomposer.calls == raw_articles
+
+
+
+def test_mixed_raw_path_and_structured_inputs_preserve_order() -> None:
+    decomposer = FakeDecomposer()
+    ranker = NewsRanker(FakeEmbedder(), decomposer=decomposer)
+    structured = _article("structured-1", 1)
+    raw = {"id": "raw-1", "title": "raw", "body": "raw body"}
+    path = ARTICLE_DIR / "bbc.json"
+
+    articles = ranker._load_structured_articles([raw, path, structured])
+
+    assert [article.article_id for article in articles] == [
+        "raw-1",
+        "trump-shooting/bbc",
+        "structured-1",
+    ]
+    assert decomposer.calls == [raw]
+
+
+
+def test_rank_uses_decomposed_article_ids() -> None:
+    ranker = NewsRanker(FakeEmbedder(), decomposer=FakeDecomposer())
+
+    result = ranker.rank([
+        {"id": "raw-1", "title": "one", "body": "body one"},
+        {"id": "raw-2", "title": "two", "body": "body two"},
+    ])
+
+    assert [entry.article_id for entry in result.entries] == ["raw-1", "raw-2"]
+
+
+
+def test_decomposer_exceptions_propagate() -> None:
+    def broken_decomposer(article: dict[str, object]) -> StructuredArticle:
+        del article
+        raise RuntimeError("decomposer failed")
+
+    ranker = NewsRanker(FakeEmbedder(), decomposer=broken_decomposer)
+
+    with pytest.raises(RuntimeError, match="decomposer failed"):
+        ranker._load_structured_articles([
+            {"id": "raw-1", "title": "one", "body": "body one"}
+        ])
 
 
 def test_rank_folder_returns_ranked_fixture_articles() -> None:
