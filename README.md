@@ -25,6 +25,27 @@ config = RankerConfig(
 )
 ```
 
+## Evaluation helpers
+
+Comparison and review helpers live in `news_ranker.evaluate`; they are not
+re-exported from the top-level package.
+
+```python
+from news_ranker import NewsRanker
+from news_ranker.evaluate import component_score_table, rank_correlation, top_m_overlap
+
+ranker = NewsRanker(embedder)
+comparison = ranker.compare_profiles(
+    article_dir, profiles=("representative", "coverage")
+)
+
+representative = comparison.rankings["representative"]
+coverage = comparison.rankings["coverage"]
+overlap = top_m_overlap(representative, coverage, m=3)
+correlation = rank_correlation(representative, coverage, method="spearman")
+score_rows = component_score_table(comparison)
+```
+
 ## Commands
 
 ```sh

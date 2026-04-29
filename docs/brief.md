@@ -703,7 +703,9 @@ articles = [
 
 results = ranker.rank(articles, profile="representative", return_diagnostics=True)
 selected = ranker.select(articles, m=5, profile="representative")
-comparison = ranker.compare_profiles(articles, profiles=["representative", "comprehensive", "concise"])
+comparison = ranker.compare_profiles(
+    articles, profiles=["representative", "comprehensive", "concise"]
+)
 
 # results.ranking → [
 #   {"id": "art3", "score": 0.87, "rank": 1, "components": {...}},
