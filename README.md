@@ -35,7 +35,9 @@ from news_ranker import NewsRanker
 from news_ranker.evaluate import component_score_table, rank_correlation, top_m_overlap
 
 ranker = NewsRanker(embedder)
-comparison = ranker.compare_profiles(article_dir, profiles=("representative", "coverage"))
+comparison = ranker.compare_profiles(
+    article_dir, profiles=("representative", "coverage")
+)
 
 representative = comparison.rankings["representative"]
 coverage = comparison.rankings["coverage"]

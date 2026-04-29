@@ -2,12 +2,13 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from math import sqrt
 from typing import Literal, TypeAlias
 
 from news_ranker.pipeline import (
     ProfileComparison,
-    RankResult,
     RankingEntry,
+    RankResult,
     SelectionResult,
 )
 
@@ -344,4 +345,4 @@ def _spearman_rho(
     right_variance = sum(
         (right_value - right_mean) ** 2 for right_value in right_values
     )
-    return covariance / (left_variance * right_variance) ** 0.5
+    return covariance / sqrt(left_variance * right_variance)

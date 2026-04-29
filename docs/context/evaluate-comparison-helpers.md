@@ -62,7 +62,9 @@ Implemented helper accepts `SelectionResult` and sanitized article materials key
 
 ## Deviations from plan
 
-None so far. Step 2 record names are `TopMOverlap` and `RankCorrelation`, matching planned fields. Step 3 uses dynamic row dictionaries for component columns. Step 4 uses dynamic row dictionaries for cluster inspection rows. Step 5 uses dynamic dictionary bundles for user-study materials.
+Step 2 record names are `TopMOverlap` and `RankCorrelation`, matching planned fields. Step 3 uses dynamic row dictionaries for component columns. Step 4 uses dynamic row dictionaries for cluster inspection rows. Step 5 uses dynamic dictionary bundles for user-study materials.
+
+Step 7 full verification initially failed on `news_ranker/evaluate.py` because mypy inferred `Any` from exponentiation in `_spearman_rho()`. The implementation now uses `math.sqrt()` for the denominator. Full verification also required ruff-formatting existing Markdown snippets in `README.md`, `docs/brief.md`, and `docs/.news_ranker_design_old.md`.
 
 ## Verification
 
@@ -101,3 +103,11 @@ Step 6 verification command:
 ```sh
 uv run pytest tests/test_health.py tests/test_evaluate.py
 ```
+
+Step 7 verification command:
+
+```sh
+make check
+```
+
+Result: passed. `mypy`, `ruff check`, `ruff format --check`, and full pytest suite passed with `166 passed`.
