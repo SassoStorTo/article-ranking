@@ -1,12 +1,13 @@
+import warnings
 from pathlib import Path
 
 import numpy as np
 import pytest
 from numpy.typing import NDArray
 
-from news_ranker.cluster import flatten_fact_items
+from news_ranker.cluster import FactUniverse, flatten_fact_items
 from news_ranker.config import RankerConfig
-from news_ranker.pipeline import NewsRanker
+from news_ranker.pipeline import NewsRanker, RankDiagnostics, RankingEntry, RankResult
 from news_ranker.schemas import (
     Claim,
     Entities,
@@ -29,6 +30,23 @@ class FakeEmbedder:
         self.calls += 1
         self.texts = list(texts)
         return np.ones((len(texts), 2), dtype=np.float32)
+
+
+class StubRanker(NewsRanker):
+    def __init__(
+        self,
+        *,
+        config: RankerConfig,
+        scores: NDArray[np.float32],
+        embeddings: NDArray[np.float32],
+    ) -> None:
+        super().__init__(FakeEmbedder(), config=config)
+        self._scores = scores
+        self._embeddings = embeddings
+
+    def rank(self, articles: object, profile: str = "representative") -> RankResult:
+        del articles
+        return _rank_result(profile, self._scores, self._embeddings)
 
 
 def test_default_config_profiles_have_expected_component_keys() -> None:
@@ -243,16 +261,57 @@ def test_top_score_selection_returns_first_m_ranked_entries() -> None:
     ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(selection_mode="top_score"))
 
     selection = ranker.select(ARTICLE_DIR, m=2)
+    expected = selection.ranking.entries[:2]
+
+    assert selection.selected == expected
+    assert [entry.rank for entry in selection.selected] == [1, 2]
+
+
+def test_mmr_selection_emits_no_warning_and_keeps_highest_ranked_first() -> None:
+    ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(selection_mode="mmr"))
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        selection = ranker.select(ARTICLE_DIR, m=2)
+
+    assert selection.selected[0] == selection.ranking.entries[0]
+
+
+def test_mmr_selection_can_differ_from_top_score_for_duplicate_embeddings() -> None:
+    ranker = StubRanker(
+        config=RankerConfig(selection_mode="mmr", selection_lambda=0.5),
+        scores=np.asarray([1.0, 0.95, 0.9], dtype=np.float32),
+        embeddings=np.asarray([[2.0, 0.0], [3.0, 0.0], [0.0, 4.0]], dtype=np.float32),
+    )
+
+    selection = ranker.select([], m=2)
+
+    assert [entry.article_id for entry in selection.selected] == [
+        "article-0",
+        "article-2",
+    ]
+    assert selection.selected != selection.ranking.entries[:2]
+
+
+def test_mmr_selection_lambda_one_matches_top_score_selection() -> None:
+    ranker = StubRanker(
+        config=RankerConfig(selection_mode="mmr", selection_lambda=1.0),
+        scores=np.asarray([1.0, 0.95, 0.9], dtype=np.float32),
+        embeddings=np.asarray([[2.0, 0.0], [3.0, 0.0], [0.0, 4.0]], dtype=np.float32),
+    )
+
+    selection = ranker.select([], m=2)
 
     assert selection.selected == selection.ranking.entries[:2]
 
 
-def test_mmr_selection_warns_and_returns_first_m_ranked_entries() -> None:
+def test_mmr_selection_empty_fact_articles_falls_back_to_score_order() -> None:
     ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(selection_mode="mmr"))
+    articles = [_article("empty-1", 0), _article("empty-2", 0)]
 
-    with pytest.warns(RuntimeWarning, match="mmr.*not implemented.*top_score"):
-        selection = ranker.select(ARTICLE_DIR, m=2)
+    selection = ranker.select(articles, m=2)
 
+    assert all(np.isfinite(entry.score) for entry in selection.selected)
     assert selection.selected == selection.ranking.entries[:2]
 
 
@@ -359,6 +418,46 @@ def test_compare_profiles_rankings_use_same_article_ids() -> None:
     }
 
     assert len(ranked_id_sets) == 1
+
+
+def _rank_result(
+    profile: str,
+    scores: NDArray[np.float32],
+    embeddings: NDArray[np.float32],
+) -> RankResult:
+    article_ids = tuple(f"article-{index}" for index in range(scores.shape[0]))
+    ranked_indices = sorted(
+        range(scores.shape[0]), key=lambda index: (-float(scores[index]), index)
+    )
+    entries = tuple(
+        RankingEntry(
+            article_id=article_ids[index],
+            rank=rank,
+            score=float(scores[index]),
+            components={},
+        )
+        for rank, index in enumerate(ranked_indices, start=1)
+    )
+    fact_universe = FactUniverse(
+        article_ids=article_ids,
+        raw_fact_article_ids=(),
+        raw_fact_ids=(),
+        raw_fact_texts=(),
+        canonical_fact_texts=(),
+        cluster_vectors=np.empty((0, embeddings.shape[1]), dtype=np.float32),
+        cluster_assignments=np.empty((0,), dtype=np.int_),
+        cluster_members=(),
+        coverage_matrix=np.zeros((scores.shape[0], 0), dtype=np.int_),
+    )
+    return RankResult(
+        profile=profile,
+        entries=entries,
+        diagnostics=RankDiagnostics(
+            fact_universe=fact_universe,
+            components={},
+            article_embeddings=embeddings,
+        ),
+    )
 
 
 def _article(article_id: str, fact_count: int) -> StructuredArticle:

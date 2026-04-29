@@ -5,7 +5,7 @@
 - `news_ranker/config.py` defines frozen `RankerConfig`, default scoring profiles, config validation helpers, and derived `distance_threshold`.
 - `news_ranker/pipeline.py` consumes `RankerConfig` for ranking, scoring, and selection.
 - `tests/test_config.py` covers config defaults and invalid config values.
-- `tests/test_pipeline.py` covers public ranking/selection behavior, including configured `top_m` and `selection_mode` fallback.
+- `tests/test_pipeline.py` covers public ranking/selection behavior, including configured `top_m` and `selection_mode` behavior.
 - `tests/test_health.py` checks public imports and `__all__` stability.
 - `README.md` documents public config knobs.
 - `docs/plans/config-knobs.md` contains implementation plan.
@@ -29,14 +29,14 @@ Config fields currently include:
 
 `NewsRanker.select()` accepts `m: int | None = None`. If explicit `m` is supplied, it wins. If omitted, `config.top_m` is used. Final `m` is validated after ranking so `1 <= m <= article_count` checks actual loaded corpus size. Omitted `m` with no configured `top_m` raises `TypeError("m must be an integer")`.
 
-`selection_mode="top_score"` returns first `m` ranked entries. `selection_mode="mmr"` emits `RuntimeWarning` saying MMR is not implemented yet and falls back to top-score selection without diversity.
+`selection_mode="top_score"` returns first `m` ranked entries. `selection_mode="mmr"` applies maximal marginal relevance using `selection_lambda` and normalized article embeddings from ranking diagnostics.
 
 ## Constraints
 
 - No new dependencies.
 - No provider/model loading from config metadata.
 - No cache directory creation during config validation.
-- No MMR/diversity algorithm in this config task.
+- Selection algorithms are covered by `news_ranker/select.py`; config validation only constrains `selection_mode` and `selection_lambda` values.
 - No scraping, URL deduplication, external fact-checking, fixture schema migration, or raw article dictionary support.
 - Existing fixture-backed ranking still requires injected `FactEmbedder`.
 

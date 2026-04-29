@@ -11,7 +11,7 @@ A scoring library that takes *k* articles about the same news event, ranks them 
 - `coverage_weighting` (`"consensus"` or `"rarity"`) for coverage scoring.
 - `profiles` for component weights (`centrality`, `coverage`, `density`, `entity_coverage`).
 - `top_m` as optional default selection count. Explicit `select(..., m=...)` wins.
-- `selection_mode` (`"top_score"` or `"mmr"`) and `selection_lambda` for diversity selection. `"mmr"` currently warns and falls back to top-score selection until diversity selection lands.
+- `selection_mode` (`"top_score"` or `"mmr"`) and `selection_lambda` for selection. `"top_score"` returns first *M* ranked entries. `"mmr"` selects entries by maximal marginal relevance using `selection_lambda` and normalized article embeddings from ranking diagnostics.
 - `embedding_model_name`, `llm_model_name`, `prompt_version`, `schema_version`, and `cache_dir` as metadata for future decomposition/cache modules. Current fixture-backed ranking does not create caches or load models from these fields.
 
 ```python
