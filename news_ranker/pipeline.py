@@ -57,7 +57,7 @@ class RankResult:
 
 @dataclass(frozen=True)
 class SelectionResult:
-    """Top-score article selection result."""
+    """Configured article selection result."""
 
     profile: str
     m: int
@@ -134,7 +134,7 @@ class NewsRanker:
         m: int | None = None,
         profile: str = "representative",
     ) -> SelectionResult:
-        """Select top-m ranked articles by score."""
+        """Select top-m articles using configured selection mode."""
 
         final_m = self._config.top_m if m is None else m
         ranking = self.rank(articles, profile=profile)

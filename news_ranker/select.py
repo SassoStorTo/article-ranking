@@ -57,12 +57,13 @@ def _next_mmr_index(
     available: NDArray[np.bool_],
     lambda_: float,
 ) -> int:
-    if selected:
-        selected_embeddings = embeddings[np.asarray(selected, dtype=np.int_)]
-        similarities = embeddings @ selected_embeddings.T
-        penalties = np.maximum(np.float32(0.0), similarities.max(axis=1))
-    else:
-        penalties = np.zeros(scores.shape, dtype=np.float32)
+    if not selected:
+        objectives = np.where(available, scores, np.float32(-np.inf))
+        return int(np.argmax(objectives))
+
+    selected_embeddings = embeddings[np.asarray(selected, dtype=np.int_)]
+    similarities = embeddings @ selected_embeddings.T
+    penalties = np.maximum(np.float32(0.0), similarities.max(axis=1))
 
     objectives = np.asarray(
         (np.float32(lambda_) * scores) - (np.float32(1.0 - lambda_) * penalties),

@@ -106,11 +106,12 @@ def test_select_mmr_rejects_invalid_shapes_and_values(
         select_mmr(scores, embeddings, 1, 0.5)
 
 
-def test_select_mmr_first_pick_is_highest_score() -> None:
+@pytest.mark.parametrize("lambda_", [0.0, 0.5, 1.0])
+def test_select_mmr_first_pick_is_highest_score(lambda_: float) -> None:
     scores = np.asarray([0.7, 0.9, 0.8], dtype=np.float32)
     embeddings = np.eye(3, dtype=np.float32)
 
-    selected = select_mmr(scores, embeddings, 2, 0.5)
+    selected = select_mmr(scores, embeddings, 2, lambda_)
 
     assert selected[0] == 1
 
