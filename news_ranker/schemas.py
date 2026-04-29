@@ -1,6 +1,7 @@
 """Structured article schemas for decomposed news JSON fixtures."""
 
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -15,7 +16,7 @@ class Entity(_StrictModel):
     """Named entity in article decomposition."""
 
     name: str
-    role: str
+    role: str | None
 
 
 class Entities(_StrictModel):
@@ -30,7 +31,7 @@ class Event(_StrictModel):
     """Atomic event in article decomposition."""
 
     id: str
-    when: str
+    when: str | None
     who: list[str]
     what: str
     where: str | None
@@ -45,8 +46,9 @@ class Event(_StrictModel):
         parts = [
             f"who: {', '.join(self.who)}",
             f"what: {self.what}",
-            f"when: {self.when}",
         ]
+        if self.when is not None:
+            parts.append(f"when: {self.when}")
         if self.where is not None:
             parts.append(f"where: {self.where}")
         if self.why is not None:
@@ -61,8 +63,8 @@ class Claim(_StrictModel):
 
     id: str
     statement: str
-    type: str
-    attributed_to: str
+    type: Literal["fact", "quote", "estimate", "prediction"]
+    attributed_to: str | None
 
     @property
     def fact_text(self) -> str:

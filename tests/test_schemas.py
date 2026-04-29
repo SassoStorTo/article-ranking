@@ -74,6 +74,14 @@ def test_unknown_top_level_fields_are_rejected() -> None:
         StructuredArticle.model_validate(data)
 
 
+def test_unknown_nested_fields_are_rejected() -> None:
+    data = json.loads((ARTICLE_DIR / "bbc.json").read_text(encoding="utf-8"))
+    data["entities"]["people"][0]["unexpected"] = "not allowed"
+
+    with pytest.raises(ValidationError):
+        StructuredArticle.model_validate(data)
+
+
 def test_brief_style_canonical_name_entities_are_rejected() -> None:
     data = json.loads((ARTICLE_DIR / "bbc.json").read_text(encoding="utf-8"))
     data["entities"]["people"] = [
@@ -82,3 +90,25 @@ def test_brief_style_canonical_name_entities_are_rejected() -> None:
 
     with pytest.raises(ValidationError):
         StructuredArticle.model_validate(data)
+
+
+def test_invalid_claim_type_is_rejected() -> None:
+    data = json.loads((ARTICLE_DIR / "bbc.json").read_text(encoding="utf-8"))
+    data["claims"][0]["type"] = "rumor"
+
+    with pytest.raises(ValidationError):
+        StructuredArticle.model_validate(data)
+
+
+def test_prompt_compatible_null_scalars_validate() -> None:
+    data = json.loads((ARTICLE_DIR / "bbc.json").read_text(encoding="utf-8"))
+    data["entities"]["people"][0]["role"] = None
+    data["events"][0]["when"] = None
+    data["claims"][0]["attributed_to"] = None
+
+    article = StructuredArticle.model_validate(data)
+
+    assert article.entities.people[0].role is None
+    assert article.events[0].when is None
+    assert article.claims[0].attributed_to is None
+    assert "when: None" not in article.events[0].fact_text
