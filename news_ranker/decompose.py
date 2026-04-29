@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass
 import hashlib
 import json
+from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -25,9 +25,7 @@ DEFAULT_DECOMPOSITION_MODEL = "default"
 class DecompositionClient(Protocol):
     """Minimal client protocol for LLM-backed decomposition."""
 
-    def complete(
-        self, *, model: str, system_prompt: str, user_prompt: str
-    ) -> str:
+    def complete(self, *, model: str, system_prompt: str, user_prompt: str) -> str:
         """Return model text for the supplied prompts."""
 
 
@@ -54,9 +52,7 @@ def decompose(
 
     resolved_config = config or DecompositionConfig()
     article_id = _required_article_text(article, ("id", "article_id"), "id")
-    _required_article_text(
-        article, ("title", "headline", "headline_neutral"), "title"
-    )
+    _required_article_text(article, ("title", "headline", "headline_neutral"), "title")
     _required_article_text(article, ("body", "text", "content"), "body")
 
     cache_path = _cache_path(article, resolved_config, cache_dir)
@@ -89,9 +85,7 @@ def decompose(
             structured = structured.model_copy(update={"article_id": article_id})
             if cache_path is not None:
                 cache_path.parent.mkdir(parents=True, exist_ok=True)
-                cache_path.write_text(
-                    structured.model_dump_json(), encoding="utf-8"
-                )
+                cache_path.write_text(structured.model_dump_json(), encoding="utf-8")
             return structured
 
         if attempt == 1:

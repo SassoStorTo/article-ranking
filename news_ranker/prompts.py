@@ -1,7 +1,7 @@
 """Prompts for structured article decomposition."""
 
-from collections.abc import Mapping
 import json
+from collections.abc import Mapping
 from typing import Any
 
 DECOMPOSITION_PROMPT_VERSION = "2026-04-29-current-schema-v1"
@@ -51,7 +51,8 @@ Rules:
 - Do not infer facts not supported by article text.
 - Use null for unknown scalar values, not empty strings.
 - Use empty arrays when no items exist.
-- For empty or missing article body, return the same schema with empty entities, events, claims, and context arrays.
+- For empty or missing article body, return the same schema with empty entities,
+  events, claims, and context arrays.
 - Forbid extra keys at every object level.
 """
 
@@ -60,7 +61,11 @@ def build_decomposition_user_prompt(article: Mapping[str, Any]) -> str:
     """Build user prompt containing raw article fields and metadata."""
 
     article_id = article.get("id") or article.get("article_id")
-    title = article.get("title") or article.get("headline") or article.get("headline_neutral")
+    title = (
+        article.get("title")
+        or article.get("headline")
+        or article.get("headline_neutral")
+    )
     body = article.get("body") or article.get("text") or article.get("content") or ""
     metadata = {
         key: value

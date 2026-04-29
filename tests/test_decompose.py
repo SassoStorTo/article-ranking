@@ -12,7 +12,6 @@ from news_ranker.decompose import (
 )
 from news_ranker.prompts import DECOMPOSITION_PROMPT_VERSION
 
-
 VALID_DECOMPOSITION = {
     "headline_neutral": "Officials describe reported event",
     "topic": "reported event",
@@ -50,16 +49,12 @@ class FakeClient:
         self.responses = responses
         self.calls: list[dict[str, str]] = []
 
-    def complete(
-        self, *, model: str, system_prompt: str, user_prompt: str
-    ) -> str:
-        self.calls.append(
-            {
-                "model": model,
-                "system_prompt": system_prompt,
-                "user_prompt": user_prompt,
-            }
-        )
+    def complete(self, *, model: str, system_prompt: str, user_prompt: str) -> str:
+        self.calls.append({
+            "model": model,
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt,
+        })
         if not self.responses:
             raise AssertionError("client called too many times")
         return self.responses.pop(0)
@@ -82,7 +77,9 @@ def response(payload: Mapping[str, Any] = VALID_DECOMPOSITION) -> str:
 def test_decompose_validates_response_and_sets_article_id() -> None:
     client = FakeClient([response()])
 
-    result = decompose(article(), client, config=DecompositionConfig(model="fake-model"))
+    result = decompose(
+        article(), client, config=DecompositionConfig(model="fake-model")
+    )
 
     assert result.article_id == "article-1"
     assert result.headline_neutral == "Officials describe reported event"

@@ -60,16 +60,14 @@ def test_decomposition_prompt_contains_extraction_rules() -> None:
 
 
 def test_user_prompt_includes_article_fields_and_metadata() -> None:
-    prompt = build_decomposition_user_prompt(
-        {
-            "id": "article-1",
-            "title": "Dinner shooting",
-            "body": "Body text",
-            "source": "Example News",
-            "published_at": "2026-04-26T20:35:00Z",
-            "url": "https://example.test/article",
-        }
-    )
+    prompt = build_decomposition_user_prompt({
+        "id": "article-1",
+        "title": "Dinner shooting",
+        "body": "Body text",
+        "source": "Example News",
+        "published_at": "2026-04-26T20:35:00Z",
+        "url": "https://example.test/article",
+    })
 
     assert "article-1" in prompt
     assert "Dinner shooting" in prompt
@@ -81,13 +79,11 @@ def test_user_prompt_includes_article_fields_and_metadata() -> None:
 
 
 def test_user_prompt_accepts_alternate_article_field_names() -> None:
-    prompt = build_decomposition_user_prompt(
-        {
-            "article_id": "article-2",
-            "headline": "Alternate headline",
-            "content": "Alternate body",
-        }
-    )
+    prompt = build_decomposition_user_prompt({
+        "article_id": "article-2",
+        "headline": "Alternate headline",
+        "content": "Alternate body",
+    })
 
     assert "article-2" in prompt
     assert "Alternate headline" in prompt

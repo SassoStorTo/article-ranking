@@ -174,7 +174,6 @@ def test_raw_article_dict_input_reports_decomposition_not_implemented() -> None:
         ranker._load_structured_articles([{"id": "raw-1", "body": "text"}])
 
 
-
 def test_raw_article_dicts_decompose_through_injected_decomposer() -> None:
     decomposer = FakeDecomposer()
     ranker = NewsRanker(FakeEmbedder(), decomposer=decomposer)
@@ -187,7 +186,6 @@ def test_raw_article_dicts_decompose_through_injected_decomposer() -> None:
 
     assert [article.article_id for article in articles] == ["raw-1", "raw-2"]
     assert decomposer.calls == raw_articles
-
 
 
 def test_mixed_raw_path_and_structured_inputs_preserve_order() -> None:
@@ -207,7 +205,6 @@ def test_mixed_raw_path_and_structured_inputs_preserve_order() -> None:
     assert decomposer.calls == [raw]
 
 
-
 def test_rank_uses_decomposed_article_ids() -> None:
     ranker = NewsRanker(FakeEmbedder(), decomposer=FakeDecomposer())
 
@@ -217,7 +214,6 @@ def test_rank_uses_decomposed_article_ids() -> None:
     ])
 
     assert [entry.article_id for entry in result.entries] == ["raw-1", "raw-2"]
-
 
 
 def test_decomposer_exceptions_propagate() -> None:
