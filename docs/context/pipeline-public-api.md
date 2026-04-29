@@ -74,7 +74,7 @@ If no fact texts exist, embedder is not called. Empty fact universes use empty `
 
 ## Selection and profile comparison
 
-`NewsRanker.select(articles, m, profile="representative")` validates integer `m` with `1 <= m <= article_count`, calls `rank()`, and returns first `m` ranked entries. No MMR or diversity behavior exists yet.
+`NewsRanker.select(articles, m, profile="representative")` validates integer `m` with `1 <= m <= article_count`, calls `rank()`, and selects entries according to `RankerConfig.selection_mode`. `selection_mode="top_score"` returns first *M* ranked entries. `selection_mode="mmr"` applies maximal marginal relevance using `selection_lambda` and normalized article embeddings from ranking diagnostics; selected order follows MMR selection order.
 
 `NewsRanker.compare_profiles(articles, profiles=None)` returns one `RankResult` per requested profile. `profiles=None` means all configured profiles in config order. Current implementation recomputes ranking per profile; correctness is preferred over optimization for this stage.
 
@@ -86,6 +86,6 @@ Pipeline tests use deterministic fake embedders. Tests must not instantiate real
 
 Future `decompose.py` can plug into the private input-normalization boundary to support raw article dictionaries after prompt/provider choices are planned.
 
-Future `select.py` can replace or extend top-score selection behind `NewsRanker.select()` when MMR/diversity behavior is planned.
+`news_ranker/select.py` owns pure selection helpers behind `NewsRanker.select()`.
 
 Do not change fixture schema, entity schema, provider choices, or public API shape without a later plan approving that scope.
