@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 
 from news_ranker.cluster import FactUniverse, flatten_fact_items
 from news_ranker.config import RankerConfig
-from news_ranker.pipeline import NewsRanker, RankDiagnostics, RankResult, RankingEntry
+from news_ranker.pipeline import NewsRanker, RankDiagnostics, RankingEntry, RankResult
 from news_ranker.schemas import (
     Claim,
     Entities,
@@ -44,9 +44,7 @@ class StubRanker(NewsRanker):
         self._scores = scores
         self._embeddings = embeddings
 
-    def rank(
-        self, articles: object, profile: str = "representative"
-    ) -> RankResult:
+    def rank(self, articles: object, profile: str = "representative") -> RankResult:
         del articles
         return _rank_result(profile, self._scores, self._embeddings)
 
@@ -283,9 +281,7 @@ def test_mmr_selection_can_differ_from_top_score_for_duplicate_embeddings() -> N
     ranker = StubRanker(
         config=RankerConfig(selection_mode="mmr", selection_lambda=0.5),
         scores=np.asarray([1.0, 0.95, 0.9], dtype=np.float32),
-        embeddings=np.asarray(
-            [[2.0, 0.0], [3.0, 0.0], [0.0, 4.0]], dtype=np.float32
-        ),
+        embeddings=np.asarray([[2.0, 0.0], [3.0, 0.0], [0.0, 4.0]], dtype=np.float32),
     )
 
     selection = ranker.select([], m=2)
@@ -301,9 +297,7 @@ def test_mmr_selection_lambda_one_matches_top_score_selection() -> None:
     ranker = StubRanker(
         config=RankerConfig(selection_mode="mmr", selection_lambda=1.0),
         scores=np.asarray([1.0, 0.95, 0.9], dtype=np.float32),
-        embeddings=np.asarray(
-            [[2.0, 0.0], [3.0, 0.0], [0.0, 4.0]], dtype=np.float32
-        ),
+        embeddings=np.asarray([[2.0, 0.0], [3.0, 0.0], [0.0, 4.0]], dtype=np.float32),
     )
 
     selection = ranker.select([], m=2)

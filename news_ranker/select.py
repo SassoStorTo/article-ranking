@@ -65,8 +65,7 @@ def _next_mmr_index(
         penalties = np.zeros(scores.shape, dtype=np.float32)
 
     objectives = np.asarray(
-        (np.float32(lambda_) * scores)
-        - (np.float32(1.0 - lambda_) * penalties),
+        (np.float32(lambda_) * scores) - (np.float32(1.0 - lambda_) * penalties),
         dtype=np.float32,
     )
     objectives = np.where(available, objectives, np.float32(-np.inf))
@@ -112,9 +111,7 @@ def _validate_embeddings(values: NDArray[Any], *, name: str) -> NDArray[np.float
     return _validate_numeric_finite(array, name=name)
 
 
-def _validate_numeric_finite(
-    array: NDArray[Any], *, name: str
-) -> NDArray[np.float32]:
+def _validate_numeric_finite(array: NDArray[Any], *, name: str) -> NDArray[np.float32]:
     if not _is_numeric(array):
         msg = f"{name} must be numeric"
         raise TypeError(msg)

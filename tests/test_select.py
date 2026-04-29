@@ -52,13 +52,48 @@ def test_select_mmr_rejects_invalid_lambda(lambda_: float) -> None:
 @pytest.mark.parametrize(
     ("scores", "embeddings", "error_type", "match"),
     [
-        (np.ones((2, 1), dtype=np.float32), np.eye(2, dtype=np.float32), ValueError, "1-D"),
-        (np.ones(2, dtype=np.float32), np.ones(2, dtype=np.float32), ValueError, "2-D"),
-        (np.ones(3, dtype=np.float32), np.eye(2, dtype=np.float32), ValueError, "row count"),
-        (np.asarray([1.0, np.nan], dtype=np.float32), np.eye(2, dtype=np.float32), ValueError, "finite"),
-        (np.ones(2, dtype=np.float32), np.asarray([[np.inf], [0.0]], dtype=np.float32), ValueError, "finite"),
-        (np.asarray([object()], dtype=object), np.ones((1, 1), dtype=np.float32), TypeError, "numeric"),
-        (np.ones(1, dtype=np.float32), np.asarray([[object()]], dtype=object), TypeError, "numeric"),
+        (
+            np.ones((2, 1), dtype=np.float32),
+            np.eye(2, dtype=np.float32),
+            ValueError,
+            "1-D",
+        ),
+        (
+            np.ones(2, dtype=np.float32),
+            np.ones(2, dtype=np.float32),
+            ValueError,
+            "2-D",
+        ),
+        (
+            np.ones(3, dtype=np.float32),
+            np.eye(2, dtype=np.float32),
+            ValueError,
+            "row count",
+        ),
+        (
+            np.asarray([1.0, np.nan], dtype=np.float32),
+            np.eye(2, dtype=np.float32),
+            ValueError,
+            "finite",
+        ),
+        (
+            np.ones(2, dtype=np.float32),
+            np.asarray([[np.inf], [0.0]], dtype=np.float32),
+            ValueError,
+            "finite",
+        ),
+        (
+            np.asarray([object()], dtype=object),
+            np.ones((1, 1), dtype=np.float32),
+            TypeError,
+            "numeric",
+        ),
+        (
+            np.ones(1, dtype=np.float32),
+            np.asarray([[object()]], dtype=object),
+            TypeError,
+            "numeric",
+        ),
     ],
 )
 def test_select_mmr_rejects_invalid_shapes_and_values(
