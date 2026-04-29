@@ -4,7 +4,7 @@
 
 Planned work adds pure evaluation helpers in `news_ranker/evaluate.py`. Helpers consume existing result dataclasses from `news_ranker/pipeline.py`; they do not call embedders, scrape content, deduplicate URLs, fact-check externally, or mutate ranking behavior.
 
-No implementation exists yet. This artifact records source context for later steps and should be updated as helper record names, fields, and edge cases land.
+Step 2 implementation now exists for overlap and correlation. This artifact records source context for later steps and should be updated as helper record names, fields, and edge cases land.
 
 ## Relevant source files
 
@@ -31,11 +31,11 @@ No implementation exists yet. This artifact records source context for later ste
 
 ### `top_m_overlap(left, right, m)`
 
-Accepts two `RankResult` objects and integer `m`. Compares top-`m` article ID sets and returns overlap count, left/right top counts, Jaccard, left/right overlap fractions, and overlap article IDs. Later implementation should reject invalid `m` and duplicate article IDs.
+Accepts two `RankResult` objects and integer `m`. Compares top-`m` article ID sets and returns frozen `TopMOverlap(overlap_count, left_top_count, right_top_count, jaccard, left_overlap_fraction, right_overlap_fraction, overlap_article_ids)`. Overlap IDs follow left top-`m` rank order. Rejects non-integer/bool `m`, `m` outside `1 <= m <= min(left_count, right_count)`, and duplicate article IDs in either ranking.
 
 ### `rank_correlation(left, right, method='kendall' | 'spearman')`
 
-Accepts two `RankResult` objects and compares ranks over common article IDs only. Planned result includes method, coefficient, common ID count, common article IDs, left-only article IDs, and right-only article IDs. Kendall should be tau-a without tie correction because pipeline ranks are unique. Spearman should be Pearson correlation over ranks. No SciPy dependency.
+Accepts two `RankResult` objects and compares ranks over common article IDs only. Returns frozen `RankCorrelation(method, coefficient, common_count, common_article_ids, left_only_article_ids, right_only_article_ids)`. Common IDs and left-only IDs follow left ranking order; right-only IDs follow right ranking order. Kendall is tau-a without tie correction because pipeline ranks are unique. Spearman is Pearson correlation over ranks. Rejects unknown methods, duplicate article IDs, and fewer than two common article IDs. No SciPy dependency.
 
 ### `component_score_table(results)`
 
@@ -60,7 +60,7 @@ Accepts `SelectionResult` and sanitized article materials keyed by original arti
 
 ## Deviations from plan
 
-None so far. Helper implementation pending later steps.
+None so far. Step 2 record names are `TopMOverlap` and `RankCorrelation`, matching planned fields.
 
 ## Verification
 
@@ -68,4 +68,10 @@ Step 1 verification command:
 
 ```sh
 test -f docs/context/evaluate-comparison-helpers.md && uv run ruff format --check docs/context/evaluate-comparison-helpers.md
+```
+
+Step 2 verification command:
+
+```sh
+uv run pytest tests/test_evaluate.py
 ```
