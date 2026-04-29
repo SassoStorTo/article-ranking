@@ -243,8 +243,10 @@ def test_top_score_selection_returns_first_m_ranked_entries() -> None:
     ranker = NewsRanker(FakeEmbedder(), config=RankerConfig(selection_mode="top_score"))
 
     selection = ranker.select(ARTICLE_DIR, m=2)
+    expected = selection.ranking.entries[:2]
 
-    assert selection.selected == selection.ranking.entries[:2]
+    assert selection.selected == expected
+    assert [entry.rank for entry in selection.selected] == [1, 2]
 
 
 def test_mmr_selection_warns_and_returns_first_m_ranked_entries() -> None:

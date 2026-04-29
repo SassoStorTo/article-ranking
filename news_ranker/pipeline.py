@@ -21,6 +21,7 @@ from news_ranker.score import (
     density,
     entity_coverage,
 )
+from news_ranker.select import select_top_score
 
 ArticleInput: TypeAlias = (
     str | Path | Sequence[str | Path] | Sequence[StructuredArticle]
@@ -159,7 +160,7 @@ class NewsRanker:
         return SelectionResult(
             profile=profile,
             m=final_m,
-            selected=ranking.entries[:final_m],
+            selected=tuple(select_top_score(ranking.entries, final_m)),
             ranking=ranking,
         )
 
