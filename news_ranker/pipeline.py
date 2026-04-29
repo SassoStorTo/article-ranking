@@ -3,7 +3,7 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeAlias
+from typing import Any, Protocol, TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
@@ -22,9 +22,21 @@ from news_ranker.score import (
 )
 from news_ranker.select import select_mmr, select_top_score
 
+RawArticleInput: TypeAlias = Mapping[str, Any]
 ArticleInput: TypeAlias = (
-    str | Path | Sequence[str | Path] | Sequence[StructuredArticle]
+    str
+    | Path
+    | Sequence[str | Path]
+    | Sequence[StructuredArticle]
+    | Sequence[RawArticleInput]
 )
+
+
+class ArticleDecomposer(Protocol):
+    """Callable dependency that converts raw article mappings to structures."""
+
+    def __call__(self, article: RawArticleInput) -> StructuredArticle:
+        """Return structured decomposition for raw article input."""
 
 
 @dataclass(frozen=True)
@@ -76,7 +88,11 @@ class NewsRanker:
     """Public orchestrator for fixture-backed article ranking."""
 
     def __init__(
-        self, embedder: FactEmbedder | None = None, config: RankerConfig | None = None
+        self,
+        embedder: FactEmbedder | None = None,
+        config: RankerConfig | None = None,
+        *,
+        decomposer: ArticleDecomposer | None = None,
     ) -> None:
         """Create ranker with explicit fact embedder dependency."""
 
@@ -88,6 +104,7 @@ class NewsRanker:
             raise TypeError(msg)
         self._embedder = embedder
         self._config = config or RankerConfig()
+        self._decomposer = decomposer
 
     def rank(
         self, articles: ArticleInput, profile: str = "representative"
@@ -239,11 +256,13 @@ class NewsRanker:
             elif isinstance(item, str | Path):
                 loaded.extend(self._load_from_path(Path(item)))
             elif isinstance(item, dict):
-                msg = (
-                    "raw article dictionaries require decomposition, "
-                    "which is not implemented yet"
-                )
-                raise NotImplementedError(msg)
+                if self._decomposer is None:
+                    msg = (
+                        "raw article dictionaries require decomposition, "
+                        "which is not implemented yet"
+                    )
+                    raise NotImplementedError(msg)
+                loaded.append(self._decomposer(item))
             else:
                 msg = (
                     "articles sequence items must be paths or "
