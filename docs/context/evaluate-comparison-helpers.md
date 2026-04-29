@@ -43,7 +43,7 @@ Implemented rows flatten one `RankResult`, a sequence of `RankResult`, or a `Pro
 
 ### `cluster_inspection_rows(rank_result, rare_threshold=1)`
 
-Planned rows inspect `rank_result.diagnostics.fact_universe`. Rows should include cluster index, canonical fact text, support article IDs, support count, member raw indices, member fact IDs, member texts, and rare flag. Empty fact universes should return empty rows.
+Implemented rows inspect `rank_result.diagnostics.fact_universe`. Returns `list[dict[str, str | int | bool | tuple[int, ...] | tuple[str, ...]]]` with `cluster_index`, `canonical_fact_text`, `support_article_ids`, `support_count`, `member_raw_indices`, `member_fact_ids`, `member_texts`, and `is_rare`. Support counts use binary article coverage (`coverage_matrix > 0`), not raw fact/member counts. Rows follow `FactUniverse.cluster_members` order. Empty fact universes return `[]`. Rejects non-integer/bool `rare_threshold` and values below `1`.
 
 ### `anonymized_user_study_bundle(selection, article_materials, *, include_scores=False)`
 
@@ -60,7 +60,7 @@ Accepts `SelectionResult` and sanitized article materials keyed by original arti
 
 ## Deviations from plan
 
-None so far. Step 2 record names are `TopMOverlap` and `RankCorrelation`, matching planned fields. Step 3 uses dynamic row dictionaries for component columns.
+None so far. Step 2 record names are `TopMOverlap` and `RankCorrelation`, matching planned fields. Step 3 uses dynamic row dictionaries for component columns. Step 4 uses dynamic row dictionaries for cluster inspection rows.
 
 ## Verification
 
@@ -77,6 +77,12 @@ uv run pytest tests/test_evaluate.py
 ```
 
 Step 3 verification command:
+
+```sh
+uv run pytest tests/test_evaluate.py
+```
+
+Step 4 verification command:
 
 ```sh
 uv run pytest tests/test_evaluate.py

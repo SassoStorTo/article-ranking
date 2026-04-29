@@ -5,7 +5,12 @@ import pytest
 from numpy.typing import NDArray
 
 from news_ranker.cluster import FactUniverse
-from news_ranker.evaluate import component_score_table, rank_correlation, top_m_overlap
+from news_ranker.evaluate import (
+    cluster_inspection_rows,
+    component_score_table,
+    rank_correlation,
+    top_m_overlap,
+)
 from news_ranker.pipeline import (
     NewsRanker,
     ProfileComparison,
@@ -155,6 +160,89 @@ def test_component_score_table_preserves_fixture_backed_scores_and_components() 
         assert all(np.isfinite(row[name]) for name in EXPECTED_COMPONENT_KEYS)
 
 
+def test_cluster_inspection_rows_report_deterministic_cluster_fields() -> None:
+    fact_universe = FactUniverse(
+        article_ids=("a", "b", "c"),
+        raw_fact_article_ids=("a", "a", "b", "c"),
+        raw_fact_ids=("a-1", "a-2", "b-1", "c-1"),
+        raw_fact_texts=("shared from a", "rare from a", "shared from b", "c fact"),
+        canonical_fact_texts=("shared from a", "rare from a", "c fact"),
+        cluster_vectors=np.ones((3, 2), dtype=np.float32),
+        cluster_assignments=np.asarray([0, 1, 0, 2], dtype=np.int_),
+        cluster_members=((0, 2), (1,), (3,)),
+        coverage_matrix=np.asarray(
+            [
+                [2, 1, 0],
+                [1, 0, 0],
+                [0, 0, 1],
+            ],
+            dtype=np.int_,
+        ),
+    )
+    result = _rank_result("profile", ["a", "b", "c"], fact_universe=fact_universe)
+
+    rows = cluster_inspection_rows(result, rare_threshold=1)
+
+    assert rows == [
+        {
+            "cluster_index": 0,
+            "canonical_fact_text": "shared from a",
+            "support_article_ids": ("a", "b"),
+            "support_count": 2,
+            "member_raw_indices": (0, 2),
+            "member_fact_ids": ("a-1", "b-1"),
+            "member_texts": ("shared from a", "shared from b"),
+            "is_rare": False,
+        },
+        {
+            "cluster_index": 1,
+            "canonical_fact_text": "rare from a",
+            "support_article_ids": ("a",),
+            "support_count": 1,
+            "member_raw_indices": (1,),
+            "member_fact_ids": ("a-2",),
+            "member_texts": ("rare from a",),
+            "is_rare": True,
+        },
+        {
+            "cluster_index": 2,
+            "canonical_fact_text": "c fact",
+            "support_article_ids": ("c",),
+            "support_count": 1,
+            "member_raw_indices": (3,),
+            "member_fact_ids": ("c-1",),
+            "member_texts": ("c fact",),
+            "is_rare": True,
+        },
+    ]
+
+
+def test_cluster_inspection_rows_return_empty_for_empty_fact_universe() -> None:
+    result = _rank_result("profile", ["a", "b"])
+
+    assert cluster_inspection_rows(result) == []
+
+
+@pytest.mark.parametrize("rare_threshold", [0, -1])
+def test_cluster_inspection_rows_reject_invalid_rare_threshold(
+    rare_threshold: int,
+) -> None:
+    result = _rank_result("profile", ["a"])
+
+    with pytest.raises(ValueError, match="rare_threshold"):
+        cluster_inspection_rows(result, rare_threshold=rare_threshold)
+
+
+@pytest.mark.parametrize("rare_threshold", [1.0, True])
+def test_cluster_inspection_rows_reject_non_integer_rare_threshold(
+    rare_threshold: object,
+) -> None:
+    result = _rank_result("profile", ["a"])
+
+    with pytest.raises(TypeError, match="integer"):
+        cluster_inspection_rows(result, rare_threshold=rare_threshold)  # type: ignore[arg-type]
+
+
 @pytest.mark.parametrize("m", [0, 4])
 def test_top_m_overlap_rejects_out_of_range_m(m: int) -> None:
     left = _rank_result("left", ["a", "b", "c"])
@@ -204,6 +292,7 @@ def _rank_result(
     profile: str,
     article_ids: list[str],
     components_by_article_id: dict[str, dict[str, float]] | None = None,
+    fact_universe: FactUniverse | None = None,
 ) -> RankResult:
     entries = tuple(
         RankingEntry(
@@ -214,17 +303,18 @@ def _rank_result(
         )
         for rank, article_id in enumerate(article_ids, start=1)
     )
-    fact_universe = FactUniverse(
-        article_ids=tuple(article_ids),
-        raw_fact_article_ids=(),
-        raw_fact_ids=(),
-        raw_fact_texts=(),
-        canonical_fact_texts=(),
-        cluster_vectors=np.empty((0, 0), dtype=np.float32),
-        cluster_assignments=np.empty((0,), dtype=np.int_),
-        cluster_members=(),
-        coverage_matrix=np.zeros((len(article_ids), 0), dtype=np.int_),
-    )
+    if fact_universe is None:
+        fact_universe = FactUniverse(
+            article_ids=tuple(article_ids),
+            raw_fact_article_ids=(),
+            raw_fact_ids=(),
+            raw_fact_texts=(),
+            canonical_fact_texts=(),
+            cluster_vectors=np.empty((0, 0), dtype=np.float32),
+            cluster_assignments=np.empty((0,), dtype=np.int_),
+            cluster_members=(),
+            coverage_matrix=np.zeros((len(article_ids), 0), dtype=np.int_),
+        )
     return RankResult(
         profile=profile,
         entries=entries,

@@ -9,6 +9,8 @@ from news_ranker.pipeline import ProfileComparison, RankResult, RankingEntry
 CorrelationMethod = Literal["kendall", "spearman"]
 ComponentScoreValue: TypeAlias = str | int | float | None
 ComponentScoreRow: TypeAlias = dict[str, ComponentScoreValue]
+ClusterInspectionValue: TypeAlias = str | int | bool | tuple[int, ...] | tuple[str, ...]
+ClusterInspectionRow: TypeAlias = dict[str, ClusterInspectionValue]
 
 
 @dataclass(frozen=True)
@@ -135,6 +137,48 @@ def component_score_table(
     return rows
 
 
+def cluster_inspection_rows(
+    rank_result: RankResult, rare_threshold: int = 1
+) -> list[ClusterInspectionRow]:
+    """Export deterministic fact-cluster inspection rows."""
+
+    _validate_rare_threshold(rare_threshold)
+    fact_universe = rank_result.diagnostics.fact_universe
+    rows: list[ClusterInspectionRow] = []
+
+    for cluster_index, member_indices in enumerate(fact_universe.cluster_members):
+        support_article_ids = tuple(
+            article_id
+            for article_id, covered in zip(
+                fact_universe.article_ids,
+                fact_universe.coverage_matrix[:, cluster_index],
+                strict=True,
+            )
+            if int(covered) > 0
+        )
+        support_count = len(support_article_ids)
+        rows.append(
+            {
+                "cluster_index": cluster_index,
+                "canonical_fact_text": fact_universe.canonical_fact_texts[
+                    cluster_index
+                ],
+                "support_article_ids": support_article_ids,
+                "support_count": support_count,
+                "member_raw_indices": member_indices,
+                "member_fact_ids": tuple(
+                    fact_universe.raw_fact_ids[index] for index in member_indices
+                ),
+                "member_texts": tuple(
+                    fact_universe.raw_fact_texts[index] for index in member_indices
+                ),
+                "is_rare": support_count <= rare_threshold,
+            }
+        )
+
+    return rows
+
+
 def _validate_m(m: int, left: RankResult, right: RankResult) -> None:
     if not isinstance(m, int) or isinstance(m, bool):
         msg = "m must be an integer"
@@ -152,6 +196,15 @@ def _validate_unique_article_ids(result: RankResult) -> None:
             msg = f"duplicate article_id in ranking: {entry.article_id}"
             raise ValueError(msg)
         seen.add(entry.article_id)
+
+
+def _validate_rare_threshold(rare_threshold: int) -> None:
+    if not isinstance(rare_threshold, int) or isinstance(rare_threshold, bool):
+        msg = "rare_threshold must be an integer"
+        raise TypeError(msg)
+    if rare_threshold < 1:
+        msg = "rare_threshold must be at least 1"
+        raise ValueError(msg)
 
 
 def _rank_by_article_id(entries: tuple[RankingEntry, ...]) -> dict[str, int]:
