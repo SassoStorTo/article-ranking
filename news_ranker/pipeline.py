@@ -1,6 +1,5 @@
 """Fixture-backed public ranking pipeline."""
 
-import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,7 +20,7 @@ from news_ranker.score import (
     density,
     entity_coverage,
 )
-from news_ranker.select import select_top_score
+from news_ranker.select import select_mmr, select_top_score
 
 ArticleInput: TypeAlias = (
     str | Path | Sequence[str | Path] | Sequence[StructuredArticle]
@@ -150,19 +149,48 @@ class NewsRanker:
             raise ValueError(msg)
 
         if self._config.selection_mode == "mmr":
-            warnings.warn(
-                "selection_mode='mmr' is not implemented yet; "
-                "falling back to top_score selection without diversity",
-                RuntimeWarning,
-                stacklevel=2,
-            )
+            selected = self._select_mmr(ranking, final_m)
+        else:
+            selected = tuple(select_top_score(ranking.entries, final_m))
 
         return SelectionResult(
             profile=profile,
             m=final_m,
-            selected=tuple(select_top_score(ranking.entries, final_m)),
+            selected=selected,
             ranking=ranking,
         )
+
+    def _select_mmr(self, ranking: RankResult, m: int) -> tuple[RankingEntry, ...]:
+        article_ids = ranking.diagnostics.fact_universe.article_ids
+        score_by_article_id = {
+            entry.article_id: np.float32(entry.score) for entry in ranking.entries
+        }
+        scores = np.asarray(
+            [score_by_article_id[article_id] for article_id in article_ids],
+            dtype=np.float32,
+        )
+        normalized_embeddings = self._normalize_article_embeddings(
+            ranking.diagnostics.article_embeddings
+        )
+        selected_indices = select_mmr(
+            scores,
+            normalized_embeddings,
+            m,
+            lambda_=self._config.selection_lambda,
+        )
+        entry_by_article_id = {entry.article_id: entry for entry in ranking.entries}
+        return tuple(
+            entry_by_article_id[article_ids[index]] for index in selected_indices
+        )
+
+    def _normalize_article_embeddings(
+        self, article_embeddings: NDArray[np.float32]
+    ) -> NDArray[np.float32]:
+        norms = np.linalg.norm(article_embeddings, axis=1, keepdims=True).astype(
+            np.float32
+        )
+        safe_norms = np.maximum(norms, np.float32(1e-12))
+        return np.asarray(article_embeddings / safe_norms, dtype=np.float32)
 
     def compare_profiles(
         self, articles: ArticleInput, profiles: Sequence[str] | str | None = None
