@@ -25,7 +25,9 @@ Step 2 implementation now exists for overlap and correlation. This artifact reco
 - `news_ranker/select.py`
   - Selection helpers validate `m`, but planned top-M overlap validation belongs in `evaluate.py`.
 - `news_ranker/__init__.py`
-  - Public `__all__` is `['NewsRanker', 'RankerConfig', 'health']` and must remain unchanged until plan step 6.
+  - Public `__all__` is `['NewsRanker', 'RankerConfig', 'health']` and remains unchanged in step 6.
+- `README.md`
+  - Documents evaluation helper usage via `from news_ranker.evaluate import ...` with `NewsRanker.compare_profiles()` output.
 
 ## Planned helper behavior
 
@@ -52,7 +54,7 @@ Implemented helper accepts `SelectionResult` and sanitized article materials key
 ## Constraints
 
 - No new dependencies such as SciPy or pandas.
-- No top-level export change before plan step 6.
+- No top-level export change; evaluate helpers stay importable from `news_ranker.evaluate` only.
 - No fixture schema migration.
 - No file-writing exporters; helpers return serializable Python data.
 - No provider calls or model downloads in tests.
@@ -92,4 +94,10 @@ Step 5 verification command:
 
 ```sh
 uv run pytest tests/test_evaluate.py
+```
+
+Step 6 verification command:
+
+```sh
+uv run pytest tests/test_health.py tests/test_evaluate.py
 ```
