@@ -6,6 +6,7 @@ import pytest
 
 from news_ranker.decompose import (
     DECOMPOSITION_SCHEMA_VERSION,
+    DEFAULT_DECOMPOSITION_MODEL,
     DecompositionConfig,
     DecompositionError,
     decompose,
@@ -85,6 +86,15 @@ def test_decompose_validates_response_and_sets_article_id() -> None:
     assert result.headline_neutral == "Officials describe reported event"
     assert client.calls[0]["model"] == "fake-model"
     assert len(client.calls) == 1
+
+
+def test_decompose_uses_mistral_default_model_with_injected_client() -> None:
+    client = FakeClient([response()])
+
+    decompose(article(), client)
+
+    assert DEFAULT_DECOMPOSITION_MODEL == "mistral-small-latest"
+    assert client.calls[0]["model"] == "mistral-small-latest"
 
 
 def test_decompose_requires_id_title_and_body() -> None:

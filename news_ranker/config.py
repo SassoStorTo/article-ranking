@@ -53,7 +53,7 @@ class RankerConfig:
     selection_mode: SelectionMode = "top_score"
     selection_lambda: float = 0.8
     embedding_model_name: str = "all-MiniLM-L6-v2"
-    llm_model_name: str = "claude-3-haiku"
+    llm_model_name: str = "mistral-small-latest"
     prompt_version: str = "v1"
     schema_version: str = "v1"
     cache_dir: str | os.PathLike[str] | None = None

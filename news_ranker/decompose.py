@@ -19,7 +19,7 @@ from news_ranker.prompts import (
 from news_ranker.schemas import StructuredArticle
 
 DECOMPOSITION_SCHEMA_VERSION = "current-schema-v1"
-DEFAULT_DECOMPOSITION_MODEL = "default"
+DEFAULT_DECOMPOSITION_MODEL = "mistral-small-latest"
 
 
 class DecompositionClient(Protocol):
