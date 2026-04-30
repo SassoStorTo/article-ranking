@@ -12,7 +12,7 @@ A scoring library that takes *k* articles about the same news event, ranks them 
 - `profiles` for component weights (`centrality`, `coverage`, `density`, `entity_coverage`).
 - `top_m` as optional default selection count. Explicit `select(..., m=...)` wins.
 - `selection_mode` (`"top_score"` or `"mmr"`) and `selection_lambda` for selection. `"top_score"` returns first *M* ranked entries. `"mmr"` selects entries by maximal marginal relevance using `selection_lambda` and normalized article embeddings from ranking diagnostics.
-- `embedding_model_name`, `llm_model_name`, `prompt_version`, `schema_version`, and `cache_dir` as metadata for future decomposition/cache modules. Current fixture-backed ranking does not create caches or load models from these fields.
+- `embedding_model_name`, `llm_model_name`, `prompt_version`, `schema_version`, and `cache_dir` as metadata for decomposition/cache modules. `llm_model_name` defaults to Mistral model naming, but `NewsRanker` does not create providers from config; callers must inject a decomposition client/decomposer explicitly.
 
 ```python
 from news_ranker import RankerConfig
@@ -23,6 +23,36 @@ config = RankerConfig(
     coverage_weighting="consensus",
     embedding_model_name="all-MiniLM-L6-v2",
 )
+```
+
+## Mistral decomposition
+
+Mistral support lives in the `news_ranker.mistral` submodule and is not
+re-exported from the top-level package. Create the provider client explicitly,
+then pass it to `decompose()` or through the raw-dict `NewsRanker` decomposer
+hook. `MistralDecompositionClient` reads `MISTRAL_API_KEY` when `api_key` is not
+provided.
+
+```python
+from pathlib import Path
+
+from news_ranker import DecompositionConfig, NewsRanker, decompose
+from news_ranker.mistral import MistralDecompositionClient
+
+client = MistralDecompositionClient()
+config = DecompositionConfig(model="mistral-small-latest")
+cache_dir = Path(".cache/news-ranker")
+
+ranker = NewsRanker(
+    embedder,
+    decomposer=lambda article: decompose(
+        article,
+        client,
+        config=config,
+        cache_dir=cache_dir,
+    ),
+)
+ranking = ranker.rank(raw_articles)
 ```
 
 ## Evaluation helpers
