@@ -378,7 +378,7 @@ Rebuilding records from JSON: a small `from_jsonable()` mirror of [§5.3](#backe
 
 Per `docs/context/mistral-llm-provider.md`:
 
-- App startup constructs one `MistralDecompositionClient(api_key=os.environ["MISTRAL_API_KEY"])`. Failure to find the key is a fatal startup error so the operator knows immediately.
+- App startup constructs one `MistralDecompositionClient(api_key=settings.MISTRAL_API_KEY)`, where `settings` is the `pydantic-settings` object loaded from environment (which Compose populates from `livedemo/.env`; see [§11.7](#env-loading)). Failure to find the key is a fatal startup error so the operator knows immediately.
 - `decompose()` is called via the injected hook `lambda article: decompose(article, mistral_client, config=DecompositionConfig(model=cfg.llm_model_name), cache_dir=CACHE_DIR)`.
 - `CACHE_DIR = /var/livedemo/cache/decompose/` on the `livedemo_cache` volume. The library's existing cache key (raw payload + model + prompt version + schema version) is unchanged; the demo just gives it a stable directory.
 - Whenever the on-disk cache writes a new entry, the backend mirrors the resulting `StructuredArticle` into `structured_article` ([§4](#data-model)) for UI display. The mirror is best-effort; the disk cache remains canonical.
@@ -421,7 +421,7 @@ article-ranking/                ← repo root, also the Compose build context
     ├── app/
     │   ├── main.py             ← FastAPI entrypoint, startup/shutdown hooks
     │   ├── deps.py             ← shared deps: embedder, mistral client, DB session
-    │   ├── config.py           ← env-var loading: paths, MISTRAL_API_KEY, CORS
+    │   ├── config.py           ← pydantic-settings model: reads .env + os env
     │   ├── db/
     │   │   ├── models.py       ← SQLAlchemy declarative models from §4
     │   │   └── session.py
@@ -618,11 +618,21 @@ services:
       context: ..
       dockerfile: livedemo/docker/backend.Dockerfile
     image: livedemo-backend:latest
+    # Compose interpolates ${...} from livedemo/.env at `up` time, AND
+    # passes the file into the container via env_file so pydantic-settings
+    # can also read it directly. Either path alone would work; we use both
+    # so dev overrides (compose interpolation) and runtime reads
+    # (settings.MISTRAL_API_KEY) stay in sync. See §11.7.
+    env_file:
+      - .env
     environment:
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY:?MISTRAL_API_KEY is required}
+      # Required, fail-fast if missing in .env
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:?MISTRAL_API_KEY is required in livedemo/.env}
+      # Container-internal paths — fixed regardless of .env
       LIVEDEMO_DB_URL: sqlite:////var/livedemo/db.sqlite
       LIVEDEMO_UPLOADS_DIR: /var/livedemo/uploads
       LIVEDEMO_CACHE_DIR: /var/livedemo/cache
+      # Optional, falls back if .env omits it
       LIVEDEMO_CORS_ORIGINS: ${LIVEDEMO_CORS_ORIGINS:-http://localhost:8080}
     volumes:
       - livedemo_db:/var/livedemo
