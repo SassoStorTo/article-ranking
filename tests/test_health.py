@@ -9,6 +9,13 @@ from news_ranker import (
     health,
 )
 from news_ranker.evaluate import rank_correlation, top_m_overlap
+from news_ranker.results import (
+    ProfileComparison,
+    RankDiagnostics,
+    RankingEntry,
+    RankResult,
+    SelectionResult,
+)
 
 
 def test_health() -> None:
@@ -31,6 +38,14 @@ def test_public_imports() -> None:
         "decompose",
         "health",
     ]
+    for result_record in (
+        ProfileComparison,
+        RankDiagnostics,
+        RankingEntry,
+        RankResult,
+        SelectionResult,
+    ):
+        assert not hasattr(news_ranker, result_record.__name__)
 
 
 def test_evaluate_helpers_import_from_submodule_only() -> None:
