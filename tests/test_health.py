@@ -48,6 +48,22 @@ def test_public_imports() -> None:
         assert not hasattr(news_ranker, result_record.__name__)
 
 
+def test_mistral_client_imports_from_submodule_only() -> None:
+    from news_ranker.mistral import MistralDecompositionClient
+
+    assert MistralDecompositionClient.__name__ == "MistralDecompositionClient"
+    assert not hasattr(news_ranker, "MistralDecompositionClient")
+    assert news_ranker.__all__ == [
+        "DecompositionClient",
+        "DecompositionConfig",
+        "DecompositionError",
+        "NewsRanker",
+        "RankerConfig",
+        "decompose",
+        "health",
+    ]
+
+
 def test_evaluate_helpers_import_from_submodule_only() -> None:
     assert top_m_overlap.__module__ == "news_ranker.evaluate"
     assert rank_correlation.__module__ == "news_ranker.evaluate"

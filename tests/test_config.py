@@ -18,7 +18,7 @@ def test_default_config_exposes_ranking_knobs() -> None:
     assert config.selection_mode == "top_score"
     assert config.selection_lambda == pytest.approx(0.8)
     assert config.embedding_model_name == "all-MiniLM-L6-v2"
-    assert config.llm_model_name
+    assert config.llm_model_name == "mistral-small-latest"
     assert config.prompt_version
     assert config.schema_version
     assert config.cache_dir is None
