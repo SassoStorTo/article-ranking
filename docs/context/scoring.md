@@ -32,7 +32,7 @@ This context covers current scoring behavior from clustered facts to ranked outp
 - `tests/test_cluster.py`, `tests/test_embed.py`, `tests/test_schemas.py` — upstream contracts for fact order, coverage matrix, article vectors, and schema fields used by scoring.
 - `articles/trump-shooting/*.json` — five structured fixtures used by scoring, pipeline, clustering, and schema tests.
 - `docs/brief.md` — original scoring formulas and defaults; current code follows most formulas but uses current `{name, role}` entity schema.
-- `docs/context/fact-clustering.md`, `docs/context/decomposition-embedding.md`, `docs/context/config-knobs.md`, `docs/context/pipeline-public-api.md` — companion contexts for upstream/downstream behavior.
+- `docs/context/fact-clustering.md`, `docs/context/decomposition-embedding.md`, `docs/context/config-knobs.md`, `docs/context/ranking-pipeline-public-api.md` — companion contexts for upstream/downstream behavior.
 
 ## Data flow / control flow
 
