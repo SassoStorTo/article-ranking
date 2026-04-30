@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, cast
 
 from mistralai.client import Mistral
 
@@ -22,12 +22,13 @@ class MistralDecompositionClient:
     def complete(self, *, model: str, system_prompt: str, user_prompt: str) -> str:
         """Return Mistral chat response text for supplied prompts."""
 
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
         response = self._client.chat.complete(
             model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            messages=cast(Any, messages),
         )
         return _response_text(response)
 
