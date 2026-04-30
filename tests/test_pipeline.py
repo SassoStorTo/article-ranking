@@ -58,6 +58,12 @@ class StubRanker(NewsRanker):
         return _rank_result(profile, self._scores, self._embeddings)
 
 
+def test_pipeline_result_imports_resolve_to_results_module() -> None:
+    assert RankingEntry.__module__ == "news_ranker.results"
+    assert RankDiagnostics.__module__ == "news_ranker.results"
+    assert RankResult.__module__ == "news_ranker.results"
+
+
 def test_default_config_profiles_have_expected_component_keys() -> None:
     config = RankerConfig()
 

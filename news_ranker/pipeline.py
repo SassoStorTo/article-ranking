@@ -1,7 +1,6 @@
 """Fixture-backed public ranking pipeline."""
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, TypeAlias
 
@@ -11,6 +10,13 @@ from numpy.typing import NDArray
 from news_ranker.cluster import FactUniverse, build_fact_universe, flatten_fact_items
 from news_ranker.config import RankerConfig
 from news_ranker.embed import FactEmbedder, embed_article_from_clusters, embed_facts
+from news_ranker.results import (
+    ProfileComparison,
+    RankDiagnostics,
+    RankingEntry,
+    RankResult,
+    SelectionResult,
+)
 from news_ranker.schemas import StructuredArticle, load_structured_article
 from news_ranker.score import (
     ScoreVector,
@@ -37,51 +43,6 @@ class ArticleDecomposer(Protocol):
 
     def __call__(self, article: RawArticleInput) -> StructuredArticle:
         """Return structured decomposition for raw article input."""
-
-
-@dataclass(frozen=True)
-class RankingEntry:
-    """Ranked article score and normalized component values."""
-
-    article_id: str
-    rank: int
-    score: float
-    components: Mapping[str, float]
-
-
-@dataclass(frozen=True)
-class RankDiagnostics:
-    """Intermediate ranking artifacts for inspection."""
-
-    fact_universe: FactUniverse
-    components: Mapping[str, ScoreVector]
-    article_embeddings: NDArray[np.float32]
-
-
-@dataclass(frozen=True)
-class RankResult:
-    """Ranked article result for one scoring profile."""
-
-    profile: str
-    entries: tuple[RankingEntry, ...]
-    diagnostics: RankDiagnostics
-
-
-@dataclass(frozen=True)
-class SelectionResult:
-    """Configured article selection result."""
-
-    profile: str
-    m: int
-    selected: tuple[RankingEntry, ...]
-    ranking: RankResult
-
-
-@dataclass(frozen=True)
-class ProfileComparison:
-    """Rankings for multiple configured scoring profiles."""
-
-    rankings: Mapping[str, RankResult]
 
 
 class NewsRanker:
