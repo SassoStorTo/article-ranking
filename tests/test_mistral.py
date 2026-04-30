@@ -148,6 +148,25 @@ def test_chunk_list_response_content_returns_joined_text() -> None:
     assert result == "part one part two"
 
 
+@pytest.mark.parametrize(
+    ("bad_response", "message"),
+    [
+        (Response(choices=[]), "Mistral response missing choices"),
+        (Response(choices=[object()]), "Mistral response missing message"),
+        (response(""), "Mistral response content is empty"),
+        (response(None), "Mistral response content is missing or unsupported"),
+        (response(object()), "Mistral response content is missing or unsupported"),
+        (response([object()]), "Mistral response content chunks have no text"),
+    ],
+)
+def test_response_content_errors_are_clear(bad_response: Any, message: str) -> None:
+    fake_client = FakeMistralClient(bad_response)
+    client = MistralDecompositionClient(client=fake_client)
+
+    with pytest.raises(ValueError, match=message):
+        client.complete(model="m", system_prompt="s", user_prompt="u")
+
+
 def test_explicit_api_key_constructs_sdk_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
