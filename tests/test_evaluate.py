@@ -12,8 +12,8 @@ from news_ranker.evaluate import (
     rank_correlation,
     top_m_overlap,
 )
-from news_ranker.pipeline import (
-    NewsRanker,
+from news_ranker.pipeline import NewsRanker
+from news_ranker.results import (
     ProfileComparison,
     RankDiagnostics,
     RankingEntry,

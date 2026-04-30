@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from math import sqrt
 from typing import Literal, TypeAlias
 
-from news_ranker.pipeline import (
+from news_ranker.results import (
     ProfileComparison,
     RankingEntry,
     RankResult,

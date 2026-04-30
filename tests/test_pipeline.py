@@ -7,7 +7,14 @@ from numpy.typing import NDArray
 
 from news_ranker.cluster import FactUniverse, flatten_fact_items
 from news_ranker.config import RankerConfig
-from news_ranker.pipeline import NewsRanker, RankDiagnostics, RankingEntry, RankResult
+from news_ranker.pipeline import NewsRanker
+from news_ranker.results import (
+    ProfileComparison,
+    RankDiagnostics,
+    RankingEntry,
+    RankResult,
+    SelectionResult,
+)
 from news_ranker.schemas import (
     Claim,
     Entities,
@@ -56,6 +63,25 @@ class StubRanker(NewsRanker):
     def rank(self, articles: object, profile: str = "representative") -> RankResult:
         del articles
         return _rank_result(profile, self._scores, self._embeddings)
+
+
+def test_pipeline_result_imports_resolve_to_results_module() -> None:
+    from news_ranker.pipeline import ProfileComparison as LegacyProfileComparison
+    from news_ranker.pipeline import RankDiagnostics as LegacyRankDiagnostics
+    from news_ranker.pipeline import RankingEntry as LegacyRankingEntry
+    from news_ranker.pipeline import RankResult as LegacyRankResult
+    from news_ranker.pipeline import SelectionResult as LegacySelectionResult
+
+    assert ProfileComparison.__module__ == "news_ranker.results"
+    assert RankingEntry.__module__ == "news_ranker.results"
+    assert RankDiagnostics.__module__ == "news_ranker.results"
+    assert RankResult.__module__ == "news_ranker.results"
+    assert SelectionResult.__module__ == "news_ranker.results"
+    assert LegacyProfileComparison is ProfileComparison
+    assert LegacyRankingEntry is RankingEntry
+    assert LegacyRankDiagnostics is RankDiagnostics
+    assert LegacyRankResult is RankResult
+    assert LegacySelectionResult is SelectionResult
 
 
 def test_default_config_profiles_have_expected_component_keys() -> None:
