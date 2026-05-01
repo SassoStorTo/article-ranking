@@ -73,7 +73,11 @@ class Corpus(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
-    executions: Mapped[list[Execution]] = relationship(back_populates="corpus")
+    executions: Mapped[list[Execution]] = relationship(
+        back_populates="corpus",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 
 class Article(Base):
@@ -143,7 +147,7 @@ class Execution(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     corpus_id: Mapped[str] = mapped_column(
         String(36),
-        ForeignKey("corpus.id"),
+        ForeignKey("corpus.id", ondelete="CASCADE"),
         nullable=False,
     )
     kind: Mapped[ExecutionKind] = mapped_column(

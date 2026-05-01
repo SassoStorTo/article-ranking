@@ -290,3 +290,41 @@ def test_deleting_execution_cascades_to_results_and_evaluation_artifacts(
         assert session.scalar(select(func.count()).select_from(Execution)) == 0
         assert session.scalar(select(func.count()).select_from(ExecutionResult)) == 0
         assert session.scalar(select(func.count()).select_from(EvaluationArtifact)) == 0
+
+
+def test_deleting_corpus_cascades_to_executions_results_and_artifacts(
+    tmp_path: Path,
+) -> None:
+    with make_session(tmp_path) as session:
+        corpus = Corpus(name="corpus")
+        execution = Execution(
+            corpus=corpus,
+            kind=ExecutionKind.RANK,
+            status=ExecutionStatus.SUCCEEDED,
+            config_json={},
+            profiles=["representative"],
+        )
+        session.add_all(
+            [
+                ExecutionResult(
+                    execution=execution,
+                    profile="representative",
+                    result_json={"ranked": []},
+                ),
+                EvaluationArtifact(
+                    execution=execution,
+                    helper=EvaluationHelper.COMPONENT_SCORE_TABLE,
+                    params_json={},
+                    payload_json={"rows": []},
+                ),
+            ],
+        )
+        session.commit()
+
+        session.delete(corpus)
+        session.commit()
+
+        assert session.scalar(select(func.count()).select_from(Corpus)) == 0
+        assert session.scalar(select(func.count()).select_from(Execution)) == 0
+        assert session.scalar(select(func.count()).select_from(ExecutionResult)) == 0
+        assert session.scalar(select(func.count()).select_from(EvaluationArtifact)) == 0
