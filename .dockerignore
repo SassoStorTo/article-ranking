@@ -1,0 +1,31 @@
+.git
+.gitignore
+
+# Python
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.egg-info
+**/.venv
+.venv
+
+# Node
+**/node_modules
+livedemo/frontend/dist
+
+# Local data / build artifacts
+livedemo/var
+dist
+build
+
+# Secrets and local env
+.env
+.env.local
+livedemo/.env
+livedemo/.env.local
+
+# OS / editor
+.DS_Store
+.idea
+.vscode

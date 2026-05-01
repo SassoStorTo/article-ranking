@@ -5,8 +5,12 @@ services:
     build:
       context: ..
       dockerfile: livedemo/docker/backend.Dockerfile
+    environment:
+      LIVEDEMO_DB_URL: sqlite:////var/livedemo/db.sqlite
+    volumes:
+      - livedemo-data:/var/livedemo
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
 
   frontend:
     build:
@@ -15,4 +19,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-8080}:80"
+
+volumes:
+  livedemo-data:
