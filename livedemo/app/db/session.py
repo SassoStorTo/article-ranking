@@ -5,7 +5,9 @@ from typing import Any
 from sqlalchemy import Engine, MetaData, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
-metadata = MetaData()
+from app.db.models import Base
+
+metadata = Base.metadata
 
 
 def _enable_sqlite_foreign_keys(
