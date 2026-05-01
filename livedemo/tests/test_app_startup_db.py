@@ -10,7 +10,8 @@ from app.main import create_app
 
 def test_app_startup_creates_database_tables(tmp_path: Path) -> None:
     db_url = f"sqlite:///{tmp_path / 'startup.sqlite'}"
-    app = create_app(Settings(db_url=db_url))
+    uploads_dir = str(tmp_path / "uploads")
+    app = create_app(Settings(db_url=db_url, uploads_dir=uploads_dir))
 
     with TestClient(app) as client:
         response = client.get("/api/health")

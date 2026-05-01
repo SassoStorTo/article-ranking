@@ -7,8 +7,10 @@ services:
       dockerfile: livedemo/docker/backend.Dockerfile
     environment:
       LIVEDEMO_DB_URL: sqlite:////var/livedemo/db.sqlite
+      LIVEDEMO_UPLOADS_DIR: /var/livedemo/uploads
     volumes:
       - livedemo-data:/var/livedemo
+      - livedemo-uploads:/var/livedemo/uploads
     ports:
       - "${BACKEND_PORT:-8000}:8000"
 
@@ -23,3 +25,4 @@ services:
 
 volumes:
   livedemo-data:
+  livedemo-uploads:
