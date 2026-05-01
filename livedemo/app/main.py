@@ -1,8 +1,29 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
-app = FastAPI(title="News Ranker Live Demo")
+from app.config import Settings, load_settings
+from app.db.session import init_db, make_engine
 
 
-@app.get("/api/health")
-def health() -> dict[str, bool]:
-    return {"ok": True}
+def create_app(settings: Settings | None = None) -> FastAPI:
+    app_settings = load_settings() if settings is None else settings
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
+        engine = make_engine(app_settings.db_url)
+        init_db(engine)
+        yield
+        engine.dispose()
+
+    app = FastAPI(title="News Ranker Live Demo", lifespan=lifespan)
+
+    @app.get("/api/health")
+    def health() -> dict[str, bool]:
+        return {"ok": True}
+
+    return app
+
+
+app = create_app()
