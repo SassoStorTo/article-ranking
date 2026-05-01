@@ -35,5 +35,6 @@ def make_session_factory(engine: Engine) -> sessionmaker[Session]:
     )
 
 
-def init_db(engine: Engine, db_metadata: MetaData = metadata) -> None:
-    db_metadata.create_all(bind=engine)
+def init_db(engine: Engine, db_metadata: MetaData | None = None) -> None:
+    target_metadata = metadata if db_metadata is None else db_metadata
+    target_metadata.create_all(bind=engine)

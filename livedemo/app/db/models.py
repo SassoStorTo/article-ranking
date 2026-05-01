@@ -126,6 +126,7 @@ class Article(Base):
         String(36),
         ForeignKey("corpus.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     filename: Mapped[str] = mapped_column(String, nullable=False)
     title: Mapped[str] = mapped_column(String, nullable=False)
@@ -162,6 +163,7 @@ class StructuredArticle(Base):
         String(36),
         ForeignKey("article.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     llm_model: Mapped[str] = mapped_column(String, nullable=False)
     prompt_version: Mapped[str] = mapped_column(String, nullable=False)
@@ -184,6 +186,7 @@ class Execution(Base):
         String(36),
         ForeignKey("corpus.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     kind: Mapped[ExecutionKind] = mapped_column(
         SqlEnum(
@@ -240,6 +243,7 @@ class ExecutionResult(Base):
         String(36),
         ForeignKey("execution.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     profile: Mapped[str | None] = mapped_column(String, nullable=True)
     result_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
@@ -260,6 +264,7 @@ class EvaluationArtifact(Base):
         String(36),
         ForeignKey("execution.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     helper: Mapped[EvaluationHelper] = mapped_column(
         SqlEnum(

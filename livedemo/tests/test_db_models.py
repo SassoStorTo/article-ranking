@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta, timezone
+from itertools import product
 from pathlib import Path
 
 import pytest
@@ -168,19 +169,16 @@ def test_execution_models_round_trip_enums_json_and_nullable_fields(
                 finished_at=None,
                 error=None,
             )
-            for kind, status in zip(
-                ExecutionKind,
-                ExecutionStatus,
-                strict=True,
-            )
+            for kind, status in product(ExecutionKind, ExecutionStatus)
         ]
+        first_execution = executions[0]
         result = ExecutionResult(
-            execution=executions[0],
+            execution=first_execution,
             profile=None,
             result_json={"ranking": [{"article_id": "a1", "score": 1.0}]},
         )
         artifact = EvaluationArtifact(
-            execution=executions[0],
+            execution=first_execution,
             helper=EvaluationHelper.TOP_M_OVERLAP,
             params_json={"m": 3, "other_execution_id": "other"},
             payload_json={"jaccard": 0.5, "overlap": ["a1"]},
@@ -189,7 +187,7 @@ def test_execution_models_round_trip_enums_json_and_nullable_fields(
         session.commit()
 
         stored = session.scalars(
-            select(Execution).where(Execution.id == executions[0].id),
+            select(Execution).where(Execution.id == first_execution.id),
         ).one()
         all_kinds = set(session.scalars(select(Execution.kind)).all())
         all_statuses = set(session.scalars(select(Execution.status)).all())
