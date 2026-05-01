@@ -18,7 +18,7 @@
 10. [Implementation Order (Milestones)](#milestones)
 11. [Docker Setup](#docker-setup)
 12. [Testing Strategy](#testing-strategy)
-13. [Open Questions](#open-questions)
+13. [Resolved Decisions](#resolved-decisions)
 
 ---
 
@@ -285,7 +285,7 @@ Server-side validation mirrors `RankerConfig.__post_init__`: profile weights non
 
 Each call instantiates the relevant helper from `news_ranker.evaluate`, stores the result in `evaluation_artifact`, and returns it. Helpers are pure and synchronous, so these endpoints do not need background tasks.
 
-`POST /api/executions/{id}/test-suite` runs the **entire** evaluation suite (top-M overlap and rank-correlation against a chosen baseline execution, component table, cluster inspection, and a user-study bundle if materials are supplied) in one call and returns the list of created artifacts. This is what the "test the algorithm with the whole testing suite" button in [§6.4](#parameter-form) invokes.
+`POST /api/executions/{id}/test-suite` runs the **entire** evaluation suite (top-M overlap and rank-correlation against a required, explicit `baseline_execution_id`, component table, cluster inspection, and a user-study bundle if materials are supplied) in one call and returns the list of created artifacts. This is what the "test the algorithm with the whole testing suite" button in [§6.4](#parameter-form) invokes. The endpoint rejects requests without a baseline so comparisons stay explicit.
 
 ---
 
@@ -318,7 +318,7 @@ For a single execution:
   - For `rank`: ranked table with article id, score, per-component scores (centrality / coverage / density / entity_coverage). Sort, filter, expand to see fact-coverage diagnostics.
   - For `select`: same table, plus a "Selected" badge on the chosen-`m` rows. MMR-selected runs also show a small order-vs-rank chart.
   - For `compare_profiles`: a side-by-side table, one column per profile, with rank-change arrows between them.
-- **Evaluation panel**: buttons for each helper ([§5.5](#backend-api)), plus a single "Run full test suite" button that triggers `/test-suite` and renders the resulting artifacts inline. Each artifact has its own renderer:
+- **Evaluation panel**: buttons for each helper ([§5.5](#backend-api)), plus a required baseline picker and a single "Run full test suite" button that triggers `/test-suite` and renders the resulting artifacts inline. Each artifact has its own renderer:
   - Top-M overlap → counts + Jaccard + the overlapping article ids.
   - Rank correlation → coefficient + left-only/right-only ids.
   - Component score table → table of (profile, article_id, rank, score, components…).
@@ -334,7 +334,7 @@ Used both for new runs and for replay. Fields:
 - Profile picker (single or multi for `compare_profiles`) with weights editable per profile (centrality / coverage / density / entity_coverage). Weights validated client-side to sum to 1.
 - Clustering knobs: `similarity_threshold`, `linkage` (average | single).
 - Coverage knobs: `coverage_weighting` (consensus | rarity).
-- Selection knobs (when applicable): `selection_mode` (top_score | mmr), `selection_lambda`, `top_m`.
+- Selection knobs (when applicable): `selection_mode` (top_score | mmr | rarity), `selection_lambda`, `top_m`. Advanced modes are exposed rather than hidden.
 - Metadata knobs (read-only, since current pipeline treats them as metadata only): `llm_model_name`, `prompt_version`, `schema_version`, `embedding_model_name`.
 
 Submit → POSTs to the matching execution endpoint and navigates to the new execution's detail page.
@@ -362,7 +362,7 @@ The library's evaluation helpers are pure functions over result records (see `do
 | "Component table" | `component_score_table(rank_or_comparison)` — accepts a single `RankResult`, a list, or a `ProfileComparison` |
 | "Cluster inspection" | `cluster_inspection_rows(rank_result, rare_threshold)` against `rank_result.diagnostics.fact_universe` |
 | "User-study bundle" | `anonymized_user_study_bundle(selection_result, materials, include_scores)` |
-| "Run full test suite" | All of the above, against a baseline execution selected by the user (or the most recent run on the same corpus + same profile if not specified). |
+| "Run full test suite" | All of the above, against a baseline execution explicitly selected by the user. No implicit fallback baseline. |
 
 Rebuilding records from JSON: a small `from_jsonable()` mirror of [§5.3](#backend-api) re-creates the frozen dataclasses. `FactUniverse.coverage_matrix` is cast back to `np.ndarray` so `cluster_inspection_rows` can index it.
 
@@ -723,15 +723,15 @@ Tests use the in-memory SQLite engine and the library's fake embedder/decomposer
 
 ---
 
-<a id="open-questions"></a>
+<a id="resolved-decisions"></a>
 
-## 13. Open Questions
+## 13. Resolved Decisions
 
-1. Do we want the full-suite "test" button to also run a fixed reference profile (e.g. `representative` with library defaults) automatically when the user has not chosen a baseline, or should we always require an explicit baseline execution? Defaulting to "most recent run on the same corpus" is convenient but hides what is being compared.
-2. Should we expose `selection_mode="rarity"` or `linkage="single"` as UI checkboxes despite the library treating them as advanced? Hiding them keeps the demo opinionated; surfacing them matches the project brief's emphasis on comparing definitions of "best".
-3. Should the `structured_article` DB mirror be removed in favor of always reading from the library's disk cache via a small `read_cached(article_hash)` helper? The mirror is convenient but introduces a second source of truth.
-4. Is single-tenant the right default, or do we want a minimal "user" concept so multiple students can use the same hosted demo without seeing each other's corpora?
-5. User-study bundle export: do we need a shareable read-only link per bundle (small JWT-signed URL), or is a downloaded JSON enough?
+1. Full-suite evaluation always requires an explicit baseline execution. No default to "most recent run on the same corpus".
+2. Advanced ranking/selection knobs are exposed in the UI, including `selection_mode="rarity"` and `linkage="single"`.
+3. Keep the `structured_article` DB mirror; do not replace it with disk-cache reads only.
+4. Keep v1 single-tenant. No user model or per-user corpora.
+5. User-study bundle export is downloaded JSON only. No shareable read-only links in v1.
 
 ---
 
