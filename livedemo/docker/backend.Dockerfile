@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir uv
+RUN pip install --no-cache-dir uv && mkdir -p /var/livedemo
 
 COPY livedemo/pyproject.toml livedemo/uv.lock* livedemo/README.md ./livedemo/
 WORKDIR /app/livedemo

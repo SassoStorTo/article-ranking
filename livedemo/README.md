@@ -15,3 +15,7 @@ make check
 ```
 
 `make dev` runs Docker Compose and serves the app at <http://localhost:8080>.
+
+Docker Compose stores the SQLite database in the `livedemo-data` named volume,
+mounted in the backend container at `/var/livedemo/db.sqlite`. To reset all
+persisted app state, run `docker compose down -v`.
