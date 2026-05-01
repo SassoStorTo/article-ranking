@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.config import Settings, load_settings
 from app.db.session import init_db, make_engine, make_session_factory
-from app.routers import corpora
+from app.routers import articles, corpora
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -25,6 +25,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="News Ranker Live Demo", lifespan=lifespan)
     app.include_router(corpora.router)
+    app.include_router(articles.router)
 
     @app.get("/api/health")
     def health() -> dict[str, bool]:
