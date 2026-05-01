@@ -11,7 +11,8 @@ metadata = Base.metadata
 
 
 def _enable_sqlite_foreign_keys(
-    dbapi_connection: Any, connection_record: Any,  # noqa: ARG001
+    dbapi_connection: Any,
+    connection_record: Any,  # noqa: ARG001
 ) -> None:
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
