@@ -4,16 +4,32 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from app.config import DB_URL_ENV_VAR, DEFAULT_DB_URL, load_settings
+from app.config import (
+    DB_URL_ENV_VAR,
+    DEFAULT_DB_URL,
+    DEFAULT_UPLOADS_DIR,
+    UPLOADS_DIR_ENV_VAR,
+    load_settings,
+)
 from app.db.session import init_db, make_engine, make_session_factory
 
 
 def test_settings_default_and_override() -> None:
-    assert load_settings({}).db_url == DEFAULT_DB_URL
+    default_settings = load_settings({})
+    assert default_settings.db_url == DEFAULT_DB_URL
+    assert default_settings.uploads_dir == DEFAULT_UPLOADS_DIR
 
     override_url = "sqlite:////tmp/livedemo-test.sqlite"
+    override_uploads_dir = "/tmp/livedemo-uploads"
 
-    assert load_settings({DB_URL_ENV_VAR: override_url}).db_url == override_url
+    override_settings = load_settings(
+        {
+            DB_URL_ENV_VAR: override_url,
+            UPLOADS_DIR_ENV_VAR: override_uploads_dir,
+        },
+    )
+    assert override_settings.db_url == override_url
+    assert override_settings.uploads_dir == override_uploads_dir
 
 
 def test_injected_sqlite_db_url_creates_usable_session(tmp_path: Path) -> None:

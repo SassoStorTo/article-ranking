@@ -1,8 +1,7 @@
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
 
 from app.config import Settings, load_settings
 from app.db.session import init_db, make_engine, make_session_factory
@@ -17,6 +16,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         init_db(engine)
         app.state.engine = engine
         app.state.session_factory = make_session_factory(engine)
+        app.state.settings = app_settings
         try:
             yield
         finally:
@@ -29,12 +29,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return {"ok": True}
 
     return app
-
-
-def get_session(request: Request) -> Iterator[Session]:
-    session_factory = request.app.state.session_factory
-    with session_factory() as session:
-        yield session
 
 
 app = create_app()
