@@ -7,7 +7,7 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
-COPY livedemo/pyproject.toml livedemo/uv.lock* ./livedemo/
+COPY livedemo/pyproject.toml livedemo/uv.lock* livedemo/README.md ./livedemo/
 WORKDIR /app/livedemo
 RUN uv sync --frozen --no-dev || uv sync --no-dev
 
