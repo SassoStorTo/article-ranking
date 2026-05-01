@@ -12,9 +12,11 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    TypeDecorator,
     UniqueConstraint,
 )
 from sqlalchemy import Enum as SqlEnum
+from sqlalchemy.engine import Dialect
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -24,6 +26,39 @@ def new_uuid() -> str:
 
 def utc_now() -> datetime:
     return datetime.now(UTC)
+
+
+class UtcDateTime(TypeDecorator[datetime]):
+    """Datetime column that always round-trips as UTC-aware.
+
+    SQLite drops timezone info on reload; this normalizes inbound values
+    to UTC and re-attaches UTC tzinfo on the way out.
+    """
+
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_bind_param(
+        self,
+        value: datetime | None,
+        dialect: Dialect,  # noqa: ARG002
+    ) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            raise ValueError("UtcDateTime requires timezone-aware datetimes")
+        return value.astimezone(UTC)
+
+    def process_result_value(
+        self,
+        value: datetime | None,
+        dialect: Dialect,  # noqa: ARG002
+    ) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
 
 
 class Base(DeclarativeBase):
@@ -62,7 +97,7 @@ class Corpus(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     name: Mapped[str] = mapped_column(String, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UtcDateTime(),
         nullable=False,
         default=utc_now,
     )
@@ -97,7 +132,7 @@ class Article(Base):
     body: Mapped[str] = mapped_column(Text, nullable=False)
     content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     uploaded_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UtcDateTime(),
         nullable=False,
         default=utc_now,
     )
@@ -133,7 +168,7 @@ class StructuredArticle(Base):
     schema_version: Mapped[str] = mapped_column(String, nullable=False)
     payload_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UtcDateTime(),
         nullable=False,
         default=utc_now,
     )
@@ -170,16 +205,16 @@ class Execution(Base):
     profiles: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     m: Mapped[int | None] = mapped_column(Integer, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
+        UtcDateTime(),
         nullable=True,
     )
     finished_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
+        UtcDateTime(),
         nullable=True,
     )
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UtcDateTime(),
         nullable=False,
         default=utc_now,
     )
@@ -209,7 +244,7 @@ class ExecutionResult(Base):
     profile: Mapped[str | None] = mapped_column(String, nullable=True)
     result_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UtcDateTime(),
         nullable=False,
         default=utc_now,
     )
@@ -237,7 +272,7 @@ class EvaluationArtifact(Base):
     params_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     payload_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        UtcDateTime(),
         nullable=False,
         default=utc_now,
     )

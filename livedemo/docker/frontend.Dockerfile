@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY livedemo/frontend/package.json livedemo/frontend/package-lock.json* ./
-RUN npm install
+COPY livedemo/frontend/package.json livedemo/frontend/package-lock.json ./
+RUN npm ci
 COPY livedemo/frontend ./
 RUN npm run build
 

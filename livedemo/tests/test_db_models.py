@@ -1,10 +1,10 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import Engine, func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.db.models import (
     Article,
@@ -20,10 +20,16 @@ from app.db.models import (
 from app.db.session import init_db, make_engine, make_session_factory
 
 
-def make_session(tmp_path: Path) -> Session:
+def make_engine_and_factory(
+    tmp_path: Path,
+) -> tuple[Engine, sessionmaker[Session]]:
     engine = make_engine(f"sqlite:///{tmp_path / 'models.sqlite'}")
     init_db(engine)
-    session_factory = make_session_factory(engine)
+    return engine, make_session_factory(engine)
+
+
+def make_session(tmp_path: Path) -> Session:
+    _, session_factory = make_engine_and_factory(tmp_path)
     return session_factory()
 
 
@@ -217,9 +223,11 @@ def test_execution_models_round_trip_enums_json_and_nullable_fields(
 def test_execution_timing_error_and_all_evaluation_helpers_round_trip(
     tmp_path: Path,
 ) -> None:
-    with make_session(tmp_path) as session:
-        started_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
-        finished_at = datetime(2026, 1, 1, 12, 1, tzinfo=UTC)
+    _, session_factory = make_engine_and_factory(tmp_path)
+    started_at = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
+    finished_at = datetime(2026, 1, 1, 12, 1, tzinfo=UTC)
+
+    with session_factory() as session:
         execution = Execution(
             corpus=Corpus(name="corpus"),
             kind=ExecutionKind.SELECT,
@@ -244,6 +252,7 @@ def test_execution_timing_error_and_all_evaluation_helpers_round_trip(
         )
         session.commit()
 
+    with session_factory() as session:
         stored = session.scalars(select(Execution)).one()
         stored_helpers = {artifact.helper for artifact in stored.evaluation_artifacts}
 
@@ -254,6 +263,73 @@ def test_execution_timing_error_and_all_evaluation_helpers_round_trip(
         assert stored.finished_at == finished_at
         assert stored.error == "boom"
         assert stored_helpers == set(EvaluationHelper)
+
+
+def test_datetime_columns_reload_as_utc_aware_in_a_new_session(
+    tmp_path: Path,
+) -> None:
+    _, session_factory = make_engine_and_factory(tmp_path)
+    plus_two = timezone(timedelta(hours=2))
+    started_at = datetime(2026, 1, 1, 14, 0, tzinfo=plus_two)
+    finished_at = datetime(2026, 1, 1, 14, 5, tzinfo=plus_two)
+
+    with session_factory() as session:
+        corpus = Corpus(name="corpus")
+        article = make_article(corpus)
+        structured = StructuredArticle(
+            article=article,
+            llm_model="mistral-small-latest",
+            prompt_version="v1",
+            schema_version="v1",
+            payload_json={"claims": []},
+        )
+        execution = Execution(
+            corpus=corpus,
+            kind=ExecutionKind.RANK,
+            status=ExecutionStatus.SUCCEEDED,
+            config_json={},
+            profiles=["representative"],
+            started_at=started_at,
+            finished_at=finished_at,
+        )
+        result = ExecutionResult(
+            execution=execution,
+            profile="representative",
+            result_json={"ranked": []},
+        )
+        artifact = EvaluationArtifact(
+            execution=execution,
+            helper=EvaluationHelper.TOP_M_OVERLAP,
+            params_json={},
+            payload_json={},
+        )
+        session.add_all([structured, result, artifact])
+        session.commit()
+
+    with session_factory() as session:
+        stored_corpus = session.scalars(select(Corpus)).one()
+        stored_article = session.scalars(select(Article)).one()
+        stored_structured = session.scalars(select(StructuredArticle)).one()
+        stored_execution = session.scalars(select(Execution)).one()
+        stored_result = session.scalars(select(ExecutionResult)).one()
+        stored_artifact = session.scalars(select(EvaluationArtifact)).one()
+
+        for value in (
+            stored_corpus.created_at,
+            stored_article.uploaded_at,
+            stored_structured.created_at,
+            stored_execution.created_at,
+            stored_execution.started_at,
+            stored_execution.finished_at,
+            stored_result.created_at,
+            stored_artifact.created_at,
+        ):
+            assert value is not None
+            assert value.tzinfo is not None
+            assert value.utcoffset() == timedelta(0)
+
+        assert stored_execution.started_at == started_at
+        assert stored_execution.finished_at == finished_at
 
 
 def test_deleting_execution_cascades_to_results_and_evaluation_artifacts(
