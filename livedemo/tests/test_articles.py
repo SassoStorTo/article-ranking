@@ -2,7 +2,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from pytest import MonkeyPatch
+from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.db.models import Article, Corpus, StructuredArticle
@@ -78,6 +81,54 @@ def test_duplicate_filename_returns_409(tmp_path: Path) -> None:
     assert duplicate_response.json() == {
         "detail": "Article filename already exists in corpus",
     }
+
+
+def test_duplicate_filename_in_same_upload_returns_409(tmp_path: Path) -> None:
+    with make_client(tmp_path) as client:
+        corpus = create_corpus(client)
+        response = client.post(
+            f"/api/corpora/{corpus['id']}/articles",
+            files=[
+                ("files", ("story.txt", b"Story", "text/plain")),
+                ("files", ("story.txt", b"Other", "text/plain")),
+            ],
+        )
+
+        with client.app.state.session_factory() as session:
+            article_count = session.scalar(select(func.count()).select_from(Article))
+
+    assert response.status_code == 409
+    assert response.json() == {
+        "detail": "Article filename already exists in corpus",
+    }
+    assert article_count == 0
+
+
+def test_upload_cleans_written_files_when_commit_fails(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    with make_client(tmp_path) as client:
+        corpus = create_corpus(client)
+
+        def failing_commit(self: Session) -> None:  # noqa: ARG001
+            raise SQLAlchemyError("commit failed")
+
+        monkeypatch.setattr(Session, "commit", failing_commit)
+        response = client.post(
+            f"/api/corpora/{corpus['id']}/articles",
+            files=[("files", ("story.txt", b"Story", "text/plain"))],
+        )
+
+        upload_dir = tmp_path / "uploads" / str(corpus["id"])
+        written_files = list(upload_dir.glob("*")) if upload_dir.exists() else []
+        with client.app.state.session_factory() as session:
+            article_count = session.scalar(select(func.count()).select_from(Article))
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Database error while uploading articles"}
+    assert written_files == []
+    assert article_count == 0
 
 
 def test_non_txt_upload_rejected(tmp_path: Path) -> None:

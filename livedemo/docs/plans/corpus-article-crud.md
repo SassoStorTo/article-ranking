@@ -56,8 +56,8 @@ Rejected adding storage path column: current data model has no path field, and A
 
 ## Risks
 
-1. `python-multipart` is new dependency; needs user approval before implementation under `AGENTS.md`.
-2. DB row + file write can diverge if commit fails after bytes written; implementation should clean up newly written files on DB error where practical.
+1. `python-multipart` is new dependency; approved by user request before this implementation pass.
+2. DB row + file write can diverge if commit fails after bytes written; implementation cleans up newly written files on SQLAlchemy DB errors.
 3. Existing model has no upload path column, so orphaned volume files after article/corpus delete are possible unless delete cleanup is added later.
 4. Multipart files can be large; reading whole file into memory is acceptable for demo but not streaming-safe.
 5. UTF-8-only decode may reject valid `.txt` in other encodings; v1 keeps simple input contract.
@@ -66,5 +66,4 @@ Rejected adding storage path column: current data model has no path field, and A
 
 ## Open questions
 
-1. Approve adding `python-multipart` dependency for FastAPI multipart upload parsing?
-2. Should upload hash be computed from decoded body text exactly as stored, or original uploaded bytes?
+None. `python-multipart` is approved; upload hash is computed from decoded body text exactly as stored.

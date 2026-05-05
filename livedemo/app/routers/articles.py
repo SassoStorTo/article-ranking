@@ -5,7 +5,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.config import Settings
@@ -118,6 +118,13 @@ async def upload_articles(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Article filename already exists in corpus",
+        ) from exc
+    except SQLAlchemyError as exc:
+        session.rollback()
+        _remove_written_files(written_paths)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error while uploading articles",
         ) from exc
 
     return UploadedArticles(
