@@ -1299,6 +1299,25 @@ function RankParameterForm({
         </div>
       </fieldset>
 
+      <fieldset>
+        <legend>Metadata</legend>
+        <div className="parameter-grid">
+          {(
+            [
+              "llm_model_name",
+              "prompt_version",
+              "schema_version",
+              "embedding_model_name",
+            ] as const
+          ).map((field) => (
+            <label key={field}>
+              {formatGroupName(field)}
+              <input readOnly value={String(config[field] ?? "")} />
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
       <ParameterErrors errors={weightWarnings} mutationError={mutation.error} />
       <div className="form-actions">
         <button disabled={mutation.isPending || !canSubmit} type="submit">
