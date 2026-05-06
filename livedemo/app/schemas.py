@@ -1,8 +1,9 @@
+from copy import deepcopy
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from news_ranker.config import RankerConfig
 
@@ -102,25 +103,49 @@ CoverageWeightingValue = Literal["consensus", "rarity"]
 
 
 class ProfileWeights(ApiSchema):
-    centrality: float
-    coverage: float
-    density: float
-    entity_coverage: float
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
+
+    centrality: float = Field(ge=0.0)
+    coverage: float = Field(ge=0.0)
+    density: float = Field(ge=0.0)
+    entity_coverage: float = Field(ge=0.0)
+
+    @model_validator(mode="after")
+    def validate_weight_sum(self) -> Self:
+        total = self.centrality + self.coverage + self.density + self.entity_coverage
+        if abs(total - 1.0) > 1e-6:
+            msg = "profile weights must sum to 1.0"
+            raise ValueError(msg)
+        return self
 
 
 class RankerConfigPayload(ApiSchema):
-    similarity_threshold: float | None = None
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
+
+    similarity_threshold: float | None = Field(default=None, ge=-1.0, le=1.0)
     linkage: LinkageValue | None = None
     coverage_weighting: CoverageWeightingValue | None = None
     profiles: dict[str, ProfileWeights] | None = None
-    top_m: int | None = None
+    top_m: int | None = Field(default=None, ge=1)
     selection_mode: SelectionModeValue | None = None
-    selection_lambda: float | None = None
+    selection_lambda: float | None = Field(default=None, ge=0.0, le=1.0)
     embedding_model_name: str | None = None
     llm_model_name: str | None = None
     prompt_version: str | None = None
     schema_version: str | None = None
     cache_dir: str | None = None
+
+    @model_validator(mode="after")
+    def validate_profiles(self) -> Self:
+        if self.profiles is not None:
+            if not self.profiles:
+                msg = "profiles must not be empty"
+                raise ValueError(msg)
+            for profile_name in self.profiles:
+                if not profile_name.strip():
+                    msg = "profile name must be a non-empty string"
+                    raise ValueError(msg)
+        return self
 
 
 class RankExecutionRequest(ApiSchema):
@@ -140,6 +165,10 @@ class CompareProfilesExecutionRequest(ApiSchema):
     corpus_id: UUID
     profiles: list[str] | None = None
     config: RankerConfigPayload | None = None
+
+
+class ReplayExecutionRequest(ApiSchema):
+    corpus_id: UUID | None = None
 
 
 class ExecutionAccepted(ApiSchema):
@@ -178,13 +207,18 @@ def normalize_ranker_config(
     m: int | None = None,
 ) -> tuple[RankerConfig, dict[str, Any]]:
     values = payload.model_dump(exclude_none=True) if payload is not None else {}
-    if "profiles" in values:
-        values["profiles"] = {
-            profile: weights.model_dump()
-            for profile, weights in values["profiles"].items()
-        }
     config = RankerConfig(**values)
     return config, ranker_config_json(config, m=m)
+
+
+def ranker_config_from_json(config_json: dict[str, Any]) -> RankerConfig:
+    payload_keys = set(RankerConfigPayload.model_fields)
+    values = {
+        key: deepcopy(value)
+        for key, value in config_json.items()
+        if key in payload_keys and value is not None
+    }
+    return RankerConfig(**values)
 
 
 def ranker_config_json(config: RankerConfig, *, m: int | None = None) -> dict[str, Any]:
