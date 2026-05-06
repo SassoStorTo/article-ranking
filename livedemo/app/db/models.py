@@ -44,7 +44,9 @@ class Corpus(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     name: Mapped[str]
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
     notes: Mapped[str | None] = mapped_column(Text)
 
     articles: Mapped[list["Article"]] = relationship(
@@ -103,7 +105,9 @@ class StructuredArticle(Base):
     prompt_version: Mapped[str]
     schema_version: Mapped[str]
     payload_json: Mapped[dict[str, object]] = mapped_column(JSON)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
 
     article: Mapped["Article"] = relationship(back_populates="structured_articles")
 
@@ -125,7 +129,9 @@ class Execution(Base):
     started_at: Mapped[datetime | None]
     finished_at: Mapped[datetime | None]
     error: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
 
     corpus: Mapped["Corpus"] = relationship(back_populates="executions")
     results: Mapped[list["ExecutionResult"]] = relationship(
@@ -149,7 +155,9 @@ class ExecutionResult(Base):
     )
     profile: Mapped[str | None]
     result_json: Mapped[dict[str, object]] = mapped_column(JSON)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
 
     execution: Mapped["Execution"] = relationship(back_populates="results")
 
@@ -166,6 +174,8 @@ class EvaluationArtifact(Base):
     helper: Mapped[EvaluationHelper]
     params_json: Mapped[dict[str, object]] = mapped_column(JSON)
     payload_json: Mapped[dict[str, object]] = mapped_column(JSON)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
 
     execution: Mapped["Execution"] = relationship(back_populates="evaluation_artifacts")
