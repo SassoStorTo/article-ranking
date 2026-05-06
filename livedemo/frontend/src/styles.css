@@ -14,6 +14,7 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
 }
 
 button,
@@ -56,6 +57,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-width: 0;
   padding-right: 28px;
 }
 
@@ -89,6 +91,7 @@ h3 {
 }
 
 .workspace {
+  align-items: start;
   display: grid;
   gap: 24px;
   grid-template-columns: minmax(240px, 0.35fr) minmax(0, 1fr);
@@ -197,6 +200,7 @@ h3 {
 .detail-panel {
   display: grid;
   gap: 16px;
+  min-width: 0;
 }
 
 .new-corpus label {
@@ -265,7 +269,18 @@ button:disabled {
   display: grid;
   gap: 4px;
   min-height: 78px;
+  min-width: 0;
   text-align: left;
+}
+
+.corpus-buttons strong,
+.article-list strong,
+.corpus-buttons span,
+.article-list span,
+.article-list small,
+.detail-header h2,
+.detail-header h3 {
+  overflow-wrap: anywhere;
 }
 
 .corpus-buttons button.selected,
@@ -499,6 +514,7 @@ button:disabled {
   gap: 18px;
   grid-template-columns: minmax(220px, 0.38fr) minmax(0, 1fr);
   min-height: 420px;
+  min-width: 0;
 }
 
 .article-inspector {
@@ -512,7 +528,9 @@ button:disabled {
   background: #fffdf8;
   border: 1px solid #d7d0c4;
   border-radius: 8px;
+  max-height: min(760px, calc(100vh - 260px));
   min-width: 0;
+  overflow: auto;
   padding: 18px;
 }
 
@@ -535,7 +553,9 @@ button:disabled {
   line-height: 1.55;
   margin: 0;
   overflow: auto;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .structured-panel {
@@ -545,7 +565,9 @@ button:disabled {
   border-radius: 8px;
   display: grid;
   gap: 16px;
+  max-height: min(760px, calc(100vh - 260px));
   min-width: 0;
+  overflow: auto;
   padding: 18px;
 }
 
@@ -567,6 +589,12 @@ button:disabled {
 .structured-panel p {
   line-height: 1.4;
   margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.structured-panel h3,
+.fact-row strong {
+  overflow-wrap: anywhere;
 }
 
 .structured-panel small,
@@ -652,6 +680,18 @@ button:disabled {
   gap: 12px;
   min-width: 0;
   padding: 12px;
+}
+
+.artifact-card p,
+.artifact-card pre,
+.cluster-artifacts p {
+  overflow-wrap: anywhere;
+}
+
+.artifact-card pre {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
 }
 
 .artifact-card h4 {
@@ -795,6 +835,7 @@ button:disabled {
 }
 
 .result-table-wrap {
+  max-width: 100%;
   min-width: 0;
   overflow-x: auto;
 }
