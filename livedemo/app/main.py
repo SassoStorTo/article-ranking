@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -20,13 +21,18 @@ def create_app(db_engine: Engine = default_engine) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.db_engine = db_engine
+        app.state.executor = ThreadPoolExecutor(max_workers=2)
+        app.state.embedders = {}
         init_db(db_engine)
         app.state.mistral_client = (
             create_mistral_client(settings)
             if should_initialize_mistral(settings)
             else None
         )
-        yield
+        try:
+            yield
+        finally:
+            app.state.executor.shutdown(wait=True)
 
     app = FastAPI(
         title="News Ranker Live Demo",
