@@ -22,6 +22,7 @@ class TimestampFields(ApiSchema):
 
 class HealthResponse(ApiSchema):
     ok: bool
+    checks: dict[str, bool]
 
 
 class ErrorDetail(ApiSchema):
