@@ -33,6 +33,9 @@ def _article_summary(article: Article) -> ArticleSummary:
         filename=article.filename,
         title=article.title,
         body_length=len(article.body),
+        decomposition_status=(
+            "decomposed" if article.structured_articles else "not_started"
+        ),
         uploaded_at=article.uploaded_at,
     )
 
@@ -83,7 +86,9 @@ def get_corpus(corpus_id: UUID, db: DbSession) -> CorpusDetail:
     corpus = db.scalar(
         select(Corpus)
         .where(Corpus.id == str(corpus_id))
-        .options(selectinload(Corpus.articles))
+        .options(
+            selectinload(Corpus.articles).selectinload(Article.structured_articles)
+        )
     )
     if corpus is None:
         raise _corpus_not_found(corpus_id)

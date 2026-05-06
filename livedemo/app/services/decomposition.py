@@ -1,3 +1,4 @@
+import logging
 from uuid import UUID
 
 from news_ranker.config import RankerConfig
@@ -11,6 +12,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from livedemo.app.db.models import Article, StructuredArticle, utc_now
+
+logger = logging.getLogger(__name__)
 
 
 def build_decomposition_config(config: RankerConfig) -> DecompositionConfig:
@@ -57,12 +60,16 @@ def decompose_article_by_id(
         article = db.get(Article, article_id)
         if article is None:
             return
-        decompose_article(
-            db,
-            article=article,
-            client=client,
-            ranker_config=ranker_config,
-        )
+        try:
+            decompose_article(
+                db,
+                article=article,
+                client=client,
+                ranker_config=ranker_config,
+            )
+        except Exception:
+            db.rollback()
+            logger.exception("Article decomposition failed for %s", article_id)
 
 
 def upsert_structured_article(
