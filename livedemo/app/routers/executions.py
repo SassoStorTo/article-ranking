@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import Select, select
-from sqlalchemy.orm import Session, sessionmaker, selectinload
+from sqlalchemy.orm import Session, selectinload, sessionmaker
 
 from livedemo.app.db.models import Corpus, Execution, ExecutionKind, ExecutionStatus
 from livedemo.app.deps import (
@@ -248,7 +248,8 @@ def list_executions(
     if status_filter is not None:
         statement = statement.where(Execution.status == status_filter)
     statement = (
-        statement.order_by(Execution.created_at.desc(), Execution.id)
+        statement
+        .order_by(Execution.created_at.desc(), Execution.id)
         .limit(limit)
         .offset(offset)
     )

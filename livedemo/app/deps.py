@@ -1,5 +1,4 @@
-from collections.abc import Generator
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from concurrent.futures import Executor
 from sys import modules
 from typing import Annotated

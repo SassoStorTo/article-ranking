@@ -52,8 +52,7 @@ def to_jsonable(value: Any) -> Any:
             "__type__": "rank_diagnostics",
             "fact_universe": to_jsonable(value.fact_universe),
             "components": {
-                name: to_jsonable(score)
-                for name, score in value.components.items()
+                name: to_jsonable(score) for name, score in value.components.items()
             },
             "article_embeddings": to_jsonable(value.article_embeddings),
         }

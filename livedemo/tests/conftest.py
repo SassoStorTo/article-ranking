@@ -1,15 +1,22 @@
 import json
 from collections.abc import Generator
+from pathlib import Path
 
+import numpy as np
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from numpy.typing import NDArray
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
 
 from livedemo.app.db.session import create_session_factory
-from livedemo.app.deps import get_db, get_mistral_client, get_session_factory
+from livedemo.app.deps import (
+    get_db,
+    get_embedder_provider,
+    get_mistral_client,
+    get_session_factory,
+)
 from livedemo.app.main import create_app
 
 
@@ -60,12 +67,21 @@ class FakeDecompositionClient:
         })
 
 
+class FakeEmbedder:
+    def embed(self, texts: list[str]) -> NDArray[np.float32]:
+        vectors = []
+        for index, text in enumerate(texts, start=1):
+            length = max(len(text), 1)
+            checksum = sum(ord(char) for char in text) % 997
+            vectors.append([float(length), float(checksum + index)])
+        return np.asarray(vectors, dtype=np.float32)
+
+
 @pytest.fixture
-def db_engine() -> Generator[Engine]:
+def db_engine(tmp_path: Path) -> Generator[Engine]:
     engine = create_engine(
-        "sqlite://",
+        f"sqlite:///{tmp_path / 'livedemo-test.sqlite'}",
         connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
     )
     yield engine
     engine.dispose()
@@ -82,10 +98,16 @@ def fake_decomposition_client() -> FakeDecompositionClient:
 
 
 @pytest.fixture
+def fake_embedder() -> FakeEmbedder:
+    return FakeEmbedder()
+
+
+@pytest.fixture
 def app(
     db_engine: Engine,
     db_session_factory: sessionmaker[Session],
     fake_decomposition_client: FakeDecompositionClient,
+    fake_embedder: FakeEmbedder,
 ) -> FastAPI:
     app = create_app(db_engine=db_engine)
 
@@ -96,6 +118,9 @@ def app(
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_session_factory] = lambda: db_session_factory
     app.dependency_overrides[get_mistral_client] = lambda: fake_decomposition_client
+    app.dependency_overrides[get_embedder_provider] = lambda: (
+        lambda _model_name: fake_embedder
+    )
     return app
 
 

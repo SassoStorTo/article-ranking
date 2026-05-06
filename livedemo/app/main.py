@@ -22,7 +22,7 @@ def create_app(db_engine: Engine = default_engine) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.db_engine = db_engine
-        app.state.executor = ThreadPoolExecutor(max_workers=2)
+        app.state.executor = ThreadPoolExecutor(max_workers=1)
         app.state.embedders = {}
         init_db(db_engine)
         app.state.mistral_client = (
