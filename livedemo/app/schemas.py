@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import datetime
 from typing import Any, Literal, Self
 from uuid import UUID
@@ -171,6 +172,10 @@ class CompareProfilesExecutionRequest(ApiSchema):
     config: RankerConfigPayload | None = None
 
 
+class ReplayExecutionRequest(ApiSchema):
+    corpus_id: UUID | None = None
+
+
 class ExecutionAccepted(ApiSchema):
     execution_id: UUID
     status: ExecutionStatusValue
@@ -214,6 +219,16 @@ def normalize_ranker_config(
         }
     config = RankerConfig(**values)
     return config, ranker_config_json(config, m=m)
+
+
+def ranker_config_from_json(config_json: dict[str, Any]) -> RankerConfig:
+    payload_keys = set(RankerConfigPayload.model_fields)
+    values = {
+        key: deepcopy(value)
+        for key, value in config_json.items()
+        if key in payload_keys and value is not None
+    }
+    return RankerConfig(**values)
 
 
 def ranker_config_json(config: RankerConfig, *, m: int | None = None) -> dict[str, Any]:
