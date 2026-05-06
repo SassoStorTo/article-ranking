@@ -1155,14 +1155,18 @@ function RankParameterForm({
   const [config, setConfig] = useState<RankerConfigPayload>(initialConfig);
   const profileNames = Object.keys(config.profiles ?? {});
   const [profile, setProfile] = useState(draft.profile ?? profileNames[0]);
+  const [topM, setTopM] = useState(draft.m ?? initialConfig.top_m ?? 3);
   const weightWarnings = profileWeightWarnings([profile], config);
-  const canSubmit = Boolean(profile) && weightWarnings.length === 0;
+  const canSubmit = Boolean(profile) && weightWarnings.length === 0 && topM >= 1;
   const mutation = useMutation({
     mutationFn: () =>
       runRankExecution({
         corpus_id: corpusId,
         profile,
-        config,
+        config: {
+          ...config,
+          top_m: topM,
+        },
       }),
     onSuccess: ({ execution_id }) => onSubmitted(execution_id),
   });
@@ -1179,6 +1183,11 @@ function RankParameterForm({
     value: RankerConfigPayload[K],
   ) {
     setConfig((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateRankTopM(value: number) {
+    setTopM(value);
+    setConfig((current) => ({ ...current, top_m: value }));
   }
 
   return (
@@ -1275,6 +1284,16 @@ function RankParameterForm({
               step="0.05"
               type="number"
               value={config.selection_lambda ?? 0.8}
+            />
+          </label>
+          <label>
+            Top M
+            <input
+              min="1"
+              onChange={(event) => updateRankTopM(Number(event.target.value))}
+              step="1"
+              type="number"
+              value={topM}
             />
           </label>
         </div>
