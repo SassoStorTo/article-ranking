@@ -55,6 +55,19 @@ class ArticleSummary(ApiSchema):
     uploaded_at: datetime
 
 
+class ArticleDetail(ApiSchema):
+    id: UUID
+    corpus_id: UUID
+    filename: str
+    title: str
+    body: str
+    uploaded_at: datetime
+
+
+class ArticleUploadResponse(ApiSchema):
+    article_ids: list[UUID]
+
+
 class CorpusDetail(TimestampFields):
     id: UUID
     name: str
