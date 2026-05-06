@@ -9,6 +9,7 @@ COPY news_ranker ./news_ranker
 COPY livedemo/pyproject.toml livedemo/uv.lock livedemo/README.md ./livedemo/
 
 WORKDIR /workspace/livedemo
+ENV UV_PROJECT_ENVIRONMENT="/opt/livedemo-venv"
 RUN uv sync --no-dev \
     --index https://download.pytorch.org/whl/cpu \
     --index-strategy unsafe-best-match \
@@ -17,7 +18,7 @@ RUN uv sync --no-dev \
 WORKDIR /workspace
 COPY livedemo ./livedemo
 
-ENV PATH="/workspace/livedemo/.venv/bin:${PATH}"
+ENV PATH="/opt/livedemo-venv/bin:${PATH}"
 ENV PYTHONPATH="/workspace"
 
 CMD ["uvicorn", "livedemo.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
