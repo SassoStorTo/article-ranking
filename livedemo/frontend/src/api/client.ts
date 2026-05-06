@@ -89,6 +89,72 @@ export type ExecutionStatus = "pending" | "running" | "succeeded" | "failed";
 
 export type ExecutionKind = "rank" | "select" | "compare_profiles" | "evaluate";
 
+export type LinkageValue = "average" | "single";
+
+export type CoverageWeightingValue = "consensus" | "rarity";
+
+export type SelectionModeValue = "top_score" | "mmr";
+
+export type ProfileWeights = {
+  centrality: number;
+  coverage: number;
+  density: number;
+  entity_coverage: number;
+};
+
+export type RankerConfigPayload = {
+  similarity_threshold?: number | null;
+  linkage?: LinkageValue | null;
+  coverage_weighting?: CoverageWeightingValue | null;
+  profiles?: Record<string, ProfileWeights> | null;
+  top_m?: number | null;
+  selection_mode?: SelectionModeValue | null;
+  selection_lambda?: number | null;
+  embedding_model_name?: string | null;
+  llm_model_name?: string | null;
+  prompt_version?: string | null;
+  schema_version?: string | null;
+  cache_dir?: string | null;
+};
+
+export const defaultRankerConfig: Required<
+  Omit<RankerConfigPayload, "cache_dir">
+> & {
+  cache_dir: string | null;
+} = {
+  similarity_threshold: 0.85,
+  linkage: "average",
+  coverage_weighting: "consensus",
+  profiles: {
+    representative: {
+      centrality: 0.4,
+      coverage: 0.5,
+      density: 0.1,
+      entity_coverage: 0,
+    },
+    comprehensive: {
+      centrality: 0.2,
+      coverage: 0.7,
+      density: 0.1,
+      entity_coverage: 0,
+    },
+    concise: {
+      centrality: 0.2,
+      coverage: 0.4,
+      density: 0.4,
+      entity_coverage: 0,
+    },
+  },
+  top_m: 3,
+  selection_mode: "top_score",
+  selection_lambda: 0.8,
+  embedding_model_name: "all-MiniLM-L6-v2",
+  llm_model_name: "mistral-small-latest",
+  prompt_version: "v1",
+  schema_version: "v1",
+  cache_dir: null,
+};
+
 export type RankingEntry = {
   article_id: string;
   rank: number;
@@ -231,39 +297,42 @@ export async function decomposeArticle(
   return parseJson<StructuredArticleRecord>(response);
 }
 
-export async function runRankExecution(
-  corpusId: string,
-): Promise<ExecutionAccepted> {
+export async function runRankExecution(payload: {
+  corpus_id: string;
+  profile: string;
+  config: RankerConfigPayload;
+}): Promise<ExecutionAccepted> {
   const response = await fetch(`${apiBaseUrl}/api/executions/rank`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ corpus_id: corpusId, profile: "representative" }),
+    body: JSON.stringify(payload),
   });
   return parseJson<ExecutionAccepted>(response);
 }
 
-export async function runSelectExecution(
-  corpusId: string,
-  m: number,
-): Promise<ExecutionAccepted> {
+export async function runSelectExecution(payload: {
+  corpus_id: string;
+  m: number;
+  profile: string;
+  config: RankerConfigPayload;
+}): Promise<ExecutionAccepted> {
   const response = await fetch(`${apiBaseUrl}/api/executions/select`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ corpus_id: corpusId, m, profile: "representative" }),
+    body: JSON.stringify(payload),
   });
   return parseJson<ExecutionAccepted>(response);
 }
 
-export async function runCompareExecution(
-  corpusId: string,
-): Promise<ExecutionAccepted> {
+export async function runCompareExecution(payload: {
+  corpus_id: string;
+  profiles: string[];
+  config: RankerConfigPayload;
+}): Promise<ExecutionAccepted> {
   const response = await fetch(`${apiBaseUrl}/api/executions/compare`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      corpus_id: corpusId,
-      profiles: ["representative", "comprehensive", "concise"],
-    }),
+    body: JSON.stringify(payload),
   });
   return parseJson<ExecutionAccepted>(response);
 }

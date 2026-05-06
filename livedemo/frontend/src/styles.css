@@ -18,6 +18,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -94,6 +95,7 @@ h3 {
 }
 
 input,
+select,
 textarea {
   background: #fffdf8;
   border: 1px solid #cfc7ba;
@@ -204,6 +206,104 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.parameter-form {
+  background: #fffdf8;
+  border: 1px solid #d7d0c4;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.parameter-form header,
+.parameter-form fieldset {
+  min-width: 0;
+}
+
+.parameter-form header {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.parameter-form fieldset {
+  border: 1px solid #e1dbd1;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 14px;
+}
+
+.parameter-form legend {
+  color: #5f5a52;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.parameter-form label {
+  color: #5f5a52;
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  min-width: 0;
+}
+
+.segmented-control,
+.checkbox-row,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.segmented-control button {
+  background: #fffdf8;
+  border-color: #d7d0c4;
+  color: #263832;
+}
+
+.segmented-control button.selected {
+  background: #263832;
+  border-color: #263832;
+  color: #fffdf8;
+}
+
+.checkbox-row label {
+  align-items: center;
+  background: #eef3ef;
+  border: 1px solid #cad8cf;
+  border-radius: 8px;
+  color: #263832;
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.weights-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.weight-group {
+  background: #f6f3ed;
+  border: 1px solid #e1dbd1;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.parameter-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .article-grid {

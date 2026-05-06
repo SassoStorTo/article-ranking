@@ -15,9 +15,12 @@ import {
   CorpusDetail,
   CorpusSummary,
   ExecutionDetail,
+  ExecutionKind,
   ExecutionResultJson,
   RankingEntry,
+  RankerConfigPayload,
   createCorpus,
+  defaultRankerConfig,
   decomposeArticle,
   deleteCorpus,
   getArticle,
@@ -31,6 +34,15 @@ import {
 } from "./api/client";
 
 const queryClient = new QueryClient();
+type RunMode = Exclude<ExecutionKind, "evaluate">;
+
+type ParameterDraft = {
+  mode: RunMode;
+  config?: RankerConfigPayload;
+  profile?: string;
+  profiles?: string[];
+  m?: number | null;
+};
 
 function App() {
   const [selectedCorpusId, setSelectedCorpusId] = useState<string | null>(null);
@@ -198,6 +210,7 @@ function CorpusPanel({
   onDeleted: () => void;
 }) {
   const queryClient = useQueryClient();
+  const [parameterDraft, setParameterDraft] = useState<ParameterDraft | null>(null);
   const corpus = useQuery({
     queryKey: ["corpus", corpusId],
     queryFn: () => getCorpus(corpusId),
@@ -217,21 +230,6 @@ function CorpusPanel({
       await queryClient.invalidateQueries({ queryKey: ["corpora"] });
       onDeleted();
     },
-  });
-  const rankMutation = useMutation({
-    mutationFn: () => runRankExecution(corpusId),
-    onSuccess: ({ execution_id }) => onSelectExecution(execution_id),
-  });
-  const selectMutation = useMutation({
-    mutationFn: () => {
-      const articleCount = detail?.articles.length ?? 1;
-      return runSelectExecution(corpusId, Math.min(3, Math.max(1, articleCount)));
-    },
-    onSuccess: ({ execution_id }) => onSelectExecution(execution_id),
-  });
-  const compareMutation = useMutation({
-    mutationFn: () => runCompareExecution(corpusId),
-    onSuccess: ({ execution_id }) => onSelectExecution(execution_id),
   });
 
   const detail = corpus.data;
@@ -282,23 +280,37 @@ function CorpusPanel({
         <>
           <ExecutionControls
             articleCount={detail.articles.length}
-            isRunning={
-              rankMutation.isPending ||
-              selectMutation.isPending ||
-              compareMutation.isPending
-            }
-            onCompare={() => compareMutation.mutate()}
-            onRank={() => rankMutation.mutate()}
-            onSelect={() => selectMutation.mutate()}
+            onCompare={() => {
+              setParameterDraft({
+                mode: "compare_profiles",
+                profiles: ["representative", "comprehensive", "concise"],
+              });
+            }}
+            onRank={() => {
+              setParameterDraft({
+                mode: "rank",
+                profile: "representative",
+              });
+            }}
+            onSelect={() => {
+              setParameterDraft({
+                mode: "select",
+                m: Math.min(3, Math.max(1, detail.articles.length)),
+                profile: "representative",
+              });
+            }}
           />
-          {rankMutation.error && (
-            <p className="error-line">{rankMutation.error.message}</p>
-          )}
-          {selectMutation.error && (
-            <p className="error-line">{selectMutation.error.message}</p>
-          )}
-          {compareMutation.error && (
-            <p className="error-line">{compareMutation.error.message}</p>
+          {parameterDraft && (
+            <ParameterForm
+              articleCount={detail.articles.length}
+              corpusId={corpusId}
+              draft={parameterDraft}
+              onCancel={() => setParameterDraft(null)}
+              onSubmitted={(executionId) => {
+                setParameterDraft(null);
+                onSelectExecution(executionId);
+              }}
+            />
           )}
           <div className="article-grid">
             <ArticleList
@@ -317,37 +329,359 @@ function CorpusPanel({
 
 function ExecutionControls({
   articleCount,
-  isRunning,
   onRank,
   onSelect,
   onCompare,
 }: {
   articleCount: number;
-  isRunning: boolean;
   onRank: () => void;
   onSelect: () => void;
   onCompare: () => void;
 }) {
   return (
     <div className="execution-controls">
-      <button disabled={isRunning || articleCount === 0} onClick={onRank} type="button">
+      <button disabled={articleCount === 0} onClick={onRank} type="button">
         Run Rank
       </button>
       <button
-        disabled={isRunning || articleCount === 0}
+        disabled={articleCount === 0}
         onClick={onSelect}
         type="button"
       >
         Run Select
       </button>
       <button
-        disabled={isRunning || articleCount === 0}
+        disabled={articleCount === 0}
         onClick={onCompare}
         type="button"
       >
         Compare Profiles
       </button>
     </div>
+  );
+}
+
+function ParameterForm({
+  articleCount,
+  corpusId,
+  draft,
+  onCancel,
+  onSubmitted,
+}: {
+  articleCount: number;
+  corpusId: string;
+  draft: ParameterDraft;
+  onCancel: () => void;
+  onSubmitted: (executionId: string) => void;
+}) {
+  const initialConfig = useMemo(() => normalizeConfigDraft(draft.config), [draft]);
+  const [mode, setMode] = useState<RunMode>(draft.mode);
+  const [config, setConfig] = useState<RankerConfigPayload>(initialConfig);
+  const profileNames = Object.keys(config.profiles ?? {});
+  const [profile, setProfile] = useState(draft.profile ?? profileNames[0]);
+  const [profiles, setProfiles] = useState<string[]>(
+    draft.profiles ?? profileNames.slice(0, 3),
+  );
+  const [topM, setTopM] = useState(
+    draft.m ?? config.top_m ?? Math.min(3, Math.max(1, articleCount)),
+  );
+  const mutation = useMutation({
+    mutationFn: () => {
+      const payloadConfig = {
+        ...config,
+        top_m: topM,
+      };
+      if (mode === "rank") {
+        return runRankExecution({
+          corpus_id: corpusId,
+          profile,
+          config: payloadConfig,
+        });
+      }
+      if (mode === "select") {
+        return runSelectExecution({
+          corpus_id: corpusId,
+          m: topM,
+          profile,
+          config: payloadConfig,
+        });
+      }
+      return runCompareExecution({
+        corpus_id: corpusId,
+        profiles,
+        config: payloadConfig,
+      });
+    },
+    onSuccess: ({ execution_id }) => onSubmitted(execution_id),
+  });
+  const activeProfiles = mode === "compare_profiles" ? profiles : [profile];
+  const weightWarnings = profileNames
+    .map((name) => {
+      const weights = config.profiles?.[name];
+      if (!weights) {
+        return null;
+      }
+      const total =
+        weights.centrality +
+        weights.coverage +
+        weights.density +
+        weights.entity_coverage;
+      return Math.abs(total - 1) > 0.000001
+        ? `${name} weights total ${total.toFixed(3)}`
+        : null;
+    })
+    .filter(Boolean);
+  const canSubmit =
+    articleCount > 0 &&
+    activeProfiles.length > 0 &&
+    weightWarnings.length === 0 &&
+    topM >= 1;
+
+  function updateConfig<K extends keyof RankerConfigPayload>(
+    key: K,
+    value: RankerConfigPayload[K],
+  ) {
+    setConfig((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateWeight(
+    profileName: string,
+    component: keyof NonNullable<RankerConfigPayload["profiles"]>[string],
+    value: number,
+  ) {
+    setConfig((current) => ({
+      ...current,
+      profiles: {
+        ...(current.profiles ?? {}),
+        [profileName]: {
+          ...(current.profiles?.[profileName] ?? {
+            centrality: 0,
+            coverage: 0,
+            density: 0,
+            entity_coverage: 0,
+          }),
+          [component]: value,
+        },
+      },
+    }));
+  }
+
+  function toggleCompareProfile(profileName: string) {
+    setProfiles((current) =>
+      current.includes(profileName)
+        ? current.filter((item) => item !== profileName)
+        : [...current, profileName],
+    );
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (canSubmit) {
+      mutation.mutate();
+    }
+  }
+
+  return (
+    <form className="parameter-form" onSubmit={handleSubmit}>
+      <header>
+        <div>
+          <p className="eyebrow">Parameters</p>
+          <h3>{formatGroupName(mode)}</h3>
+        </div>
+        <button onClick={onCancel} type="button">
+          Close
+        </button>
+      </header>
+
+      <div className="segmented-control" aria-label="Execution kind">
+        {(["rank", "select", "compare_profiles"] as RunMode[]).map((item) => (
+          <button
+            className={item === mode ? "selected" : ""}
+            key={item}
+            onClick={() => setMode(item)}
+            type="button"
+          >
+            {formatGroupName(item)}
+          </button>
+        ))}
+      </div>
+
+      {mode === "compare_profiles" ? (
+        <fieldset>
+          <legend>Profiles</legend>
+          <div className="checkbox-row">
+            {profileNames.map((name) => (
+              <label key={name}>
+                <input
+                  checked={profiles.includes(name)}
+                  onChange={() => toggleCompareProfile(name)}
+                  type="checkbox"
+                />
+                {name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : (
+        <label>
+          Profile
+          <select value={profile} onChange={(event) => setProfile(event.target.value)}>
+            {profileNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <fieldset>
+        <legend>Profile Weights</legend>
+        <div className="weights-grid">
+          {profileNames.map((name) => {
+            const weights = config.profiles?.[name];
+            if (!weights) {
+              return null;
+            }
+            return (
+              <div className="weight-group" key={name}>
+                <strong>{name}</strong>
+                {(
+                  [
+                    "centrality",
+                    "coverage",
+                    "density",
+                    "entity_coverage",
+                  ] as const
+                ).map((component) => (
+                  <label key={component}>
+                    {formatGroupName(component)}
+                    <input
+                      min="0"
+                      onChange={(event) =>
+                        updateWeight(name, component, Number(event.target.value))
+                      }
+                      step="0.05"
+                      type="number"
+                      value={weights[component]}
+                    />
+                  </label>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <div className="parameter-grid">
+        <label>
+          Similarity
+          <input
+            max="1"
+            min="-1"
+            onChange={(event) =>
+              updateConfig("similarity_threshold", Number(event.target.value))
+            }
+            step="0.01"
+            type="number"
+            value={config.similarity_threshold ?? 0.85}
+          />
+        </label>
+        <label>
+          Linkage
+          <select
+            onChange={(event) =>
+              updateConfig("linkage", event.target.value as "average" | "single")
+            }
+            value={config.linkage ?? "average"}
+          >
+            <option value="average">average</option>
+            <option value="single">single</option>
+          </select>
+        </label>
+        <label>
+          Coverage
+          <select
+            onChange={(event) =>
+              updateConfig(
+                "coverage_weighting",
+                event.target.value as "consensus" | "rarity",
+              )
+            }
+            value={config.coverage_weighting ?? "consensus"}
+          >
+            <option value="consensus">consensus</option>
+            <option value="rarity">rarity</option>
+          </select>
+        </label>
+        <label>
+          Selection mode
+          <select
+            onChange={(event) =>
+              updateConfig("selection_mode", event.target.value as "top_score" | "mmr")
+            }
+            value={config.selection_mode ?? "top_score"}
+          >
+            <option value="top_score">top_score</option>
+            <option value="mmr">mmr</option>
+          </select>
+        </label>
+        <label>
+          Selection lambda
+          <input
+            max="1"
+            min="0"
+            onChange={(event) =>
+              updateConfig("selection_lambda", Number(event.target.value))
+            }
+            step="0.05"
+            type="number"
+            value={config.selection_lambda ?? 0.8}
+          />
+        </label>
+        <label>
+          Top M
+          <input
+            min="1"
+            onChange={(event) => setTopM(Number(event.target.value))}
+            step="1"
+            type="number"
+            value={topM}
+          />
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>Metadata</legend>
+        <div className="parameter-grid">
+          {(
+            [
+              "llm_model_name",
+              "prompt_version",
+              "schema_version",
+              "embedding_model_name",
+            ] as const
+          ).map((field) => (
+            <label key={field}>
+              {formatGroupName(field)}
+              <input readOnly value={String(config[field] ?? "")} />
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {weightWarnings.map((warning) => (
+        <p className="error-line" key={warning}>
+          {warning}
+        </p>
+      ))}
+      {mutation.error && <p className="error-line">{mutation.error.message}</p>}
+      <div className="form-actions">
+        <button disabled={mutation.isPending || !canSubmit} type="submit">
+          {mutation.isPending ? "Starting" : "Start Execution"}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -501,6 +835,18 @@ function selectedArticleIds(payload: ExecutionResultJson): Set<string> {
     return new Set();
   }
   return new Set(payload.selected.map((entry) => entry.article_id));
+}
+
+function normalizeConfigDraft(config?: RankerConfigPayload): RankerConfigPayload {
+  const normalized = {
+    ...defaultRankerConfig,
+    ...(config ?? {}),
+    profiles: {
+      ...defaultRankerConfig.profiles,
+      ...(config?.profiles ?? {}),
+    },
+  };
+  return JSON.parse(JSON.stringify(normalized)) as RankerConfigPayload;
 }
 
 function formatScore(value: number | undefined) {
