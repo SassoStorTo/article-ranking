@@ -151,6 +151,13 @@ def run_full_suite(
     materials: ArticleMaterials,
     include_scores: bool,
 ) -> list[EvaluationArtifact]:
+    if materials:
+        anonymized_user_study_bundle(
+            _selection_result(db, execution_id=execution_id),
+            materials,
+            include_scores=include_scores,
+        )
+
     artifacts = [
         evaluate_top_m_overlap(
             db,

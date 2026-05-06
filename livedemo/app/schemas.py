@@ -250,6 +250,15 @@ class UserStudyBundleRequest(ApiSchema):
     include_scores: bool = False
 
 
+class FullEvaluationSuiteRequest(ApiSchema):
+    baseline_execution_id: UUID
+    m: int = Field(default=3, ge=1)
+    method: RankCorrelationMethodValue = "kendall"
+    rare_threshold: int = Field(default=1, ge=1)
+    materials: dict[str, ArticleMaterialPayload] = Field(default_factory=dict)
+    include_scores: bool = False
+
+
 def normalize_ranker_config(
     payload: RankerConfigPayload | None,
     *,
