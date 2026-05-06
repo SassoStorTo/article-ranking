@@ -214,13 +214,16 @@ export type EvaluationArtifact = {
 export type ExecutionSummary = {
   id: string;
   corpus_id: string;
+  corpus_name: string;
   kind: ExecutionKind;
   status: ExecutionStatus;
   profiles: string[];
+  profile_summary: string;
   m: number | null;
   started_at: string | null;
   finished_at: string | null;
   error: string | null;
+  has_evaluation_artifacts: boolean;
   created_at: string;
 };
 
@@ -383,6 +386,9 @@ export async function listExecutions(params: {
   corpus_id?: string;
   kind?: ExecutionKind;
   status?: ExecutionStatus;
+  created_from?: string;
+  created_to?: string;
+  profile?: string;
   limit?: number;
   offset?: number;
 } = {}): Promise<ExecutionSummary[]> {
@@ -395,6 +401,15 @@ export async function listExecutions(params: {
   const suffix = search.size ? `?${search.toString()}` : "";
   const response = await fetch(`${apiBaseUrl}/api/executions${suffix}`);
   return parseJson<ExecutionSummary[]>(response);
+}
+
+export async function deleteExecution(executionId: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl}/api/executions/${executionId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    await parseJson<never>(response);
+  }
 }
 
 export async function listEvaluationArtifacts(

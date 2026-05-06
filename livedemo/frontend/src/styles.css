@@ -79,6 +79,22 @@ h3 {
   min-width: 0;
 }
 
+.workspace.single-pane {
+  grid-template-columns: 1fr;
+}
+
+.nav-button {
+  background: #fffdf8;
+  border-color: #d7d0c4;
+  color: #263832;
+  text-align: left;
+}
+
+.nav-button.selected {
+  border-color: #b65c38;
+  box-shadow: inset 4px 0 0 #b65c38;
+}
+
 .new-corpus,
 .corpus-list,
 .detail-panel {
@@ -206,6 +222,45 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.execution-filters {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.execution-filters label {
+  color: #5f5a52;
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.executions-table {
+  min-width: 980px;
+}
+
+.row-actions,
+.pagination-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.row-actions button {
+  padding: 7px 9px;
+}
+
+.pagination-controls {
+  justify-content: flex-end;
+}
+
+.pagination-controls span {
+  color: #686158;
+  font-weight: 800;
 }
 
 .parameter-form {
