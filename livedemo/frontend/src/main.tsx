@@ -48,6 +48,7 @@ import {
 
 const queryClient = new QueryClient();
 type RunMode = Exclude<ExecutionKind, "evaluate">;
+type AppPage = "home" | "corpora" | "executions";
 
 type ParameterDraft = {
   mode: RunMode;
@@ -58,12 +59,12 @@ type ParameterDraft = {
 };
 
 function App() {
+  const [page, setPage] = useState<AppPage>("home");
   const [selectedCorpusId, setSelectedCorpusId] = useState<string | null>(null);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(
     null,
   );
-  const [showExecutionsIndex, setShowExecutionsIndex] = useState(false);
   const corpora = useQuery({ queryKey: ["corpora"], queryFn: listCorpora });
 
   const selectedCorpus = useMemo(() => {
@@ -72,79 +73,194 @@ function App() {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <header className="brand-block">
-          <p className="eyebrow">Live Demo</p>
-          <h1>News Ranker</h1>
-        </header>
-        <NewCorpusForm
-          onCreated={(id) => {
+      <TopNavigation currentPage={page} onNavigate={setPage} />
+
+      {page === "home" ? (
+        <HomePage
+          corpora={corpora.data ?? []}
+          isLoading={corpora.isLoading}
+          onCreateCorpus={() => setPage("corpora")}
+          onOpenCorpus={(id) => {
             setSelectedCorpusId(id);
             setSelectedArticleId(null);
             setSelectedExecutionId(null);
-            setShowExecutionsIndex(false);
+            setPage("corpora");
           }}
+          onOpenExecutions={() => setPage("executions")}
         />
-        <button
-          className={showExecutionsIndex ? "nav-button selected" : "nav-button"}
-          onClick={() => {
-            setShowExecutionsIndex(true);
-            setSelectedArticleId(null);
-            setSelectedExecutionId(null);
-          }}
-          type="button"
-        >
-          Old Executions
-        </button>
-      </aside>
+      ) : null}
 
-      {showExecutionsIndex ? (
+      {page === "executions" ? (
         <section className="workspace single-pane" aria-label="Executions workspace">
           <ExecutionsIndex
             corpora={corpora.data ?? []}
-            onClose={() => setShowExecutionsIndex(false)}
+            onClose={() => setPage("corpora")}
             onOpenExecution={(execution) => {
               setSelectedCorpusId(execution.corpus_id);
               setSelectedArticleId(null);
               setSelectedExecutionId(execution.id);
-              setShowExecutionsIndex(false);
+              setPage("corpora");
             }}
           />
         </section>
-      ) : (
+      ) : null}
+
+      {page === "corpora" ? (
         <section className="workspace" aria-label="Corpus workspace">
-          <CorpusList
-            corpora={corpora.data ?? []}
-            isLoading={corpora.isLoading}
-            error={corpora.error}
-            selectedCorpusId={selectedCorpusId}
-            onSelect={(id) => {
-              setSelectedCorpusId(id);
-              setSelectedArticleId(null);
-              setSelectedExecutionId(null);
-              setShowExecutionsIndex(false);
-            }}
-          />
-          {selectedCorpusId ? (
-            <CorpusPanel
-              corpusId={selectedCorpusId}
-              fallbackCorpus={selectedCorpus}
-              selectedArticleId={selectedArticleId}
-              onSelectArticle={setSelectedArticleId}
-              selectedExecutionId={selectedExecutionId}
-              onSelectExecution={setSelectedExecutionId}
-              onDeleted={() => {
-                setSelectedCorpusId(null);
+          <aside className="sidebar">
+            <CorpusList
+              corpora={corpora.data ?? []}
+              isLoading={corpora.isLoading}
+              error={corpora.error}
+              selectedCorpusId={selectedCorpusId}
+              onSelect={(id) => {
+                setSelectedCorpusId(id);
                 setSelectedArticleId(null);
                 setSelectedExecutionId(null);
               }}
             />
-          ) : (
-            <EmptyWorkspace />
-          )}
+          </aside>
+          <div className="corpus-workspace">
+            <NewCorpusForm
+              onCreated={(id) => {
+                setSelectedCorpusId(id);
+                setSelectedArticleId(null);
+                setSelectedExecutionId(null);
+              }}
+            />
+            {selectedCorpusId ? (
+              <CorpusPanel
+                corpusId={selectedCorpusId}
+                fallbackCorpus={selectedCorpus}
+                selectedArticleId={selectedArticleId}
+                onSelectArticle={setSelectedArticleId}
+                selectedExecutionId={selectedExecutionId}
+                onSelectExecution={setSelectedExecutionId}
+                onDeleted={() => {
+                  setSelectedCorpusId(null);
+                  setSelectedArticleId(null);
+                  setSelectedExecutionId(null);
+                }}
+              />
+            ) : (
+              <EmptyWorkspace />
+            )}
+          </div>
         </section>
-      )}
+      ) : null}
     </main>
+  );
+}
+
+function TopNavigation({
+  currentPage,
+  onNavigate,
+}: {
+  currentPage: AppPage;
+  onNavigate: (page: AppPage) => void;
+}) {
+  return (
+    <header className="topper">
+      <div className="brand-block">
+        <p className="eyebrow">Live Demo</p>
+        <h1>News Ranker</h1>
+      </div>
+      <nav className="topper-nav" aria-label="Main sections">
+        <button
+          className={currentPage === "home" ? "nav-button selected" : "nav-button"}
+          onClick={() => onNavigate("home")}
+          type="button"
+        >
+          Home
+        </button>
+        <button
+          className={
+            currentPage === "corpora" ? "nav-button selected" : "nav-button"
+          }
+          onClick={() => onNavigate("corpora")}
+          type="button"
+        >
+          Corpora
+        </button>
+        <button
+          className={
+            currentPage === "executions" ? "nav-button selected" : "nav-button"
+          }
+          onClick={() => onNavigate("executions")}
+          type="button"
+        >
+          Executions
+        </button>
+      </nav>
+    </header>
+  );
+}
+
+function HomePage({
+  corpora,
+  isLoading,
+  onCreateCorpus,
+  onOpenCorpus,
+  onOpenExecutions,
+}: {
+  corpora: CorpusSummary[];
+  isLoading: boolean;
+  onCreateCorpus: () => void;
+  onOpenCorpus: (id: string) => void;
+  onOpenExecutions: () => void;
+}) {
+  const articleCount = corpora.reduce(
+    (total, corpus) => total + corpus.article_count,
+    0,
+  );
+  const newestCorpora = corpora.slice(0, 4);
+
+  return (
+    <section className="home-page" aria-labelledby="home-title">
+      <div className="home-hero">
+        <p className="eyebrow">Workspace</p>
+        <h2 id="home-title">Rank event coverage from corpus to evidence.</h2>
+        <p>
+          Create corpora, upload article text, inspect decomposition output, run
+          rankings, and compare executions from one local demo.
+        </p>
+        <div className="home-actions">
+          <button onClick={onCreateCorpus} type="button">
+            Add Corpus
+          </button>
+          <button className="secondary" onClick={onOpenExecutions} type="button">
+            View Executions
+          </button>
+        </div>
+      </div>
+      <div className="home-metrics">
+        <Metric label="Corpora" value={corpora.length} />
+        <Metric label="Articles" value={articleCount} />
+        <Metric label="Newest" value={corpora[0]?.name ?? "none"} />
+      </div>
+      <section className="home-recent" aria-labelledby="recent-corpora-title">
+        <div className="section-heading">
+          <h3 id="recent-corpora-title">Recent Corpora</h3>
+          <span>{corpora.length}</span>
+        </div>
+        {isLoading && <p className="muted">Loading corpora</p>}
+        {!isLoading && newestCorpora.length === 0 ? (
+          <p className="muted">Create a corpus to begin ranking articles.</p>
+        ) : null}
+        <div className="corpus-buttons">
+          {newestCorpora.map((corpus) => (
+            <button
+              key={corpus.id}
+              onClick={() => onOpenCorpus(corpus.id)}
+              type="button"
+            >
+              <strong>{corpus.name}</strong>
+              <span>{corpus.article_count} articles</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </section>
   );
 }
 
