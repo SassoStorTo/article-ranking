@@ -53,6 +53,22 @@ def test_manual_decompose_upserts_matching_metadata_row(
     )
 
 
+def test_decompose_normalizes_string_context_from_provider(
+    client: TestClient,
+    fake_decomposition_client: FakeDecompositionClient,
+) -> None:
+    corpus_id = create_corpus(client)
+    fake_decomposition_client.context = "Provider returned a single paragraph."
+    article_id = upload_txt(client, corpus_id)
+
+    detail = client.get(f"/api/articles/{article_id}").json()
+
+    assert detail["decomposition_status"] == "decomposed"
+    assert detail["structured_article"]["payload_json"]["context"] == [
+        "Provider returned a single paragraph."
+    ]
+
+
 def test_manual_decompose_reports_failure_without_replacing_payload(
     client: TestClient,
     fake_decomposition_client: FakeDecompositionClient,

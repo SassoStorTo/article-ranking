@@ -1,4 +1,6 @@
+import json
 import logging
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -14,6 +16,19 @@ from news_ranker.decompose import (
 from news_ranker.schemas import StructuredArticle as NewsRankerStructuredArticle
 
 logger = logging.getLogger(__name__)
+
+
+class NormalizingDecompositionClient:
+    def __init__(self, client: DecompositionClient) -> None:
+        self._client = client
+
+    def complete(self, *, model: str, system_prompt: str, user_prompt: str) -> str:
+        output = self._client.complete(
+            model=model,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+        )
+        return _normalize_decomposition_output(output)
 
 
 def build_decomposition_config(config: RankerConfig) -> DecompositionConfig:
@@ -38,7 +53,7 @@ def decompose_article(
             "title": article.title,
             "body": article.body,
         },
-        client,
+        NormalizingDecompositionClient(client),
         config=decomposition_config,
     )
     return upsert_structured_article(
@@ -116,3 +131,34 @@ def latest_structured_article(
         .order_by(StructuredArticle.created_at.desc(), StructuredArticle.id.desc())
         .limit(1)
     )
+
+
+def _normalize_decomposition_output(output: str) -> str:
+    try:
+        payload = json.loads(output)
+    except json.JSONDecodeError:
+        return output
+
+    if not isinstance(payload, dict):
+        return output
+
+    normalized = dict(payload)
+    context = normalized.get("context")
+    if isinstance(context, str):
+        normalized["context"] = [context]
+    elif context is None:
+        normalized["context"] = []
+    elif isinstance(context, list):
+        normalized["context"] = [item for item in context if isinstance(item, str)]
+
+    return json.dumps(_jsonable(normalized), ensure_ascii=False)
+
+
+def _jsonable(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_jsonable(item) for item in value]
+    if isinstance(value, str | int | float | bool) or value is None:
+        return value
+    return str(value)

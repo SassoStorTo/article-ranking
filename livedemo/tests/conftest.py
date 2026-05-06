@@ -17,6 +17,7 @@ class FakeDecompositionClient:
     def __init__(self) -> None:
         self.fail = False
         self.headline = "Neutral headline"
+        self.context: list[str] | str | None = ["Background context"]
         self.calls: list[dict[str, str]] = []
 
     def complete(self, *, model: str, system_prompt: str, user_prompt: str) -> str:
@@ -55,7 +56,7 @@ class FakeDecompositionClient:
                     "attributed_to": "Alice",
                 }
             ],
-            "context": ["Background context"],
+            "context": self.context,
         })
 
 
