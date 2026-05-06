@@ -599,38 +599,38 @@ const style = `
 
 const pipelineSteps = [
   {
-    c: "c1", icon: "◈", name: "DECOMPOSIZIONE",
-    desc: "Ogni articolo viene passato a un LLM con un prompt rigido. L'output è un documento strutturato: lista di eventi atomici e claim, scritti in modo neutro, senza stile. Questo isola il contenuto dalla prosa.",
+    c: "c1", icon: "◈", name: "DECOMPOSITION",
+    desc: "Each article is sent to an LLM with a strict prompt. The output is a structured document: a list of atomic events and claims, written neutrally and stripped of style. This isolates content from prose.",
     badge: "StructuredArticle", badgeColor: theme.accent1,
     tags: ["LLM → JSON", "cached", "retry on fail"],
   },
   {
-    c: "c2", icon: "⟨⟩", name: "EMBEDDING DEI FATTI",
-    desc: "Ogni evento/claim estratto viene trasformato in un vettore numerico. Frasi semanticamente simili finiscono vicine nello spazio vettoriale — indipendentemente da come sono scritte.",
-    badge: "ℝᵈ per ogni fatto",
+    c: "c2", icon: "⟨⟩", name: "FACT EMBEDDINGS",
+    desc: "Each extracted event or claim becomes a numeric vector. Semantically similar sentences land near each other in vector space, regardless of how they are written.",
+    badge: "ℝᵈ per fact",
     tags: ["sentence-transformers", "batch API", "disk cache"],
   },
   {
     c: "c3", icon: "⬡", name: "CLUSTERING",
-    desc: "Tutti i fatti di tutti gli articoli vengono raggruppati per similarità coseno. Ogni cluster = un fatto canonico unico. Il risultato è l'universo dei fatti F e la matrice C ∈ {0,1}^(k×n).",
-    badge: "Fatto Universo F",
+    desc: "All facts from all articles are grouped by cosine similarity. Each cluster is one unique canonical fact. The result is the fact universe F and the matrix C ∈ {0,1}^(k×n).",
+    badge: "Fact Universe F",
     tags: ["agglomerative", "avg-linkage", "τ = 0.85"],
   },
   {
-    c: "c4", icon: "⊞", name: "VETTORI ARTICOLO",
-    desc: "Il vettore di ogni articolo è la media dei vettori dei cluster univoci che copre — non delle sue entries raw. Questo elimina il rumore da ripetizioni: ogni fatto conta una volta sola.",
+    c: "c4", icon: "⊞", name: "ARTICLE VECTORS",
+    desc: "Each article vector is the mean of the unique cluster vectors it covers, not its raw entries. This removes repetition noise: each fact counts only once.",
     badge: "êᵢ ∈ ℝᵈ (L2-norm)",
     tags: ["mean of unique clusters", "L2-normalize"],
   },
   {
     c: "c5", icon: "≋", name: "SCORING",
-    desc: "Quattro componenti raw: centralità (distanza dal centroide), coverage (recall pesato), density (fatti unici / entries totali), entity coverage (opzionale). Poi normalizzazione min-max a [0, 1].",
+    desc: "Four raw components: centrality (distance from centroid), coverage (weighted recall), density (unique facts / total entries), and optional entity coverage. Then min-max normalization to [0, 1].",
     badge: "cᵢ, covᵢ, densᵢ ∈ [0,1]",
     tags: ["4 components", "min-max norm", "relative to corpus"],
   },
   {
     c: "c6", icon: "↑", name: "RANK / SELECT",
-    desc: "Score finale come somma pesata. Ranking per score decrescente. Selezione top-M con semplice cutoff, oppure con MMR per bilanciare qualità e diversità del set selezionato.",
+    desc: "The final score is a weighted sum. Articles are ranked by descending score. Top-M selection can use a simple cutoff or MMR to balance quality and diversity in the selected set.",
     badge: "score(i) ∈ [0,1]",
     tags: ["weighted sum", "top_score / mmr"],
   },
@@ -639,33 +639,33 @@ const pipelineSteps = [
 const components = [
   {
     cls: "cent",
-    name: "Centralità",
-    question: "Questo articolo assomiglia agli altri?",
-    body: "Calcola il centroide di tutti i vettori articolo. Un articolo è centrale se il suo vettore di contenuto è vicino alla media geometrica del corpus — cioè racconta le stesse cose che raccontano tutti.",
+    name: "Centrality",
+    question: "Does this article resemble the others?",
+    body: "Computes the centroid of all article vectors. An article is central when its content vector is close to the corpus's geometric average, meaning it tells the same things everyone else tells.",
     formula: "c̃ᵢ = −‖êᵢ − μ‖",
     weight: 0.40,
     color: theme.accent1,
-    why: "Proxy di rappresentatività semantica. Funziona anche quando l'estrazione dei fatti è imperfetta.",
+    why: "A proxy for semantic representativeness. It still works when fact extraction is imperfect.",
   },
   {
     cls: "cov",
     name: "Coverage",
-    question: "Quanta della storia racconta?",
-    body: "Recall pesato contro l'universo dei fatti. Ogni fatto ha un peso = frazione di articoli che lo menzionano. Coverage = somma dei pesi dei fatti coperti / somma totale pesi.",
+    question: "How much of the story does it cover?",
+    body: "Weighted recall against the fact universe. Each fact has a weight equal to the fraction of articles that mention it. Coverage = sum of covered fact weights / total fact weights.",
     formula: "coṽᵢ = Σ wⱼ·Cᵢⱼ / Σ wⱼ",
     weight: 0.50,
     color: theme.accent2,
-    why: "Il segnale più diretto: quanto della notizia mi racconta questo articolo?",
+    why: "The most direct signal: how much of the news event does this article tell me?",
   },
   {
     cls: "dens",
     name: "Density",
-    question: "È denso o ripetitivo?",
-    body: "Rapporto tra fatti unici coperti e total entries estratte. Un articolo con 30 entries ma solo 8 cluster unici ha density ≈ 0.27. Penalizza il padding senza penalizzare la completezza.",
+    question: "Is it dense or repetitive?",
+    body: "The ratio between unique covered facts and total extracted entries. An article with 30 entries but only 8 unique clusters has density ≈ 0.27. It penalizes padding without penalizing completeness.",
     formula: "dens̃ᵢ = Uᵢ / (Eᵢ + Lᵢ)",
     weight: 0.10,
     color: theme.accent3,
-    why: "Termine correttivo: evita che articoli ridondanti salgano in classifica solo per lunghezza.",
+    why: "A corrective term: it prevents redundant articles from ranking high just because they are long.",
   },
 ];
 
@@ -674,37 +674,37 @@ const profiles = [
     name: "Representative",
     color: theme.accent1,
     alpha: 0.40, beta: 0.50, gamma: 0.10,
-    desc: "Bilancia consenso e completezza",
+    desc: "Balances consensus and completeness",
   },
   {
     name: "Comprehensive",
     color: theme.accent2,
     alpha: 0.20, beta: 0.70, gamma: 0.10,
-    desc: "Massimizza la copertura dei fatti",
+    desc: "Maximizes fact coverage",
   },
   {
     name: "Concise",
     color: theme.accent3,
     alpha: 0.20, beta: 0.40, gamma: 0.40,
-    desc: "Preferisce articoli densi e compatti",
+    desc: "Prefers dense, compact articles",
   },
 ];
 
 const mmrSteps = [
   {
-    n: "Passo 0",
-    title: "Inizio",
-    body: "Il cestino S è vuoto. Nessuna penalità di diversità — si prende il miglior articolo per score.",
+    n: "Step 0",
+    title: "Start",
+    body: "The selected set S is empty. There is no diversity penalty, so the best article by score is selected first.",
   },
   {
-    n: "Passo t",
-    title: "Scelta successiva",
-    body: "Per ogni candidato: score ponderato λ meno la similarità massima con gli articoli già scelti.",
+    n: "Step t",
+    title: "Next choice",
+    body: "For each candidate: weighted score λ minus its maximum similarity to articles already selected.",
   },
   {
-    n: "Iterazione",
-    title: "Si ripete",
-    body: "Si aggiunge il vincitore al cestino. Si ricalcola la penalità rispetto al nuovo set. Avanti fino ad M articoli.",
+    n: "Iteration",
+    title: "Repeat",
+    body: "Add the winner to the selected set. Recompute the penalty against the new set. Continue until M articles are selected.",
   },
 ];
 
@@ -728,15 +728,15 @@ function Infographic() {
         {/* HEADER */}
         <div className="header">
           <div className="header-eyebrow">News Ranking System · Design Document</div>
-          <h1 className="header-title">Come funziona il <span>ranking</span><br/>degli articoli</h1>
+          <h1 className="header-title">How article <span>ranking</span><br/>works</h1>
           <p className="header-sub">
-            Dal testo grezzo al punteggio finale: pipeline completa di selezione degli articoli migliori tramite decomposizione strutturata, clustering semantico e scoring multi-criterio.
+            From raw text to final score: a complete pipeline for selecting the best articles with structured decomposition, semantic clustering, and multi-criteria scoring.
           </p>
           <div className="header-line" />
         </div>
 
         {/* PIPELINE */}
-        <div className="section-title">01 · Pipeline di elaborazione</div>
+        <div className="section-title">01 · Processing pipeline</div>
         <div className="pipeline">
           {pipelineSteps.map((step, i) => (
             <div className="pipe-step" key={i}>
@@ -764,7 +764,7 @@ function Infographic() {
         </div>
 
         {/* SCORING COMPONENTS */}
-        <div className="section-title">02 · Le tre componenti di scoring</div>
+        <div className="section-title">02 · The three scoring components</div>
         <div className="components-grid">
           {components.map((c, i) => (
             <div className={`comp-card ${c.cls}`} key={i}>
@@ -778,7 +778,7 @@ function Infographic() {
               </div>
               <div className="comp-weight">
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: theme.muted, width: 50 }}>
-                  peso default
+                  default weight
                 </div>
                 <div className="comp-weight-bar">
                   <div className="comp-weight-fill"
@@ -794,14 +794,14 @@ function Infographic() {
         </div>
 
         {/* NORMALIZATION */}
-        <div className="section-title">03 · Normalizzazione min-max</div>
+        <div className="section-title">03 · Min-max normalization</div>
         <div className="norm-block">
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12.5, color: theme.muted, lineHeight: 1.6, fontWeight: 300 }}>
-            Le tre componenti vivono su <strong style={{ color: theme.text }}>scale completamente diverse</strong>: centralità è una distanza negativa (−0.3 → −1.2), coverage e density sono frazioni. Senza normalizzazione, la somma pesata sarebbe dominata dalla componente con varianza assoluta più alta — indipendentemente dai pesi scelti.
+            The three components live on <strong style={{ color: theme.text }}>very different scales</strong>: centrality is a negative distance (−0.3 → −1.2), while coverage and density are fractions. Without normalization, the weighted sum would be dominated by the component with the highest absolute variance, regardless of the chosen weights.
           </div>
           <div className="norm-visual">
             <div className="norm-before">
-              <div className="norm-label">prima — scale diverse</div>
+              <div className="norm-label">before — different scales</div>
               {beforeBars.map((b, i) => (
                 <div className="norm-bar-row" key={i}>
                   <div className="norm-bar-name">{b.name}</div>
@@ -814,7 +814,7 @@ function Infographic() {
             </div>
             <div className="norm-arrow">→</div>
             <div className="norm-after">
-              <div className="norm-label">dopo — [0, 1]</div>
+              <div className="norm-label">after — [0, 1]</div>
               {afterBars.map((b, i) => (
                 <div className="norm-bar-row" key={i}>
                   <div className="norm-bar-name">{b.name}</div>
@@ -827,15 +827,15 @@ function Infographic() {
             </div>
           </div>
           <div className="norm-why">
-            <strong>Regola per i pareggi:</strong> se tutti gli articoli hanno lo stesso valore su una componente (range ≈ 0), quella componente è non-discriminante → tutti ricevono <strong>1.0</strong>, non 0. Mappare a 0 è riservato ai componenti non definiti (es. nessuna entità estratta).
+            <strong>Tie rule:</strong> if every article has the same value for a component (range ≈ 0), that component is non-discriminating → everyone receives <strong>1.0</strong>, not 0. Mapping to 0 is reserved for undefined components (for example, no extracted entities).
           </div>
         </div>
 
         {/* SCORE FORMULA */}
-        <div className="section-title">04 · Score finale composito</div>
+        <div className="section-title">04 · Composite final score</div>
         <div className="score-block">
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: theme.muted }}>
-            Una volta normalizzate, le componenti vengono combinate in una <strong style={{ color: theme.text }}>somma pesata</strong>. I pesi esprimono una definizione esplicita di "migliore" — cambiarli cambia il criterio, non la logica.
+            Once normalized, components are combined into a <strong style={{ color: theme.text }}>weighted sum</strong>. The weights express an explicit definition of "best"; changing them changes the criterion, not the logic.
           </div>
           <div className="score-equation">
             <span className="eq-label">score(i)</span>
@@ -857,42 +857,42 @@ function Infographic() {
               <span className="eq-dot">·</span>
               <span className="eq-gamma">dens</span>
             </div>
-            <span className="eq-plus">&nbsp;&nbsp;con&nbsp;</span>
+            <span className="eq-plus">&nbsp;&nbsp;with&nbsp;</span>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: theme.dim }}>α + β + γ = 1</span>
           </div>
           <div className="score-legend">
             <div className="legend-item">
               <div className="legend-dot" style={{ background: theme.accent1 }} />
               <div>
-                <div className="legend-key">α = 0.40 · centralità</div>
-                <div className="legend-val">rappresentatività semantica</div>
+                <div className="legend-key">α = 0.40 · centrality</div>
+                <div className="legend-val">semantic representativeness</div>
               </div>
             </div>
             <div className="legend-item">
               <div className="legend-dot" style={{ background: theme.accent2 }} />
               <div>
                 <div className="legend-key">β = 0.50 · coverage</div>
-                <div className="legend-val">segnale principale — recall pesato</div>
+                <div className="legend-val">main signal — weighted recall</div>
               </div>
             </div>
             <div className="legend-item">
               <div className="legend-dot" style={{ background: theme.accent3 }} />
               <div>
                 <div className="legend-key">γ = 0.10 · density</div>
-                <div className="legend-val">termine correttivo anti-padding</div>
+                <div className="legend-val">anti-padding corrective term</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* PROFILES */}
-        <div className="section-title">05 · Profili di scoring</div>
+        <div className="section-title">05 · Scoring profiles</div>
         <div className="profiles-grid">
           {profiles.map((p, i) => (
             <div className="profile-card" key={i}
               style={{ borderColor: p.color + "40" }}>
               <div className="profile-name" style={{ color: p.color }}>{p.name}</div>
-              {[["α · centralità", p.alpha], ["β · coverage", p.beta], ["γ · density", p.gamma]].map(([label, val], j) => (
+              {[["α · centrality", p.alpha], ["β · coverage", p.beta], ["γ · density", p.gamma]].map(([label, val], j) => (
                 <div className="profile-bar-row" key={j}>
                   <div className="profile-bar-label">
                     <span>{label}</span>
@@ -912,10 +912,10 @@ function Infographic() {
         </div>
 
         {/* MMR */}
-        <div className="section-title">06 · Selezione top-M con MMR</div>
+        <div className="section-title">06 · Top-M selection with MMR</div>
         <div className="mmr-block">
           <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12.5, color: theme.muted, lineHeight: 1.6, fontWeight: 300, marginBottom: 16 }}>
-            I top-M articoli per score possono essere quasi identici (riscritture dello stesso dispaccio). <strong style={{ color: theme.text }}>MMR bilancia qualità e diversità</strong>: ad ogni passo sceglie l'articolo che massimizza lo score scontato della similarità con quelli già scelti.
+            The top-M articles by score can be nearly identical rewrites of the same wire report. <strong style={{ color: theme.text }}>MMR balances quality and diversity</strong>: at each step it chooses the article that maximizes score after discounting similarity to articles already selected.
           </div>
           <div className="mmr-steps">
             {mmrSteps.map((s, i) => (
@@ -934,40 +934,40 @@ function Infographic() {
             <span className="hl3">(1−λ) · max<sub style={{ fontSize: 9 }}>s∈S</sub> max(0, ⟨êᵢ, êₛ⟩)</span>
             &nbsp;]<br />
             <span style={{ color: theme.dim, fontSize: 10 }}>
-              ↑ qualità dell'articolo &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-              ↑ penalità di ridondanza con il più simile nel cestino
+              ↑ article quality &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              ↑ redundancy penalty with the most similar selected article
             </span>
           </div>
 
           <div style={{ marginTop: 18 }}>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: theme.muted, marginBottom: 6 }}>
-              λ = 0.8 (default) · dial qualità ↔ diversità
+              λ = 0.8 (default) · quality ↔ diversity dial
             </div>
             <div className="lambda-track">
               <div className="lambda-thumb" />
             </div>
             <div className="lambda-labels">
-              <span>λ=0 · solo diversità</span>
+              <span>λ=0 · diversity only</span>
               <span style={{ color: theme.accent5 }}>λ=0.8 default</span>
-              <span>λ=1 · solo score</span>
+              <span>λ=1 · score only</span>
             </div>
           </div>
 
           <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <div style={{ background: '#0d1018', border: `1px solid ${theme.border}`, borderRadius: 8, padding: 12 }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: theme.accent5, marginBottom: 6 }}>PROPRIETÀ GARANTITE</div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: theme.accent5, marginBottom: 6 }}>GUARANTEED PROPERTIES</div>
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: theme.muted, lineHeight: 1.6, fontWeight: 300 }}>
-                → Il 1° articolo è sempre il top per score<br />
-                → max(0, sim) evita di premiare anti-correlazioni<br />
-                → Greedy O(M·k), non combinatorio
+                → The 1st article is always the top by score<br />
+                → max(0, sim) avoids rewarding anti-correlations<br />
+                → Greedy O(M·k), not combinatorial
               </div>
             </div>
             <div style={{ background: '#0d1018', border: `1px solid ${theme.border}`, borderRadius: 8, padding: 12 }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: theme.accent4, marginBottom: 6 }}>QUANDO USARLO</div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: theme.accent4, marginBottom: 6 }}>WHEN TO USE IT</div>
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: theme.muted, lineHeight: 1.6, fontWeight: 300 }}>
-                → Rassegne stampa multi-fonte<br />
-                → Dataset di training bilanciati<br />
-                → Corpus con molti duplicati da agenzia
+                → Multi-source press reviews<br />
+                → Balanced training datasets<br />
+                → Corpora with many wire-service duplicates
               </div>
             </div>
           </div>
