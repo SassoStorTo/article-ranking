@@ -1,0 +1,38 @@
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: livedemo/docker/backend.Dockerfile
+    command: uvicorn livedemo.app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file:
+      - ../.env
+    environment:
+      LIVEDEMO_DB_URL: ${LIVEDEMO_DB_URL:-sqlite:////var/livedemo/db.sqlite}
+      LIVEDEMO_CORS_ORIGINS: ${LIVEDEMO_CORS_ORIGINS:-http://localhost:5173}
+      BACKEND_PORT: ${BACKEND_PORT:-8000}
+      FRONTEND_PORT: ${FRONTEND_PORT:-5173}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./app:/workspace/livedemo/app
+      - livedemo-db:/var/livedemo
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /workspace/livedemo/frontend
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    env_file:
+      - ../.env
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/workspace/livedemo/frontend
+      - frontend-node-modules:/workspace/livedemo/frontend/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  frontend-node-modules:
+  livedemo-db:
