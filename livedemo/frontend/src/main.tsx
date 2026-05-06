@@ -1174,6 +1174,13 @@ function RankParameterForm({
     }
   }
 
+  function updateRankConfig<K extends keyof RankerConfigPayload>(
+    key: K,
+    value: RankerConfigPayload[K],
+  ) {
+    setConfig((current) => ({ ...current, [key]: value }));
+  }
+
   return (
     <form className="parameter-form" onSubmit={handleSubmit}>
       <ParameterFormHeader
@@ -1192,6 +1199,28 @@ function RankParameterForm({
         profiles={[profile]}
         selectedProfile={profile}
       />
+
+      <fieldset>
+        <legend>Ranking Parameters</legend>
+        <div className="parameter-grid">
+          <label>
+            Similarity
+            <input
+              max="1"
+              min="-1"
+              onChange={(event) =>
+                updateRankConfig(
+                  "similarity_threshold",
+                  Number(event.target.value),
+                )
+              }
+              step="0.01"
+              type="number"
+              value={config.similarity_threshold ?? 0.85}
+            />
+          </label>
+        </div>
+      </fieldset>
 
       <ParameterErrors errors={weightWarnings} mutationError={mutation.error} />
       <div className="form-actions">
