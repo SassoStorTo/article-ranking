@@ -18,6 +18,7 @@ from livedemo.app.deps import (
 )
 from livedemo.app.schemas import (
     CompareProfilesExecutionRequest,
+    EvaluationArtifactRecord,
     ExecutionAccepted,
     ExecutionDetail,
     ExecutionKindValue,
@@ -78,6 +79,20 @@ def _execution_detail(execution: Execution) -> ExecutionDetail:
             for result in sorted(
                 execution.results,
                 key=lambda item: (item.profile or "", item.created_at, item.id),
+            )
+        ],
+        evaluation_artifacts=[
+            EvaluationArtifactRecord(
+                id=UUID(artifact.id),
+                execution_id=UUID(artifact.execution_id),
+                helper=artifact.helper.value,
+                params_json=artifact.params_json,
+                payload_json=artifact.payload_json,
+                created_at=artifact.created_at,
+            )
+            for artifact in sorted(
+                execution.evaluation_artifacts,
+                key=lambda item: (item.created_at, item.id),
             )
         ],
     )
@@ -264,7 +279,10 @@ def get_execution(execution_id: UUID, db: DbSession) -> ExecutionDetail:
     execution = db.scalar(
         select(Execution)
         .where(Execution.id == str(execution_id))
-        .options(selectinload(Execution.results))
+        .options(
+            selectinload(Execution.results),
+            selectinload(Execution.evaluation_artifacts),
+        )
     )
     if execution is None:
         raise _not_found("Execution", execution_id)

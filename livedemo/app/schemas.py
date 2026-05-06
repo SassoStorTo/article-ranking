@@ -97,6 +97,14 @@ class CorpusDetail(TimestampFields):
 
 ExecutionKindValue = Literal["rank", "select", "compare_profiles", "evaluate"]
 ExecutionStatusValue = Literal["pending", "running", "succeeded", "failed"]
+EvaluationHelperValue = Literal[
+    "top_m_overlap",
+    "rank_correlation",
+    "component_score_table",
+    "cluster_inspection_rows",
+    "anonymized_user_study_bundle",
+]
+RankCorrelationMethodValue = Literal["kendall", "spearman"]
 SelectionModeValue = Literal["top_score", "mmr"]
 LinkageValue = Literal["average", "single"]
 CoverageWeightingValue = Literal["consensus", "rarity"]
@@ -184,6 +192,15 @@ class ExecutionResultRecord(ApiSchema):
     created_at: datetime
 
 
+class EvaluationArtifactRecord(ApiSchema):
+    id: UUID
+    execution_id: UUID
+    helper: EvaluationHelperValue
+    params_json: dict[str, Any]
+    payload_json: dict[str, Any]
+    created_at: datetime
+
+
 class ExecutionSummary(TimestampFields):
     id: UUID
     corpus_id: UUID
@@ -199,6 +216,47 @@ class ExecutionSummary(TimestampFields):
 class ExecutionDetail(ExecutionSummary):
     config_json: dict[str, Any]
     results: list[ExecutionResultRecord]
+    evaluation_artifacts: list[EvaluationArtifactRecord]
+
+
+class TopMOverlapRequest(ApiSchema):
+    other_execution_id: UUID
+    m: int = Field(ge=1)
+
+
+class RankCorrelationRequest(ApiSchema):
+    other_execution_id: UUID
+    method: RankCorrelationMethodValue = "kendall"
+
+
+class ComponentTableRequest(ApiSchema):
+    pass
+
+
+class ClusterInspectionRequest(ApiSchema):
+    rare_threshold: int = Field(default=1, ge=1)
+
+
+class ArticleMaterialPayload(ApiSchema):
+    model_config = ConfigDict(from_attributes=True, extra="forbid")
+
+    title: str | None = None
+    snippet: str | None = None
+    summary: str | None = None
+
+
+class UserStudyBundleRequest(ApiSchema):
+    materials: dict[str, ArticleMaterialPayload] = Field(default_factory=dict)
+    include_scores: bool = False
+
+
+class FullEvaluationSuiteRequest(ApiSchema):
+    baseline_execution_id: UUID
+    m: int = Field(default=3, ge=1)
+    method: RankCorrelationMethodValue = "kendall"
+    rare_threshold: int = Field(default=1, ge=1)
+    materials: dict[str, ArticleMaterialPayload] = Field(default_factory=dict)
+    include_scores: bool = False
 
 
 def normalize_ranker_config(
