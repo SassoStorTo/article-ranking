@@ -1249,6 +1249,21 @@ function RankParameterForm({
               <option value="rarity">rarity</option>
             </select>
           </label>
+          <label>
+            Selection mode
+            <select
+              onChange={(event) =>
+                updateRankConfig(
+                  "selection_mode",
+                  event.target.value as "top_score" | "mmr",
+                )
+              }
+              value={config.selection_mode ?? "top_score"}
+            >
+              <option value="top_score">top_score</option>
+              <option value="mmr">mmr</option>
+            </select>
+          </label>
         </div>
       </fieldset>
 
