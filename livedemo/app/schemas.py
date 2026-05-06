@@ -207,11 +207,6 @@ def normalize_ranker_config(
     m: int | None = None,
 ) -> tuple[RankerConfig, dict[str, Any]]:
     values = payload.model_dump(exclude_none=True) if payload is not None else {}
-    if "profiles" in values:
-        values["profiles"] = {
-            profile: weights.model_dump()
-            for profile, weights in values["profiles"].items()
-        }
     config = RankerConfig(**values)
     return config, ranker_config_json(config, m=m)
 

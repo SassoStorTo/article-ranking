@@ -118,6 +118,56 @@ def test_compare_profiles_execution_persists_profile_comparison(
     assert set(result["rankings"]) == {"representative", "comprehensive"}
 
 
+def test_compare_profiles_accepts_parameter_form_config(client: TestClient) -> None:
+    corpus_id = create_corpus_with_articles(client)
+    execution_id = start_execution(
+        client,
+        "/api/executions/compare",
+        {
+            "corpus_id": corpus_id,
+            "profiles": ["representative", "comprehensive", "concise"],
+            "config": {
+                "similarity_threshold": 0.85,
+                "linkage": "average",
+                "coverage_weighting": "consensus",
+                "profiles": {
+                    "representative": {
+                        "centrality": 0.4,
+                        "coverage": 0.5,
+                        "density": 0.1,
+                        "entity_coverage": 0.0,
+                    },
+                    "comprehensive": {
+                        "centrality": 0.2,
+                        "coverage": 0.7,
+                        "density": 0.1,
+                        "entity_coverage": 0.0,
+                    },
+                    "concise": {
+                        "centrality": 0.2,
+                        "coverage": 0.4,
+                        "density": 0.4,
+                        "entity_coverage": 0.0,
+                    },
+                },
+                "top_m": 3,
+                "selection_mode": "top_score",
+                "selection_lambda": 0.8,
+                "embedding_model_name": "all-MiniLM-L6-v2",
+                "llm_model_name": "mistral-small-latest",
+                "prompt_version": "v1",
+                "schema_version": "v1",
+            },
+        },
+    )
+
+    detail = wait_for_execution(client, execution_id)
+
+    assert detail["status"] == "succeeded"
+    assert detail["profiles"] == ["representative", "comprehensive", "concise"]
+    assert detail["config_json"]["profiles"]["concise"]["density"] == 0.4
+
+
 def test_execution_failure_status_is_persisted(client: TestClient) -> None:
     corpus_id = create_corpus_with_articles(client)
     execution_id = start_execution(
