@@ -58,9 +58,7 @@ def create_articles(
         if not filename.lower().endswith(".txt"):
             raise UnsupportedArticleTypeError(f"{filename} is not a .txt file.")
         if filename in seen_filenames or filename in existing_filenames:
-            raise DuplicateFilenameError(
-                f"{filename} already exists in this corpus."
-            )
+            raise DuplicateFilenameError(f"{filename} already exists in this corpus.")
         seen_filenames.add(filename)
 
         try:

@@ -1,5 +1,6 @@
 from email import policy
 from email.parser import BytesParser
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -9,12 +10,16 @@ from sqlalchemy.orm import Session
 from livedemo.app.db.models import Article, Corpus
 from livedemo.app.deps import get_db
 from livedemo.app.schemas import ArticleDetail, ArticleUploadResponse
-from livedemo.app.services.ingestion import ArticleDecodeError, ArticleUpload
-from livedemo.app.services.ingestion import DuplicateFilenameError
-from livedemo.app.services.ingestion import UnsupportedArticleTypeError
-from livedemo.app.services.ingestion import create_articles
+from livedemo.app.services.ingestion import (
+    ArticleDecodeError,
+    ArticleUpload,
+    DuplicateFilenameError,
+    UnsupportedArticleTypeError,
+    create_articles,
+)
 
 router = APIRouter(tags=["articles"])
+DbSession = Annotated[Session, Depends(get_db)]
 
 
 def _not_found(entity: str, entity_id: UUID) -> HTTPException:
@@ -57,7 +62,7 @@ async def _parse_multipart_uploads(request: Request) -> list[ArticleUpload]:
 
     if not uploads:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Upload at least one .txt file.",
         )
     return uploads
@@ -71,7 +76,7 @@ async def _parse_multipart_uploads(request: Request) -> list[ArticleUpload]:
 async def upload_articles(
     corpus_id: UUID,
     request: Request,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> ArticleUploadResponse:
     if db.get(Corpus, str(corpus_id)) is None:
         raise _not_found("Corpus", corpus_id)
@@ -82,13 +87,13 @@ async def upload_articles(
     except UnsupportedArticleTypeError as exc:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
     except ArticleDecodeError as exc:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
     except DuplicateFilenameError as exc:
@@ -102,7 +107,7 @@ async def upload_articles(
 
 
 @router.get("/articles/{article_id}", response_model=ArticleDetail)
-def get_article(article_id: UUID, db: Session = Depends(get_db)) -> ArticleDetail:
+def get_article(article_id: UUID, db: DbSession) -> ArticleDetail:
     article = db.scalar(select(Article).where(Article.id == str(article_id)))
     if article is None:
         raise _not_found("Article", article_id)

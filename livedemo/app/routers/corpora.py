@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -6,10 +7,16 @@ from sqlalchemy.orm import Session, selectinload
 
 from livedemo.app.db.models import Article, Corpus
 from livedemo.app.deps import get_db
-from livedemo.app.schemas import ArticleSummary, CorpusCreate, CorpusDetail
-from livedemo.app.schemas import CorpusSummary, IdResponse
+from livedemo.app.schemas import (
+    ArticleSummary,
+    CorpusCreate,
+    CorpusDetail,
+    CorpusSummary,
+    IdResponse,
+)
 
 router = APIRouter(prefix="/corpora", tags=["corpora"])
+DbSession = Annotated[Session, Depends(get_db)]
 
 
 def _corpus_not_found(corpus_id: UUID) -> HTTPException:
@@ -52,7 +59,7 @@ def _corpus_summary(row: tuple[Corpus, int]) -> CorpusSummary:
 
 
 @router.post("", response_model=IdResponse, status_code=status.HTTP_201_CREATED)
-def create_corpus(payload: CorpusCreate, db: Session = Depends(get_db)) -> IdResponse:
+def create_corpus(payload: CorpusCreate, db: DbSession) -> IdResponse:
     corpus = Corpus(name=payload.name, notes=payload.notes)
     db.add(corpus)
     db.commit()
@@ -61,7 +68,7 @@ def create_corpus(payload: CorpusCreate, db: Session = Depends(get_db)) -> IdRes
 
 
 @router.get("", response_model=list[CorpusSummary])
-def list_corpora(db: Session = Depends(get_db)) -> list[CorpusSummary]:
+def list_corpora(db: DbSession) -> list[CorpusSummary]:
     statement: Select[tuple[Corpus, int]] = (
         select(Corpus, func.count(Article.id))
         .outerjoin(Article)
@@ -72,7 +79,7 @@ def list_corpora(db: Session = Depends(get_db)) -> list[CorpusSummary]:
 
 
 @router.get("/{corpus_id}", response_model=CorpusDetail)
-def get_corpus(corpus_id: UUID, db: Session = Depends(get_db)) -> CorpusDetail:
+def get_corpus(corpus_id: UUID, db: DbSession) -> CorpusDetail:
     corpus = db.scalar(
         select(Corpus)
         .where(Corpus.id == str(corpus_id))
@@ -85,7 +92,7 @@ def get_corpus(corpus_id: UUID, db: Session = Depends(get_db)) -> CorpusDetail:
 
 
 @router.delete("/{corpus_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_corpus(corpus_id: UUID, db: Session = Depends(get_db)) -> Response:
+def delete_corpus(corpus_id: UUID, db: DbSession) -> Response:
     corpus = db.get(Corpus, str(corpus_id))
     if corpus is None:
         raise _corpus_not_found(corpus_id)
