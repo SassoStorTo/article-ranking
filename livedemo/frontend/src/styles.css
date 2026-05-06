@@ -992,6 +992,11 @@ button:disabled {
 }
 
 .app-shell[data-theme="dark"] .home-hero p,
+.app-shell[data-theme="dark"] .new-corpus label,
+.app-shell[data-theme="dark"] .execution-filters label,
+.app-shell[data-theme="dark"] .parameter-form label,
+.app-shell[data-theme="dark"] .parameter-form legend,
+.app-shell[data-theme="dark"] .evaluation-controls label,
 .app-shell[data-theme="dark"] .corpus-buttons span,
 .app-shell[data-theme="dark"] .article-list span,
 .app-shell[data-theme="dark"] .article-list small,
@@ -1003,14 +1008,28 @@ button:disabled {
 .app-shell[data-theme="dark"] .article-cell span,
 .app-shell[data-theme="dark"] .structured-panel small,
 .app-shell[data-theme="dark"] .fact-row span,
-.app-shell[data-theme="dark"] .entity-groups span {
-  color: #aebbb4;
+.app-shell[data-theme="dark"] .entity-groups span,
+.app-shell[data-theme="dark"] .pagination-controls span {
+  color: #c8d3cd;
 }
 
 .app-shell[data-theme="dark"] .article-cell strong,
 .app-shell[data-theme="dark"] .execution-panel summary,
-.app-shell[data-theme="dark"] .artifact-card a {
+.app-shell[data-theme="dark"] .artifact-card a,
+.app-shell[data-theme="dark"] .artifact-card h4,
+.app-shell[data-theme="dark"] .result-table-wrap h4,
+.app-shell[data-theme="dark"] .result-table th,
+.app-shell[data-theme="dark"] .structured-panel h4 {
   color: #eef5f0;
+}
+
+.app-shell[data-theme="dark"] .empty-state {
+  border-color: #36433c;
+}
+
+.app-shell[data-theme="dark"] input::placeholder,
+.app-shell[data-theme="dark"] textarea::placeholder {
+  color: #8ea098;
 }
 
 .app-shell[data-theme="dark"] .status-pill.failed {
