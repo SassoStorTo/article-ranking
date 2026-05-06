@@ -398,6 +398,125 @@ button:disabled {
   padding: 18px;
 }
 
+.evaluation-panel {
+  background: #eef3ef;
+  border: 1px solid #cad8cf;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.evaluation-panel header,
+.artifact-card header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.evaluation-panel header span {
+  background: #fffdf8;
+  border-radius: 999px;
+  color: #263832;
+  font-weight: 800;
+  min-width: 28px;
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.evaluation-controls {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.evaluation-controls label {
+  color: #5f5a52;
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.evaluation-controls .inline-check {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.evaluation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.artifact-list {
+  display: grid;
+  gap: 12px;
+}
+
+.artifact-card {
+  background: #fffdf8;
+  border: 1px solid #d7d0c4;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.artifact-card h4 {
+  font-size: 0.86rem;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.artifact-card a {
+  color: #263832;
+  font-weight: 800;
+}
+
+.metric-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.metric {
+  background: #f6f3ed;
+  border: 1px solid #e1dbd1;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.metric span,
+.artifact-card small {
+  color: #686158;
+  font-size: 0.78rem;
+}
+
+.metric strong {
+  overflow-wrap: anywhere;
+}
+
+.cluster-artifacts {
+  display: grid;
+  gap: 8px;
+}
+
+.cluster-artifacts details {
+  border: 1px solid #e1dbd1;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.result-table.compact {
+  min-width: 620px;
+}
+
 .execution-panel header {
   align-items: center;
   display: flex;

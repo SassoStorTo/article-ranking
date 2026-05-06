@@ -195,7 +195,23 @@ export type ExecutionResultRecord = {
   created_at: string;
 };
 
-export type ExecutionDetail = {
+export type EvaluationHelper =
+  | "top_m_overlap"
+  | "rank_correlation"
+  | "component_score_table"
+  | "cluster_inspection_rows"
+  | "anonymized_user_study_bundle";
+
+export type EvaluationArtifact = {
+  id: string;
+  execution_id: string;
+  helper: EvaluationHelper;
+  params_json: Record<string, unknown>;
+  payload_json: Record<string, unknown>;
+  created_at: string;
+};
+
+export type ExecutionSummary = {
   id: string;
   corpus_id: string;
   kind: ExecutionKind;
@@ -206,8 +222,12 @@ export type ExecutionDetail = {
   finished_at: string | null;
   error: string | null;
   created_at: string;
+};
+
+export type ExecutionDetail = ExecutionSummary & {
   config_json: Record<string, unknown>;
   results: ExecutionResultRecord[];
+  evaluation_artifacts: EvaluationArtifact[];
 };
 
 export type ExecutionAccepted = {
@@ -357,4 +377,128 @@ export async function getExecution(
 ): Promise<ExecutionDetail> {
   const response = await fetch(`${apiBaseUrl}/api/executions/${executionId}`);
   return parseJson<ExecutionDetail>(response);
+}
+
+export async function listExecutions(params: {
+  corpus_id?: string;
+  kind?: ExecutionKind;
+  status?: ExecutionStatus;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<ExecutionSummary[]> {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      search.set(key, String(value));
+    }
+  });
+  const suffix = search.size ? `?${search.toString()}` : "";
+  const response = await fetch(`${apiBaseUrl}/api/executions${suffix}`);
+  return parseJson<ExecutionSummary[]>(response);
+}
+
+export async function listEvaluationArtifacts(
+  executionId: string,
+): Promise<EvaluationArtifact[]> {
+  const response = await fetch(`${apiBaseUrl}/api/executions/${executionId}/eval`);
+  return parseJson<EvaluationArtifact[]>(response);
+}
+
+export async function createTopMOverlapArtifact(
+  executionId: string,
+  payload: { other_execution_id: string; m: number },
+): Promise<EvaluationArtifact> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/executions/${executionId}/eval/top-m-overlap`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+  return parseJson<EvaluationArtifact>(response);
+}
+
+export async function createRankCorrelationArtifact(
+  executionId: string,
+  payload: { other_execution_id: string; method: "kendall" | "spearman" },
+): Promise<EvaluationArtifact> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/executions/${executionId}/eval/rank-correlation`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+  return parseJson<EvaluationArtifact>(response);
+}
+
+export async function createComponentTableArtifact(
+  executionId: string,
+): Promise<EvaluationArtifact> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/executions/${executionId}/eval/component-table`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  return parseJson<EvaluationArtifact>(response);
+}
+
+export async function createClusterInspectionArtifact(
+  executionId: string,
+  payload: { rare_threshold: number },
+): Promise<EvaluationArtifact> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/executions/${executionId}/eval/cluster-inspection`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+  return parseJson<EvaluationArtifact>(response);
+}
+
+export async function createUserStudyBundleArtifact(
+  executionId: string,
+  payload: {
+    materials: Record<string, { title?: string; snippet?: string; summary?: string }>;
+    include_scores: boolean;
+  },
+): Promise<EvaluationArtifact> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/executions/${executionId}/eval/user-study-bundle`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+  return parseJson<EvaluationArtifact>(response);
+}
+
+export async function runFullEvaluationSuite(
+  executionId: string,
+  payload: {
+    baseline_execution_id: string;
+    m: number;
+    method: "kendall" | "spearman";
+    rare_threshold: number;
+    materials: Record<string, { title?: string; snippet?: string; summary?: string }>;
+    include_scores: boolean;
+  },
+): Promise<EvaluationArtifact[]> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/executions/${executionId}/test-suite`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+  return parseJson<EvaluationArtifact[]>(response);
 }

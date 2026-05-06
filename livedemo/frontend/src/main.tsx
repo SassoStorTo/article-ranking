@@ -17,17 +17,26 @@ import {
   ExecutionDetail,
   ExecutionKind,
   ExecutionResultJson,
+  EvaluationArtifact,
   RankingEntry,
   RankerConfigPayload,
+  createClusterInspectionArtifact,
+  createComponentTableArtifact,
   createCorpus,
+  createRankCorrelationArtifact,
+  createTopMOverlapArtifact,
+  createUserStudyBundleArtifact,
   defaultRankerConfig,
   decomposeArticle,
   deleteCorpus,
   getArticle,
   getCorpus,
   getExecution,
+  listEvaluationArtifacts,
+  listExecutions,
   listCorpora,
   runCompareExecution,
+  runFullEvaluationSuite,
   runRankExecution,
   runSelectExecution,
   uploadArticles,
@@ -709,6 +718,12 @@ function ExecutionPanel({
         : false;
     },
   });
+  const artifacts = useQuery({
+    queryKey: ["evaluation-artifacts", executionId],
+    queryFn: () => listEvaluationArtifacts(executionId ?? ""),
+    enabled: executionId !== null && execution.data?.status === "succeeded",
+    initialData: execution.data?.evaluation_artifacts,
+  });
 
   if (!executionId) {
     return null;
@@ -760,7 +775,359 @@ function ExecutionPanel({
           selectedArticleIds={selectedArticleIds(result.result_json)}
         />
       ))}
+      {execution.data.status === "succeeded" && (
+        <EvaluationPanel
+          artifacts={artifacts.data ?? execution.data.evaluation_artifacts}
+          articles={articles}
+          execution={execution.data}
+        />
+      )}
     </section>
+  );
+}
+
+function EvaluationPanel({
+  artifacts,
+  articles,
+  execution,
+}: {
+  artifacts: EvaluationArtifact[];
+  articles: ArticleSummary[];
+  execution: ExecutionDetail;
+}) {
+  const queryClient = useQueryClient();
+  const [baselineId, setBaselineId] = useState("");
+  const [topM, setTopM] = useState(
+    Math.min(execution.m ?? 3, Math.max(1, articles.length)),
+  );
+  const [method, setMethod] = useState<"kendall" | "spearman">("kendall");
+  const [rareThreshold, setRareThreshold] = useState(1);
+  const [includeScores, setIncludeScores] = useState(false);
+  const baselines = useQuery({
+    queryKey: ["baseline-executions", execution.corpus_id],
+    queryFn: () =>
+      listExecutions({
+        corpus_id: execution.corpus_id,
+        status: "succeeded",
+        limit: 100,
+      }),
+  });
+  const baselineOptions =
+    baselines.data?.filter((item) => item.id !== execution.id) ?? [];
+  const materials = useMemo(() => articleMaterials(articles), [articles]);
+  const invalidateArtifacts = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["evaluation-artifacts", execution.id],
+      }),
+      queryClient.invalidateQueries({ queryKey: ["execution", execution.id] }),
+    ]);
+  };
+  const topOverlap = useMutation({
+    mutationFn: () =>
+      createTopMOverlapArtifact(execution.id, {
+        other_execution_id: baselineId,
+        m: topM,
+      }),
+    onSuccess: invalidateArtifacts,
+  });
+  const correlation = useMutation({
+    mutationFn: () =>
+      createRankCorrelationArtifact(execution.id, {
+        other_execution_id: baselineId,
+        method,
+      }),
+    onSuccess: invalidateArtifacts,
+  });
+  const componentTable = useMutation({
+    mutationFn: () => createComponentTableArtifact(execution.id),
+    onSuccess: invalidateArtifacts,
+  });
+  const clusterInspection = useMutation({
+    mutationFn: () =>
+      createClusterInspectionArtifact(execution.id, {
+        rare_threshold: rareThreshold,
+      }),
+    onSuccess: invalidateArtifacts,
+  });
+  const userStudy = useMutation({
+    mutationFn: () =>
+      createUserStudyBundleArtifact(execution.id, {
+        materials,
+        include_scores: includeScores,
+      }),
+    onSuccess: invalidateArtifacts,
+  });
+  const fullSuite = useMutation({
+    mutationFn: () =>
+      runFullEvaluationSuite(execution.id, {
+        baseline_execution_id: baselineId,
+        m: topM,
+        method,
+        rare_threshold: rareThreshold,
+        materials: execution.kind === "select" ? materials : {},
+        include_scores: includeScores,
+      }),
+    onSuccess: invalidateArtifacts,
+  });
+  const needsBaseline = !baselineId;
+
+  return (
+    <section className="evaluation-panel" aria-labelledby="evaluation-title">
+      <header>
+        <div>
+          <p className="eyebrow">Evaluation</p>
+          <h3 id="evaluation-title">Artifacts</h3>
+        </div>
+        <span>{artifacts.length}</span>
+      </header>
+      <div className="evaluation-controls">
+        <label>
+          Baseline
+          <select
+            onChange={(event) => setBaselineId(event.target.value)}
+            value={baselineId}
+          >
+            <option value="">Choose baseline</option>
+            {baselineOptions.map((item) => (
+              <option key={item.id} value={item.id}>
+                {formatGroupName(item.kind)} · {item.profiles.join(", ")}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          M
+          <input
+            min="1"
+            onChange={(event) => setTopM(Number(event.target.value))}
+            type="number"
+            value={topM}
+          />
+        </label>
+        <label>
+          Correlation
+          <select
+            onChange={(event) =>
+              setMethod(event.target.value as "kendall" | "spearman")
+            }
+            value={method}
+          >
+            <option value="kendall">kendall</option>
+            <option value="spearman">spearman</option>
+          </select>
+        </label>
+        <label>
+          Rare threshold
+          <input
+            min="1"
+            onChange={(event) => setRareThreshold(Number(event.target.value))}
+            type="number"
+            value={rareThreshold}
+          />
+        </label>
+        <label className="inline-check">
+          <input
+            checked={includeScores}
+            onChange={(event) => setIncludeScores(event.target.checked)}
+            type="checkbox"
+          />
+          Include scores
+        </label>
+      </div>
+      {baselines.error && <p className="error-line">{baselines.error.message}</p>}
+      <div className="evaluation-actions">
+        <button
+          disabled={needsBaseline || topOverlap.isPending}
+          onClick={() => topOverlap.mutate()}
+          type="button"
+        >
+          Top-M Overlap
+        </button>
+        <button
+          disabled={needsBaseline || correlation.isPending}
+          onClick={() => correlation.mutate()}
+          type="button"
+        >
+          Rank Correlation
+        </button>
+        <button
+          disabled={componentTable.isPending}
+          onClick={() => componentTable.mutate()}
+          type="button"
+        >
+          Component Table
+        </button>
+        <button
+          disabled={clusterInspection.isPending}
+          onClick={() => clusterInspection.mutate()}
+          type="button"
+        >
+          Cluster Inspection
+        </button>
+        <button
+          disabled={execution.kind !== "select" || userStudy.isPending}
+          onClick={() => userStudy.mutate()}
+          type="button"
+        >
+          User-Study Bundle
+        </button>
+        <button
+          disabled={needsBaseline || fullSuite.isPending}
+          onClick={() => fullSuite.mutate()}
+          type="button"
+        >
+          Run Full Test Suite
+        </button>
+      </div>
+      {[
+        topOverlap.error,
+        correlation.error,
+        componentTable.error,
+        clusterInspection.error,
+        userStudy.error,
+        fullSuite.error,
+      ].map((error) =>
+        error ? (
+          <p className="error-line" key={error.message}>
+            {error.message}
+          </p>
+        ) : null,
+      )}
+      {artifacts.length === 0 ? (
+        <p className="muted">No evaluation artifacts yet.</p>
+      ) : (
+        <div className="artifact-list">
+          {artifacts.map((artifact) => (
+            <ArtifactCard artifact={artifact} key={artifact.id} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ArtifactCard({ artifact }: { artifact: EvaluationArtifact }) {
+  const payload = artifact.payload_json;
+  return (
+    <article className="artifact-card">
+      <header>
+        <div>
+          <h4>{formatGroupName(artifact.helper)}</h4>
+          <small>{new Date(artifact.created_at).toLocaleString()}</small>
+        </div>
+        {artifact.helper === "anonymized_user_study_bundle" && (
+          <a
+            download={`user-study-${artifact.id}.json`}
+            href={`data:application/json;charset=utf-8,${encodeURIComponent(
+              JSON.stringify(payload, null, 2),
+            )}`}
+          >
+            JSON
+          </a>
+        )}
+      </header>
+      <ArtifactPayload artifact={artifact} />
+    </article>
+  );
+}
+
+function ArtifactPayload({ artifact }: { artifact: EvaluationArtifact }) {
+  const payload = artifact.payload_json;
+  if (artifact.helper === "top_m_overlap") {
+    return (
+      <div className="metric-grid">
+        <Metric label="Overlap" value={payload.overlap_count} />
+        <Metric label="Jaccard" value={formatUnknownScore(payload.jaccard)} />
+        <Metric label="Left top" value={payload.left_top_count} />
+        <Metric label="Right top" value={payload.right_top_count} />
+        <p>{formatIdList(payload.overlap_article_ids)}</p>
+      </div>
+    );
+  }
+  if (artifact.helper === "rank_correlation") {
+    return (
+      <div className="metric-grid">
+        <Metric label="Method" value={payload.method} />
+        <Metric
+          label="Coefficient"
+          value={formatUnknownScore(payload.coefficient)}
+        />
+        <Metric label="Common" value={payload.common_count} />
+        <p>Left-only: {formatIdList(payload.left_only_article_ids)}</p>
+        <p>Right-only: {formatIdList(payload.right_only_article_ids)}</p>
+      </div>
+    );
+  }
+  if (artifact.helper === "component_score_table") {
+    return <ArtifactRows rows={arrayPayload(payload.rows)} />;
+  }
+  if (artifact.helper === "cluster_inspection_rows") {
+    return (
+      <div className="cluster-artifacts">
+        {arrayPayload(payload.rows).map((row, index) => (
+          <details key={`${row.cluster_index}-${index}`}>
+            <summary>
+              {String(row.canonical_fact_text ?? "Cluster")} · support{" "}
+              {String(row.support_count ?? "0")}{" "}
+              {row.is_rare ? <span className="selected-badge">Rare</span> : null}
+            </summary>
+            <p>Articles: {formatIdList(row.support_article_ids)}</p>
+            <p>Facts: {formatIdList(row.member_fact_ids)}</p>
+            <p>{formatIdList(row.member_texts)}</p>
+          </details>
+        ))}
+      </div>
+    );
+  }
+  if (artifact.helper === "anonymized_user_study_bundle") {
+    return (
+      <div className="metric-grid">
+        <Metric label="Profile" value={payload.profile} />
+        <Metric label="M" value={payload.m} />
+        <p>Labels: {formatIdList(payload.selected_article_labels)}</p>
+        <pre>{JSON.stringify(payload.article_materials, null, 2)}</pre>
+      </div>
+    );
+  }
+  return <pre>{JSON.stringify(payload, null, 2)}</pre>;
+}
+
+function ArtifactRows({ rows }: { rows: Record<string, unknown>[] }) {
+  const columns = rows.slice(0, 1).flatMap((row) => Object.keys(row));
+  if (rows.length === 0) {
+    return <p className="muted">No rows.</p>;
+  }
+  return (
+    <div className="result-table-wrap">
+      <table className="result-table compact">
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column}>{formatGroupName(column)}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={index}>
+              {columns.map((column) => (
+                <td key={column}>{formatCell(row[column])}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div className="metric">
+      <span>{label}</span>
+      <strong>{String(value ?? "n/a")}</strong>
+    </div>
   );
 }
 
@@ -873,6 +1240,54 @@ function selectedArticleIds(payload: ExecutionResultJson): Set<string> {
     return new Set();
   }
   return new Set(payload.selected.map((entry) => entry.article_id));
+}
+
+function articleMaterials(
+  articles: ArticleSummary[],
+): Record<string, { title: string; snippet: string }> {
+  return Object.fromEntries(
+    articles.map((article) => [
+      article.id,
+      {
+        title: article.title,
+        snippet: article.filename,
+      },
+    ]),
+  );
+}
+
+function arrayPayload(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => isRecord(item))
+    : [];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function formatCell(value: unknown): string {
+  if (typeof value === "number") {
+    return formatScore(value);
+  }
+  if (Array.isArray(value)) {
+    return value.map(String).join(", ");
+  }
+  if (value === null || value === undefined) {
+    return "n/a";
+  }
+  return String(value);
+}
+
+function formatIdList(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.length ? value.map(String).join(", ") : "none";
+  }
+  return typeof value === "string" ? value : "none";
+}
+
+function formatUnknownScore(value: unknown): string {
+  return typeof value === "number" ? formatScore(value) : String(value ?? "n/a");
 }
 
 function normalizeConfigDraft(config?: RankerConfigPayload): RankerConfigPayload {
@@ -1097,7 +1512,7 @@ function StructuredPanel({
 }
 
 function formatGroupName(group: string) {
-  return group.replace("_", " ");
+  return group.replaceAll("_", " ");
 }
 
 function EmptyWorkspace() {
