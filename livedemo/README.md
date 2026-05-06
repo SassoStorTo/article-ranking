@@ -1,29 +1,26 @@
 # News Ranker Live Demo
 
-This folder contains the development shell for the News Ranker live demo. It is
-implemented as a FastAPI backend plus a Vite React frontend, both run through
-Docker Compose from inside the parent `article-ranking` repository.
+FastAPI + React demo for running the local `news_ranker` package against
+uploaded `.txt` article corpora. The app stores corpora, article bodies,
+Mistral decompositions, ranking executions, replay configs, and evaluation
+artifacts in SQLite.
 
-Milestone 1 only provides the app skeleton and health check. Corpus management,
-database models, ranking execution, Mistral decomposition, and evaluation
-features are planned for later milestones.
+## Setup
 
-## Environment
-
-Runtime environment comes from the parent repository `.env` file:
+From the parent `article-ranking` repository, copy the example environment into
+the parent `.env` file and fill in the Mistral key:
 
 ```bash
-/Users/paolo/farm/swe/article-ranking/.env
+cp livedemo/.env.example .env
 ```
 
-Use `livedemo/.env.example` as the reference list of keys, but copy the values
-into the parent `.env`. The Compose file reads `../.env` so local secrets stay
-in one place for the whole repository.
+The Compose file reads `../.env` from this folder, keeping local secrets at the
+repository root.
 
-Expected keys:
+## Environment Variables
 
 ```bash
-MISTRAL_API_KEY=
+MISTRAL_API_KEY=                    # required outside tests
 LIVEDEMO_DB_URL=sqlite:////var/livedemo/db.sqlite
 LIVEDEMO_CORS_ORIGINS=http://localhost:5173
 BACKEND_PORT=8000
@@ -31,48 +28,110 @@ FRONTEND_PORT=5173
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-`MISTRAL_API_KEY` can be blank for this skeleton milestone because the backend
-does not construct a Mistral client yet.
+`MISTRAL_API_KEY` is required for real article decomposition. Tests override the
+decomposition client and do not call Mistral.
 
-## Start Development Stack
+## Start The Dev Stack
 
-From the parent repository root:
+Run from the parent repository root:
 
 ```bash
 docker compose -f livedemo/docker-compose.yml up --build
 ```
 
-Then open:
+Open:
 
 - Frontend: `http://localhost:5173`
 - Backend health: `http://localhost:8000/api/health`
+- OpenAPI: `http://localhost:8000/docs`
 
-Useful commands:
+Follow backend logs:
 
 ```bash
 docker compose -f livedemo/docker-compose.yml logs -f backend
+```
+
+Stop the stack:
+
+```bash
 docker compose -f livedemo/docker-compose.yml down
 ```
 
-## Backend
+## Development Workflow
 
-The backend app is exposed as:
+Typical local loop:
+
+1. Create or select a corpus.
+2. Upload one or more `.txt` files.
+3. Inspect decomposition output on article detail.
+4. Run rank, select, or compare profiles.
+5. Replay old executions or compare them from the Old Executions view.
+6. Run evaluation helpers or the full test suite with an explicit baseline.
+
+The backend container hot-reloads `livedemo/app`. The frontend container runs
+Vite with HMR against `livedemo/frontend`.
+
+## Test Commands
+
+Backend tests from this folder:
 
 ```bash
-livedemo.app.main:app
+uv run python -m pytest tests
 ```
 
-The dev container runs:
+Frontend build from `livedemo/frontend`:
 
 ```bash
-uvicorn livedemo.app.main:app --host 0.0.0.0 --port 8000 --reload
+npm run build
 ```
 
-The Docker build context is the parent repository root so the image can install
-both the local `news-ranker` library and this `livedemo` backend package.
+Parent project verification from the repository root:
 
-## Frontend
+```bash
+make check
+```
 
-The frontend is a minimal Vite React shell in `livedemo/frontend`. It polls the
-backend health endpoint through `VITE_API_BASE_URL`, defaulting to
-`http://localhost:8000`.
+`make check` runs the parent library typecheck, lint, format check, and pytest
+suite. Use it before declaring an implementation milestone complete.
+
+## Reset The Local DB
+
+The default Compose database lives in the `livedemo-db` Docker volume. To remove
+all local demo state:
+
+```bash
+docker compose -f livedemo/docker-compose.yml down -v
+```
+
+Then restart the stack with `up --build`.
+
+## Common Failures
+
+`MISTRAL_API_KEY is required for article decomposition.`
+
+Add the key to the parent `.env` file, then restart the backend container.
+
+`Address already in use`
+
+Change `BACKEND_PORT` or `FRONTEND_PORT` in `.env`, then restart Compose.
+
+Frontend cannot reach the backend.
+
+Make sure `VITE_API_BASE_URL` points at the host backend URL, usually
+`http://localhost:8000`, and that `/api/health` returns `ok: true`.
+
+Health returns `ok: false`.
+
+Inspect the `checks` object from `/api/health`. `database: false` usually means
+the SQLite path or Docker volume is not writable. `decomposition_client: false`
+means the app could not prepare the configured Mistral client.
+
+Uploads fail with `409`.
+
+Filenames are unique within a corpus. Rename the duplicate `.txt` file or delete
+and recreate the corpus.
+
+Evaluation comparison fails with `422`.
+
+Top-M overlap and rank correlation require compatible rank/select executions.
+The full test suite also requires an explicit baseline execution.
