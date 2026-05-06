@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -39,6 +40,19 @@ class CorpusCreate(ApiSchema):
     notes: str | None = None
 
 
+DecompositionStatus = Literal["not_started", "decomposed"]
+
+
+class StructuredArticleRecord(ApiSchema):
+    id: UUID
+    article_id: UUID
+    llm_model: str
+    prompt_version: str
+    schema_version: str
+    payload_json: dict[str, Any]
+    created_at: datetime
+
+
 class CorpusSummary(TimestampFields):
     id: UUID
     name: str
@@ -52,6 +66,7 @@ class ArticleSummary(ApiSchema):
     filename: str
     title: str
     body_length: int
+    decomposition_status: DecompositionStatus
     uploaded_at: datetime
 
 
@@ -61,6 +76,8 @@ class ArticleDetail(ApiSchema):
     filename: str
     title: str
     body: str
+    decomposition_status: DecompositionStatus
+    structured_article: StructuredArticleRecord | None
     uploaded_at: datetime
 
 

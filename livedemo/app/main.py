@@ -8,6 +8,7 @@ from sqlalchemy import Engine
 from livedemo.app.config import get_settings
 from livedemo.app.db.session import engine as default_engine
 from livedemo.app.db.session import init_db
+from livedemo.app.deps import create_mistral_client, should_initialize_mistral
 from livedemo.app.routers.articles import router as articles_router
 from livedemo.app.routers.corpora import router as corpora_router
 from livedemo.app.schemas import HealthResponse
@@ -20,6 +21,11 @@ def create_app(db_engine: Engine = default_engine) -> FastAPI:
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.db_engine = db_engine
         init_db(db_engine)
+        app.state.mistral_client = (
+            create_mistral_client(settings)
+            if should_initialize_mistral(settings)
+            else None
+        )
         yield
 
     app = FastAPI(
