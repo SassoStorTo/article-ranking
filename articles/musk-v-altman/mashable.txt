@@ -1,0 +1,87 @@
+Everything you need to know about Elon Musk's OpenAI testimony
+Musk didn't respond well to questioning in his lawsuit against ChatGPT's developer.
+ By 
+Chris Taylor
+ on 
+April 30, 2026
+Share on Facebook
+Share on Twitter
+Share on Flipboard
+Elon Musk going through courthouse security
+Credit: Jessica Christian/San Francisco Chronicle via Getty Images
+
+The Elon Musk-Sam Altman courtroom showdown already promised plenty of fireworks. And in its first week, dominated by the world's richest man taking the stand in a federal courthouse in Oakland, Calif., Musk v. Altman delivered more than a few whizz-bangs.
+
+Musk's goals on the witness stand were to explain his OpenAI lawsuit under friendly questioning from his own lawyer, and to not look too arrogant or ignorant under questioning from counsel for the OpenAI executives he's suing.
+
+Whether he succeeded in either sense is open to question — in part because Musk himself did not seem very open to questions.
+
+But Musk certainly succeeded in making more people aware of his ongoing romantic coparent relationship with his former chief of staff, and making many of us scratch our heads about what, exactly, the popular online acronym "TL;DR" stands for.
+
+So let's dive in to our own TL;DR: highlights from the Musk testimony we followed so you don't have to.
+1. Musk says this is about 'looting every charity'
+
+If you're Elon Musk, and you're trying to explain a spat between yourself and other billionaires over OpenAI's nonprofit status to a jury of nine Oaklanders who may or may not give a hoot about Silicon Valley, how do you frame it?
+
+Simple, apparently: you paint yourself as the savior of all charitable trusts, not just the one behind OpenAI.
+
+"The consequences of this case go far beyond me," Musk told his attorney Steve Molo after he took the stand on Tuesday. If OpenAI wins, Musk said, it will establish a precedent that will give "license to looting every charity ... the entire foundation of charitable giving in America will be destroyed."
+
+(Not mentioned: the fact that Musk's own charity has failed to give away enough money to qualify for charitable status, consistently, for the past five years.)
+
+And if you find that outcome too hyperbolic, just wait till you hear Musk's other repeated claim: that in bringing a suit over the 2019 change of OpenAI's nonprofit status, he is "saving humanity" from AI that "could kill us all."
+
+Musk specifically and repeatedly invoked the Terminator movies, evidently hoping the jury would draw a connection from ChatGPT to the entirely fictional Skynet.
+2. OpenAI says this is about Musk's 'sour grapes'
+
+Musk's telling of the OpenAI story dominated Tuesday, the first full day after jury selection. But it was also the day he had to sit through the opening argument for Altman et al., which painted a pretty clear picture of him as well.
+
+"We are here because Musk didn't get his way at OpenAI," OpenAI lead counsel William Savitt said. "My clients had the nerve to go on and succeed without him. Mr. Musk did not like that."
+
+Savitt noted Musk made no complaint when Microsoft invested in OpenAI in 2019. It was after ChatGPT's success, starting in 2022 but really ramping up in 2023, that "the sour grapes kicked in," Savitt said. 
+
+Under Savitt's questioning on Thursday, Musk said he was fine with Microsoft's $1 billion investment in 2019, but not its $10 million investment in 2022. "This is a bait and switch," is how he described his thinking at the time.
+
+The judge had already ruled that Musk could get a fair trial even if jurors said they didn't particularly like him personally, given that it's impossible in the Bay Area to find anyone who doesn't know about him.
+
+So there's definitely an audience among those nine for what Savitt is laying down here. Especially when Savitt took time on Wednesday to remind jurors in this deeply Democratic town of Musk's employment by Donald Trump.
+3. Musk reluctantly recognized a mother of his children
+
+Under favorable questioning Tuesday, Musk identified Shivon Zillis — a key player in the early days of OpenAI — as his "chief of staff." Multiple laughs came from the public gallery, presumably from those who knew that Zilis also happens to be the mother of Musk's children, or at least four out of 14.
+
+Asked again about Zilis by his lawyer on Wednesday, Musk came clean: "We live together and she’s the mother of four of my children."
+
+Despite this shiftiness about a relationship he already admitted in his deposition was a romantic one, Musk insisted that he didn't recall Zilis ever sharing "sensitive" information about OpenAI after he departed the company in 2019.
+4. What's the TL;DR, Elon?
+
+Asked by his lawyer to explain the acronym TL;DR, which cropped up in a court document, Musk said it stands for "Too Long, Don't Read." As any dictionary will tell you, however, it's actually Too Long Didn't Read.
+
+That may just have been a trivial mistake, but for the fact that Musk appears to have used his version to apply to court documents themselves. On Wednesday, Savitt hammered away at Musk for saying he'd only read the first paragraph of a key OpenAI document.
+
+On Thursday, the OpenAI counsel played a segment of Musk's 2025 deposition in which he'd claimed to have read the whole thing. TL;DR: OpenAI is doing a fairly good job of establishing that Musk's statements about reading or not reading, at least, are untrustworthy. 
+
+5. Musk was testy on the stand, not aided by 'Law 101'
+
+Whomever else Musk may be convincing with his testimony, he and his lawyer didn't help their position with Judge Yvonne Gonzalez Rogers, a veteran of big tech trials.
+
+Multiple times on Wednesday, Gonzalez Rogers berated Molo, Musk's counsel, for leading the witness. "You should have read it," she fired back at Musk and counsel on his TL;DR approach to trial documents. And she noted to the jury that Musk was "at times difficult" under OpenAI's cross-examination.
+
+If anything, that's understating the matter. Musk was visibly furious at Savitt for asking "yes or no" questions, a fairly typical courtroom concept. He said they were "designed to trick me," and called Savitt's claim that they were "simple questions" an outright "lie." 
+
+Musk drew a connection between Savitt's simple yes or no questions and the classic example of a loaded question, "when did you stop beating your wife?" Gonzalez Rogers shut Musk down on that one: "we're not going there," she said.
+
+Just once, Savitt apologized for what he said "wasn't a fair question." Before he could reframe it, Musk had some petulant commentary: "I find it funny you saying it wasn't a fair question, since you're only asking unfair questions."
+
+Most attorneys in Molo's position would advise their clients to tone it down after a day like that on the witness stand. Whether Molo did or not, Musk was at it again Thursday, the final day of his testimony (although OpenAI reserves the right to call him back later in the trial).
+
+Echoing the judge's admonishment of his own lawyer, Musk repeatedly claimed Savitt was leading the witness. That is, however, something that only applies to friendly questioning, as Gonzalez Rogers pointed out.
+
+"That’s not how it works," the judge told the world's richest man, before dropping the mic: "Let’s remind everyone in the courtroom that you're not a lawyer."
+
+But Musk simply couldn't avoid having the last word, telling the jury that "I did take Law 101 in school."
+
+As any Law 101 professor could tell Musk, however, he should be glad to be off the witness stand before he made his case any worse for himself.
+
+Disclosure: Ziff Davis, Mashable’s parent company, in April 2025 filed a lawsuit against OpenAI, alleging it infringed Ziff Davis copyrights in training and operating its AI systems.
+
+https://mashable.com/article/musk-openai-trial-testimony

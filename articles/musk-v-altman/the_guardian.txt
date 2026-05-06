@@ -1,0 +1,57 @@
+‘Your questions are designed to trick me’: combative Musk grilled over battle with Sam Altman
+
+Lawyers for world’s richest person try to paint him as humanitarian as judge cuts off his long-winded replies
+Dara Kerr in Oakland and Nick Robins-Early
+Thu 30 Apr 2026 00.46 CEST
+Prefer the Guardian on Google
+
+After a dramatic first day of opening statements and testimony from Elon Musk in his case against Sam Altman and OpenAI, the trial continued on Wednesday with a cross-examination of the Tesla CEO. Musk began his second day of on the stand by repeating the accusation that Altman “stole a charity” and would endanger humanity with AI multiple times. OpenAI’s attorneys pressed the world’s richest man on his allegations, resulting in testy exchanges and multiple interventions from the judge.
+
+Musk often refused to answer questions as instructed, and the judge interjected several times to tell Musk to simply give a yes-or-no response. At various points, Musk told OpenAI’s counsel, “You’re being misleading with your question,” and “Your questions are not simple, they are designed to trick me, essentially.”
+
+Musk accuses his OpenAI co-founders Altman and Greg Brockman of breaking the founding agreement of the company to build AI to benefit humanity, instead shifting the non-profit to a for-profit structure and unjustly enriching themselves along the way. He is seeking the removal of Altman and Brockman, the undoing of the for-profit conversion, and $134bn in damages, which he wants redistributed to OpenAI’s non-profit arm.
+a composite image of two men in suits
+‘Stole a charity’: Elon Musk accuses Sam Altman of betrayal in courtroom showdown
+Read more
+
+OpenAI has rejected Musk’s claims as “motivated by jealousy”, stating that he was always aware of plans for the business and that he left OpenAI in 2018 only after a failed bid to take it over. The company holds that what Musk describes as his $38m investment into the non-profit was actually a tax-deductible donation, and does not entitle him to any say over the firm. OpenAI also emphasizes that it is still overseen by the original non-profit.
+
+Musk first took the stand on Tuesday after his lawyer, Steven Molo, called him to testify. Musk largely rehashed his career and answered a series of softball questions from Molo, which led to Judge Yvonne Gonzalez Rogers repeatedly admonishing Musk’s lawyer for leading the witness. At one point Gonzalez Rogers asked Molo: “Are you giving testimony?”
+
+The tone of the questions and Musk’s demeanor noticeably shifted as soon as OpenAI’s lead counsel William Savitt began his cross-examination. Over a series of rapid-fire questions, Savitt presented Musk with email exchanges from his time at OpenAI and tried to show that Musk was always aware of the company’s potential for-profit plans.
+
+At one point, Savitt asked Musk: “OpenAI was formed as a nonprofit in 2015. True or false?” After prevaricating, Musk said: “In this case, yes.” But then he went on: “The reason you can’t simply answer a yes or no question, for example if you ask, ‘Have you stopped beating your wife … ’”Judge Gonzalez Rogers stopped him from finishing, as several people audibly gasped.
+
+Much of Savitt’s questioning focused on internal emails and text messages about whether Musk wanted to create a for-profit, which included an email from within Musk’s company Neuralink, where Musk wrote that “setting it up as a nonprofit might be the wrong move”. One later document introduced into evidence included notes from an event that Savitt referred to as the “haunted mansion meeting”, since it took place in a supposedly haunted mansion that Musk had just bought in San Francisco. According to the notes, Musk suggested creating a for-profit at that meeting.
+
+Musk’s common response to these questions about creating a for-profit was: “I don’t think creating a for-profit as an adjunct to a non-profit is breaking a promise.”
+
+Tesla was also a central point of questioning. Savitt, the OpenAI lawyer, pointed out that Musk was on OpenAI’s board through February 2018, which entailed a legal obligation to act in the best interest of the company, but simultaneously was allegedly poaching employees for Tesla, including the renowned engineer Andrej Karpathy. In one email from June 2017 with Jim Keller, the vice-president of autopilot at Tesla, Musk said, “The OpenAI guys are going to want to kill me” regarding him recruiting Karpathy.
+
+Savitt questioned Musk about Tesla’s pursuits with artificial general intelligence, submitting several documents into evidence, including one in which Musk said he plans to build an “enormous AI-enabled robot army”.
+
+“If we build the robots, I wanted to make sure we’re safe and we don’t have a terminator situation,” Musk testified.
+
+Peripheral to the legal showdown, the court was packed on Wednesday with a mix of media and eager young men who lined up before dawn to get a glimpse – and a picture – of Musk. Judge Gonzalez Rogers at one point threatened that if observers did not stop taking photos and videos, a violation of the court’s rules, she would shut down an overflow room for watching the proceedings.
+
+Earlier in the day, Musk gave testimony that outlined his version of how OpenAI was founded in 2015. Musk claimed that the company only existed because of an alarming conversation about AI he had had with Google co-founder Larry Page, which made him believe that he needed to build a counterpoint or Page would doom humanity.
+
+Musk’s own lawyers have tried to paint him as a tech pioneer who is deeply invested in helping humanity. As Molo started his line of questioning on Wednesday, he showed Musk emails from OpenAI engineers praising him for his tech knowledge. He also showed him a document where Musk called OpenAI’s safety team “jackasses”, and asked him what he meant.
+
+Musk said the “jackass” statement was a joke. “I don’t yell at people, basically,” Musk said. “You occasionally have to use strong language to get people to change their course.”
+
+During his testimony, Musk said his concerns about OpenAI shifting from its non-profit status started in about 2017. He claimed that an email exchange with Altman at the time showed Musk questioning whether Altman had gone back on his initial promises, and that Musk suspected they “actually wanted to create a for-profit where they had the majority of control”.
+
+Musk called himself a “fool” for providing OpenAI funding to create a billion-dollar company. He testified that he cautiously continued funding OpenAI, paying its rent and sending $5m quarterly payments, because he received assurances from Altman that the company would remain a non-profit. Musk said he left OpenAI’s board because he was too busy with his other businesses, but that he had believed the company would remain a non-profit.
+
+Musk’s departure from the board likewise is a point of contention. OpenAI says that Musk left following an attempt to take control of the company and proposing it merge with Tesla. OpenAI also argued Musk was aware of plans to create a for-profit and that its non-profit still technically oversees the business.
+
+Musk testified that it was not until late 2022, about the time that ChatGPT was released, that he felt he’d been hoodwinked. “I lost trust in Altman, and I was really concerned they were trying to steal a charity, and it turned out to be true,” he said, one of the many times Musk repeated the accusation of the theft of a non-profit.
+
+The trial is being extremely closely watched in Silicon Valley as it pits two of the tech industry’s most powerful men against each other and promises to intensify their feud. Altman and Musk have openly sniped at each other on social media in the lead-up to the trial, causing the judge to request that both parties keep their posts to a minimum.
+
+Investors and other AI companies are also keeping an eye on the trial because it threatens severe consequences for OpenAI. The company is seeking to go public on the US stock market later this year at about a $1tn valuation, and any changes to its leadership or corporate structure would threaten that IPO.
+
+The trial is taking place in a federal court in Oakland, California, where a nine-person jury will decide on Musk’s claims. If OpenAI is found liable, however, the judge will be the one to decide on any remedy. The trial is expected to last around three weeks.
+
+https://www.theguardian.com/technology/2026/apr/29/elon-musk-openai-sam-altman-lawsuit
