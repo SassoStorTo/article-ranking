@@ -464,6 +464,24 @@ button:disabled {
   margin-left: 8px;
 }
 
+.article-cell {
+  display: grid;
+  gap: 3px;
+}
+
+.article-cell strong {
+  color: #172026;
+  line-height: 1.25;
+}
+
+.article-cell span {
+  color: #686158;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
 .comparison-grid {
   display: grid;
   gap: 14px;

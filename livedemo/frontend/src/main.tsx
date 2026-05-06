@@ -321,6 +321,7 @@ function CorpusPanel({
             <ArticleBody articleId={selectedArticleId} />
           </div>
           <ExecutionPanel
+            articles={detail.articles}
             executionId={selectedExecutionId}
             onReplay={(draft) => setParameterDraft(draft)}
           />
@@ -689,9 +690,11 @@ function ParameterForm({
 }
 
 function ExecutionPanel({
+  articles,
   executionId,
   onReplay,
 }: {
+  articles: ArticleSummary[];
   executionId: string | null;
   onReplay: (draft: ParameterDraft) => void;
 }) {
@@ -752,6 +755,7 @@ function ExecutionPanel({
       {execution.data.results.map((result) => (
         <ResultPayloadTable
           key={result.id}
+          articles={articles}
           payload={result.result_json}
           selectedArticleIds={selectedArticleIds(result.result_json)}
         />
@@ -761,17 +765,24 @@ function ExecutionPanel({
 }
 
 function ResultPayloadTable({
+  articles,
   payload,
   selectedArticleIds,
 }: {
+  articles: ArticleSummary[];
   payload: ExecutionResultJson;
   selectedArticleIds: Set<string>;
 }) {
+  const articleLookup = useMemo(() => {
+    return new Map(articles.map((article) => [article.id, article]));
+  }, [articles]);
+
   if (payload.__type__ === "profile_comparison") {
     return (
       <div className="comparison-grid">
         {Object.entries(payload.rankings).map(([profile, ranking]) => (
           <RankingTable
+            articleLookup={articleLookup}
             entries={ranking.entries}
             key={profile}
             profile={profile}
@@ -785,6 +796,7 @@ function ResultPayloadTable({
   if (payload.__type__ === "selection_result") {
     return (
       <RankingTable
+        articleLookup={articleLookup}
         entries={payload.ranking.entries}
         profile={`${payload.profile} · selected ${payload.m}`}
         selectedArticleIds={selectedArticleIds}
@@ -794,6 +806,7 @@ function ResultPayloadTable({
 
   return (
     <RankingTable
+      articleLookup={articleLookup}
       entries={payload.entries}
       profile={payload.profile}
       selectedArticleIds={selectedArticleIds}
@@ -802,10 +815,12 @@ function ResultPayloadTable({
 }
 
 function RankingTable({
+  articleLookup,
   profile,
   entries,
   selectedArticleIds,
 }: {
+  articleLookup: Map<string, ArticleSummary>;
   profile: string;
   entries: RankingEntry[];
   selectedArticleIds: Set<string>;
@@ -830,7 +845,12 @@ function RankingTable({
             <tr key={entry.article_id}>
               <td>{entry.rank}</td>
               <td>
-                {entry.article_id}
+                <div className="article-cell">
+                  <strong>
+                    {articleLookup.get(entry.article_id)?.title ?? "Untitled article"}
+                  </strong>
+                  <span>{entry.article_id}</span>
+                </div>
                 {selectedArticleIds.has(entry.article_id) && (
                   <span className="selected-badge">Selected</span>
                 )}
