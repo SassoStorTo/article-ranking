@@ -26,6 +26,8 @@ def create_session_factory(db_engine: Engine) -> sessionmaker[Session]:
 
 
 def init_db(db_engine: Engine = engine) -> None:
+    from livedemo.app.db import models as _models  # noqa: F401
+
     Base.metadata.create_all(bind=db_engine)
 
 
