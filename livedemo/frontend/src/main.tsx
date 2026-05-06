@@ -14,12 +14,19 @@ import {
   StructuredArticleRecord,
   CorpusDetail,
   CorpusSummary,
+  ExecutionDetail,
+  ExecutionResultJson,
+  RankingEntry,
   createCorpus,
   decomposeArticle,
   deleteCorpus,
   getArticle,
   getCorpus,
+  getExecution,
   listCorpora,
+  runCompareExecution,
+  runRankExecution,
+  runSelectExecution,
   uploadArticles,
 } from "./api/client";
 
@@ -28,6 +35,9 @@ const queryClient = new QueryClient();
 function App() {
   const [selectedCorpusId, setSelectedCorpusId] = useState<string | null>(null);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(
+    null,
+  );
   const corpora = useQuery({ queryKey: ["corpora"], queryFn: listCorpora });
 
   const selectedCorpus = useMemo(() => {
@@ -58,6 +68,7 @@ function App() {
           onSelect={(id) => {
             setSelectedCorpusId(id);
             setSelectedArticleId(null);
+            setSelectedExecutionId(null);
           }}
         />
         {selectedCorpusId ? (
@@ -66,9 +77,12 @@ function App() {
             fallbackCorpus={selectedCorpus}
             selectedArticleId={selectedArticleId}
             onSelectArticle={setSelectedArticleId}
+            selectedExecutionId={selectedExecutionId}
+            onSelectExecution={setSelectedExecutionId}
             onDeleted={() => {
               setSelectedCorpusId(null);
               setSelectedArticleId(null);
+              setSelectedExecutionId(null);
             }}
           />
         ) : (
@@ -171,12 +185,16 @@ function CorpusPanel({
   fallbackCorpus,
   selectedArticleId,
   onSelectArticle,
+  selectedExecutionId,
+  onSelectExecution,
   onDeleted,
 }: {
   corpusId: string;
   fallbackCorpus: CorpusSummary | null;
   selectedArticleId: string | null;
   onSelectArticle: (id: string | null) => void;
+  selectedExecutionId: string | null;
+  onSelectExecution: (id: string | null) => void;
   onDeleted: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -199,6 +217,21 @@ function CorpusPanel({
       await queryClient.invalidateQueries({ queryKey: ["corpora"] });
       onDeleted();
     },
+  });
+  const rankMutation = useMutation({
+    mutationFn: () => runRankExecution(corpusId),
+    onSuccess: ({ execution_id }) => onSelectExecution(execution_id),
+  });
+  const selectMutation = useMutation({
+    mutationFn: () => {
+      const articleCount = detail?.articles.length ?? 1;
+      return runSelectExecution(corpusId, Math.min(3, Math.max(1, articleCount)));
+    },
+    onSuccess: ({ execution_id }) => onSelectExecution(execution_id),
+  });
+  const compareMutation = useMutation({
+    mutationFn: () => runCompareExecution(corpusId),
+    onSuccess: ({ execution_id }) => onSelectExecution(execution_id),
   });
 
   const detail = corpus.data;
@@ -246,17 +279,232 @@ function CorpusPanel({
       {corpus.isLoading && <p className="muted">Loading articles</p>}
       {corpus.error && <p className="error-line">{corpus.error.message}</p>}
       {detail && (
-        <div className="article-grid">
-          <ArticleList
-            articles={detail.articles}
-            selectedArticleId={selectedArticleId}
-            onSelectArticle={onSelectArticle}
+        <>
+          <ExecutionControls
+            articleCount={detail.articles.length}
+            isRunning={
+              rankMutation.isPending ||
+              selectMutation.isPending ||
+              compareMutation.isPending
+            }
+            onCompare={() => compareMutation.mutate()}
+            onRank={() => rankMutation.mutate()}
+            onSelect={() => selectMutation.mutate()}
           />
-          <ArticleBody articleId={selectedArticleId} />
-        </div>
+          {rankMutation.error && (
+            <p className="error-line">{rankMutation.error.message}</p>
+          )}
+          {selectMutation.error && (
+            <p className="error-line">{selectMutation.error.message}</p>
+          )}
+          {compareMutation.error && (
+            <p className="error-line">{compareMutation.error.message}</p>
+          )}
+          <div className="article-grid">
+            <ArticleList
+              articles={detail.articles}
+              selectedArticleId={selectedArticleId}
+              onSelectArticle={onSelectArticle}
+            />
+            <ArticleBody articleId={selectedArticleId} />
+          </div>
+          <ExecutionPanel executionId={selectedExecutionId} />
+        </>
       )}
     </section>
   );
+}
+
+function ExecutionControls({
+  articleCount,
+  isRunning,
+  onRank,
+  onSelect,
+  onCompare,
+}: {
+  articleCount: number;
+  isRunning: boolean;
+  onRank: () => void;
+  onSelect: () => void;
+  onCompare: () => void;
+}) {
+  return (
+    <div className="execution-controls">
+      <button disabled={isRunning || articleCount === 0} onClick={onRank} type="button">
+        Run Rank
+      </button>
+      <button
+        disabled={isRunning || articleCount === 0}
+        onClick={onSelect}
+        type="button"
+      >
+        Run Select
+      </button>
+      <button
+        disabled={isRunning || articleCount === 0}
+        onClick={onCompare}
+        type="button"
+      >
+        Compare Profiles
+      </button>
+    </div>
+  );
+}
+
+function ExecutionPanel({ executionId }: { executionId: string | null }) {
+  const execution = useQuery({
+    queryKey: ["execution", executionId],
+    queryFn: () => getExecution(executionId ?? ""),
+    enabled: executionId !== null,
+    refetchInterval: (query) => {
+      const data = query.state.data as ExecutionDetail | undefined;
+      return data?.status === "pending" || data?.status === "running"
+        ? 1000
+        : false;
+    },
+  });
+
+  if (!executionId) {
+    return null;
+  }
+  if (execution.isLoading) {
+    return <section className="execution-panel muted">Loading execution</section>;
+  }
+  if (execution.error) {
+    return (
+      <section className="execution-panel error-line">
+        {execution.error.message}
+      </section>
+    );
+  }
+  if (!execution.data) {
+    return null;
+  }
+
+  return (
+    <section className="execution-panel" aria-labelledby="execution-title">
+      <header>
+        <div>
+          <p className="eyebrow">Execution</p>
+          <h3 id="execution-title">{formatGroupName(execution.data.kind)}</h3>
+        </div>
+        <span className={`status-pill ${execution.data.status}`}>
+          {execution.data.status}
+        </span>
+      </header>
+      {execution.data.error && <p className="error-line">{execution.data.error}</p>}
+      <details>
+        <summary>Parameters</summary>
+        <pre>{JSON.stringify(execution.data.config_json, null, 2)}</pre>
+      </details>
+      {execution.data.results.map((result) => (
+        <ResultPayloadTable
+          key={result.id}
+          payload={result.result_json}
+          selectedArticleIds={selectedArticleIds(result.result_json)}
+        />
+      ))}
+    </section>
+  );
+}
+
+function ResultPayloadTable({
+  payload,
+  selectedArticleIds,
+}: {
+  payload: ExecutionResultJson;
+  selectedArticleIds: Set<string>;
+}) {
+  if (payload.__type__ === "profile_comparison") {
+    return (
+      <div className="comparison-grid">
+        {Object.entries(payload.rankings).map(([profile, ranking]) => (
+          <RankingTable
+            entries={ranking.entries}
+            key={profile}
+            profile={profile}
+            selectedArticleIds={selectedArticleIds}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (payload.__type__ === "selection_result") {
+    return (
+      <RankingTable
+        entries={payload.ranking.entries}
+        profile={`${payload.profile} · selected ${payload.m}`}
+        selectedArticleIds={selectedArticleIds}
+      />
+    );
+  }
+
+  return (
+    <RankingTable
+      entries={payload.entries}
+      profile={payload.profile}
+      selectedArticleIds={selectedArticleIds}
+    />
+  );
+}
+
+function RankingTable({
+  profile,
+  entries,
+  selectedArticleIds,
+}: {
+  profile: string;
+  entries: RankingEntry[];
+  selectedArticleIds: Set<string>;
+}) {
+  return (
+    <div className="result-table-wrap">
+      <h4>{profile}</h4>
+      <table className="result-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Article</th>
+            <th>Score</th>
+            <th>Centrality</th>
+            <th>Coverage</th>
+            <th>Density</th>
+            <th>Entities</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => (
+            <tr key={entry.article_id}>
+              <td>{entry.rank}</td>
+              <td>
+                {entry.article_id}
+                {selectedArticleIds.has(entry.article_id) && (
+                  <span className="selected-badge">Selected</span>
+                )}
+              </td>
+              <td>{formatScore(entry.score)}</td>
+              <td>{formatScore(entry.components.centrality)}</td>
+              <td>{formatScore(entry.components.coverage)}</td>
+              <td>{formatScore(entry.components.density)}</td>
+              <td>{formatScore(entry.components.entity_coverage)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function selectedArticleIds(payload: ExecutionResultJson): Set<string> {
+  if (payload.__type__ !== "selection_result") {
+    return new Set();
+  }
+  return new Set(payload.selected.map((entry) => entry.article_id));
+}
+
+function formatScore(value: number | undefined) {
+  return typeof value === "number" ? value.toFixed(3) : "n/a";
 }
 
 function ArticleList({
