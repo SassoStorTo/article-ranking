@@ -4,11 +4,8 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
-from news_ranker.config import RankerConfig
-from news_ranker.decompose import DecompositionClient, DecompositionError
 from sqlalchemy import select
-from sqlalchemy.orm import Session
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from livedemo.app.db.models import Article, Corpus, StructuredArticle
 from livedemo.app.deps import (
@@ -34,6 +31,8 @@ from livedemo.app.services.ingestion import (
     UnsupportedArticleTypeError,
     create_articles,
 )
+from news_ranker.config import RankerConfig
+from news_ranker.decompose import DecompositionClient, DecompositionError
 
 router = APIRouter(tags=["articles"])
 DbSession = Annotated[Session, Depends(get_db)]

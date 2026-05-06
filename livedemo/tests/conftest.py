@@ -1,3 +1,4 @@
+import json
 from collections.abc import Generator
 
 import pytest
@@ -8,8 +9,54 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from livedemo.app.db.session import create_session_factory
-from livedemo.app.deps import get_db
+from livedemo.app.deps import get_db, get_mistral_client, get_session_factory
 from livedemo.app.main import create_app
+
+
+class FakeDecompositionClient:
+    def __init__(self) -> None:
+        self.fail = False
+        self.headline = "Neutral headline"
+        self.calls: list[dict[str, str]] = []
+
+    def complete(self, *, model: str, system_prompt: str, user_prompt: str) -> str:
+        self.calls.append({
+            "model": model,
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt,
+        })
+        if self.fail:
+            return "{"
+        return json.dumps({
+            "headline_neutral": self.headline,
+            "topic": "test topic",
+            "entities": {
+                "people": [{"name": "Alice", "role": "source"}],
+                "organizations": [],
+                "locations": [{"name": "Rome", "role": "dateline"}],
+            },
+            "events": [
+                {
+                    "id": "event-1",
+                    "when": None,
+                    "who": ["Alice"],
+                    "what": "reported the event",
+                    "where": "Rome",
+                    "why": None,
+                    "how": None,
+                    "depends_on": [],
+                }
+            ],
+            "claims": [
+                {
+                    "id": "claim-1",
+                    "statement": "Alice described the event.",
+                    "type": "fact",
+                    "attributed_to": "Alice",
+                }
+            ],
+            "context": ["Background context"],
+        })
 
 
 @pytest.fixture
@@ -29,7 +76,16 @@ def db_session_factory(db_engine: Engine) -> sessionmaker[Session]:
 
 
 @pytest.fixture
-def app(db_engine: Engine, db_session_factory: sessionmaker[Session]) -> FastAPI:
+def fake_decomposition_client() -> FakeDecompositionClient:
+    return FakeDecompositionClient()
+
+
+@pytest.fixture
+def app(
+    db_engine: Engine,
+    db_session_factory: sessionmaker[Session],
+    fake_decomposition_client: FakeDecompositionClient,
+) -> FastAPI:
     app = create_app(db_engine=db_engine)
 
     def override_get_db() -> Generator[Session]:
@@ -37,6 +93,8 @@ def app(db_engine: Engine, db_session_factory: sessionmaker[Session]) -> FastAPI
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_session_factory] = lambda: db_session_factory
+    app.dependency_overrides[get_mistral_client] = lambda: fake_decomposition_client
     return app
 
 

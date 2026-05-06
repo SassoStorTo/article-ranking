@@ -1,17 +1,16 @@
 from collections.abc import Generator
 from sys import modules
+from typing import Annotated
 
 from fastapi import Depends, Request
-from news_ranker.config import RankerConfig
-from news_ranker.decompose import DecompositionClient
-from news_ranker.mistral import MistralDecompositionClient
-from sqlalchemy.orm import Session
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from livedemo.app.config import Settings
 from livedemo.app.config import get_settings as load_settings
-from livedemo.app.db.session import SessionLocal
-from livedemo.app.db.session import iter_db
+from livedemo.app.db.session import SessionLocal, iter_db
+from news_ranker.config import RankerConfig
+from news_ranker.decompose import DecompositionClient
+from news_ranker.mistral import MistralDecompositionClient
 
 
 def get_settings() -> Settings:
@@ -20,6 +19,9 @@ def get_settings() -> Settings:
 
 def get_db() -> Generator[Session]:
     yield from iter_db()
+
+
+SettingsDep = Annotated[Settings, Depends(get_settings)]
 
 
 def get_session_factory() -> sessionmaker[Session]:
@@ -46,7 +48,7 @@ def create_mistral_client(settings: Settings) -> MistralDecompositionClient:
 
 def get_mistral_client(
     request: Request,
-    settings: Settings = Depends(get_settings),
+    settings: SettingsDep,
 ) -> DecompositionClient:
     client = getattr(request.app.state, "mistral_client", None)
     if client is not None:

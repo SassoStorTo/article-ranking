@@ -1,6 +1,10 @@
 import logging
 from uuid import UUID
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session, sessionmaker
+
+from livedemo.app.db.models import Article, StructuredArticle, utc_now
 from news_ranker.config import RankerConfig
 from news_ranker.decompose import (
     DecompositionClient,
@@ -8,10 +12,6 @@ from news_ranker.decompose import (
     decompose,
 )
 from news_ranker.schemas import StructuredArticle as NewsRankerStructuredArticle
-from sqlalchemy import select
-from sqlalchemy.orm import Session, sessionmaker
-
-from livedemo.app.db.models import Article, StructuredArticle, utc_now
 
 logger = logging.getLogger(__name__)
 
