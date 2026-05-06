@@ -320,7 +320,10 @@ function CorpusPanel({
             />
             <ArticleBody articleId={selectedArticleId} />
           </div>
-          <ExecutionPanel executionId={selectedExecutionId} />
+          <ExecutionPanel
+            executionId={selectedExecutionId}
+            onReplay={(draft) => setParameterDraft(draft)}
+          />
         </>
       )}
     </section>
@@ -685,7 +688,13 @@ function ParameterForm({
   );
 }
 
-function ExecutionPanel({ executionId }: { executionId: string | null }) {
+function ExecutionPanel({
+  executionId,
+  onReplay,
+}: {
+  executionId: string | null;
+  onReplay: (draft: ParameterDraft) => void;
+}) {
   const execution = useQuery({
     queryKey: ["execution", executionId],
     queryFn: () => getExecution(executionId ?? ""),
@@ -722,9 +731,18 @@ function ExecutionPanel({ executionId }: { executionId: string | null }) {
           <p className="eyebrow">Execution</p>
           <h3 id="execution-title">{formatGroupName(execution.data.kind)}</h3>
         </div>
-        <span className={`status-pill ${execution.data.status}`}>
-          {execution.data.status}
-        </span>
+        <div className="execution-header-actions">
+          <button
+            disabled={execution.data.kind === "evaluate"}
+            onClick={() => onReplay(draftFromExecution(execution.data))}
+            type="button"
+          >
+            Replay
+          </button>
+          <span className={`status-pill ${execution.data.status}`}>
+            {execution.data.status}
+          </span>
+        </div>
       </header>
       {execution.data.error && <p className="error-line">{execution.data.error}</p>}
       <details>
@@ -838,15 +856,49 @@ function selectedArticleIds(payload: ExecutionResultJson): Set<string> {
 }
 
 function normalizeConfigDraft(config?: RankerConfigPayload): RankerConfigPayload {
+  const source = config as (RankerConfigPayload & { m?: number | null }) | undefined;
   const normalized = {
     ...defaultRankerConfig,
-    ...(config ?? {}),
+    similarity_threshold:
+      source?.similarity_threshold ?? defaultRankerConfig.similarity_threshold,
+    linkage: source?.linkage ?? defaultRankerConfig.linkage,
+    coverage_weighting:
+      source?.coverage_weighting ?? defaultRankerConfig.coverage_weighting,
     profiles: {
       ...defaultRankerConfig.profiles,
-      ...(config?.profiles ?? {}),
+      ...(source?.profiles ?? {}),
     },
+    top_m: source?.top_m ?? defaultRankerConfig.top_m,
+    selection_mode: source?.selection_mode ?? defaultRankerConfig.selection_mode,
+    selection_lambda:
+      source?.selection_lambda ?? defaultRankerConfig.selection_lambda,
+    embedding_model_name:
+      source?.embedding_model_name ?? defaultRankerConfig.embedding_model_name,
+    llm_model_name: source?.llm_model_name ?? defaultRankerConfig.llm_model_name,
+    prompt_version: source?.prompt_version ?? defaultRankerConfig.prompt_version,
+    schema_version: source?.schema_version ?? defaultRankerConfig.schema_version,
+    cache_dir: source?.cache_dir ?? defaultRankerConfig.cache_dir,
   };
   return JSON.parse(JSON.stringify(normalized)) as RankerConfigPayload;
+}
+
+function draftFromExecution(execution: ExecutionDetail): ParameterDraft {
+  const config = normalizeConfigDraft(
+    execution.config_json as RankerConfigPayload & { m?: number | null },
+  );
+  const storedM =
+    typeof execution.config_json.m === "number"
+      ? execution.config_json.m
+      : execution.m;
+  return {
+    mode: execution.kind === "evaluate" ? "rank" : execution.kind,
+    config,
+    profile: execution.profiles[0] ?? "representative",
+    profiles: execution.profiles.length
+      ? execution.profiles
+      : ["representative", "comprehensive", "concise"],
+    m: storedM ?? config.top_m ?? 3,
+  };
 }
 
 function formatScore(value: number | undefined) {

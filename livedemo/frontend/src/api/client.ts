@@ -337,6 +337,21 @@ export async function runCompareExecution(payload: {
   return parseJson<ExecutionAccepted>(response);
 }
 
+export async function replayExecution(
+  executionId: string,
+  payload: { corpus_id?: string } = {},
+): Promise<ExecutionAccepted> {
+  const response = await fetch(
+    `${apiBaseUrl}/api/executions/${executionId}/replay`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  );
+  return parseJson<ExecutionAccepted>(response);
+}
+
 export async function getExecution(
   executionId: string,
 ): Promise<ExecutionDetail> {

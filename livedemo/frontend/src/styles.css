@@ -405,6 +405,14 @@ button:disabled {
   justify-content: space-between;
 }
 
+.execution-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .execution-panel details {
   border-bottom: 1px solid #e1dbd1;
   border-top: 1px solid #e1dbd1;
