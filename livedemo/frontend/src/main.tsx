@@ -142,7 +142,7 @@ function App() {
       ) : null}
 
       {page === "corpora" ? (
-        <section className="workspace" aria-label="Corpus workspace">
+        <section className="workspace" aria-label="Article set workspace">
           <aside className="sidebar">
             <CorpusList
               corpora={corpora.data ?? []}
@@ -213,7 +213,7 @@ function TopNavigation({
           onClick={() => onNavigate("corpora")}
           type="button"
         >
-          Corpora
+          Article Sets
         </button>
         <button
           className={
@@ -222,7 +222,7 @@ function TopNavigation({
           onClick={() => onNavigate("new-corpus")}
           type="button"
         >
-          New Corpus
+          Create Set
         </button>
         <button
           className={
@@ -278,14 +278,14 @@ function HomePage({
     <section className="home-page" aria-labelledby="home-title">
       <div className="home-hero">
         <p className="eyebrow">Workspace</p>
-        <h2 id="home-title">Rank event coverage from corpus to evidence.</h2>
+        <h2 id="home-title">Rank event coverage from article set to evidence.</h2>
         <p>
-          Create corpora, upload article text, inspect decomposition output, run
-          rankings, and compare executions from one local demo.
+          Create article sets, upload text files, inspect decomposition output,
+          run rankings, and compare executions from one local demo.
         </p>
         <div className="home-actions">
           <button onClick={onCreateCorpus} type="button">
-            Add Corpus
+            Create Article Set
           </button>
           <button className="secondary" onClick={onOpenExecutions} type="button">
             View Executions
@@ -293,18 +293,18 @@ function HomePage({
         </div>
       </div>
       <div className="home-metrics">
-        <Metric label="Corpora" value={corpora.length} />
+        <Metric label="Article Sets" value={corpora.length} />
         <Metric label="Articles" value={articleCount} />
         <Metric label="Newest" value={corpora[0]?.name ?? "none"} />
       </div>
       <section className="home-recent" aria-labelledby="recent-corpora-title">
         <div className="section-heading">
-          <h3 id="recent-corpora-title">Recent Corpora</h3>
+          <h3 id="recent-corpora-title">Recent Article Sets</h3>
           <span>{corpora.length}</span>
         </div>
-        {isLoading && <p className="muted">Loading corpora</p>}
+        {isLoading && <p className="muted">Loading article sets</p>}
         {!isLoading && newestCorpora.length === 0 ? (
-          <p className="muted">Create a corpus to begin ranking articles.</p>
+          <p className="muted">Create an article set to begin ranking articles.</p>
         ) : null}
         <div className="corpus-buttons">
           {newestCorpora.map((corpus) => (
@@ -328,9 +328,9 @@ function NewCorpusPage({ onCreated }: { onCreated: (id: string) => void }) {
     <section className="single-page" aria-labelledby="new-corpus-title">
       <div className="page-heading">
         <p className="eyebrow">Create</p>
-        <h2 id="new-corpus-title">New Corpus</h2>
+        <h2 id="new-corpus-title">Create Article Set</h2>
         <p className="muted">
-          Start with an event name, then add article text files on the articles
+          Start with an event name, then add article text files on the Articles
           page.
         </p>
       </div>
@@ -378,7 +378,7 @@ function NewCorpusForm({ onCreated }: { onCreated: (id: string) => void }) {
         />
       </label>
       <button type="submit" disabled={mutation.isPending || !name.trim()}>
-        Create Corpus
+        Create Article Set
       </button>
       {mutation.error && <p className="error-line">{mutation.error.message}</p>}
     </form>
@@ -401,13 +401,13 @@ function CorpusList({
   return (
     <section className="corpus-list" aria-labelledby="corpora-title">
       <div className="section-heading">
-        <h2 id="corpora-title">Corpora</h2>
+        <h2 id="corpora-title">Article Sets</h2>
         <span>{corpora.length}</span>
       </div>
-      {isLoading && <p className="muted">Loading corpora</p>}
+      {isLoading && <p className="muted">Loading article sets</p>}
       {error && <p className="error-line">{error.message}</p>}
       {!isLoading && corpora.length === 0 && (
-        <p className="muted">No corpora yet.</p>
+        <p className="muted">No article sets yet.</p>
       )}
       <div className="corpus-buttons">
         {corpora.map((corpus) => (
@@ -613,18 +613,18 @@ function ExecutionsIndex({
           <h2 id="old-title">Execution History</h2>
         </div>
         <button onClick={onClose} type="button">
-          Corpora
+          Article Sets
         </button>
       </header>
 
       <div className="execution-filters">
         <label>
-          Corpus
+          Article Set
           <select
             onChange={(event) => updateFilter("corpusId", event.target.value)}
             value={filters.corpusId}
           >
-            <option value="">All corpora</option>
+            <option value="">All article sets</option>
             {corpora.map((corpus) => (
               <option key={corpus.id} value={corpus.id}>
                 {corpus.name}
@@ -706,7 +706,7 @@ function ExecutionsIndex({
           <table className="result-table executions-table">
             <thead>
               <tr>
-                <th>Corpus</th>
+                <th>Article Set</th>
                 <th>Kind</th>
                 <th>Profile</th>
                 <th>Status</th>
@@ -861,7 +861,10 @@ function CompareExecutionModal({
         </header>
         <div className="compare-summary">
           <Metric label="Target" value={formatGroupName(target.kind)} />
-          <Metric label="Corpus" value={target.corpus_name || target.corpus_id} />
+          <Metric
+            label="Article Set"
+            value={target.corpus_name || target.corpus_id}
+          />
         </div>
         <div className="execution-filters">
           <label>
@@ -961,13 +964,13 @@ function CorpusPanel({
   });
 
   const detail = corpus.data;
-  const heading = detail?.name ?? fallbackCorpus?.name ?? "Corpus";
+  const heading = detail?.name ?? fallbackCorpus?.name ?? "Article Set";
 
   return (
     <section className="detail-panel" aria-labelledby="corpus-title">
       <header className="detail-header">
         <div>
-          <p className="eyebrow">Corpus</p>
+          <p className="eyebrow">Article Set</p>
           <h2 id="corpus-title">{heading}</h2>
           {detail?.notes && <p className="notes">{detail.notes}</p>}
         </div>
@@ -975,13 +978,17 @@ function CorpusPanel({
           className="danger"
           disabled={deleteMutation.isPending}
           onClick={() => {
-            if (window.confirm(`Delete corpus "${heading}" and all of its data?`)) {
+            if (
+              window.confirm(
+                `Delete article set "${heading}" and all of its data?`,
+              )
+            ) {
               deleteMutation.mutate();
             }
           }}
           type="button"
         >
-          Delete Corpus
+          Delete Article Set
         </button>
       </header>
       {deleteMutation.error && (
@@ -2291,9 +2298,14 @@ function dateEnd(value: string) {
 
 function EmptyWorkspace() {
   return (
-    <section className="detail-panel empty-state" aria-label="No corpus selected">
-      <h2>Choose a Corpus</h2>
-      <p className="muted">Create or select a corpus to manage text articles.</p>
+    <section
+      className="detail-panel empty-state"
+      aria-label="No article set selected"
+    >
+      <h2>Choose an Article Set</h2>
+      <p className="muted">
+        Create or select an article set to manage text articles.
+      </p>
     </section>
   );
 }
