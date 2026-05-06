@@ -112,12 +112,7 @@ class ProfileWeights(ApiSchema):
 
     @model_validator(mode="after")
     def validate_weight_sum(self) -> Self:
-        total = (
-            self.centrality
-            + self.coverage
-            + self.density
-            + self.entity_coverage
-        )
+        total = self.centrality + self.coverage + self.density + self.entity_coverage
         if abs(total - 1.0) > 1e-6:
             msg = "profile weights must sum to 1.0"
             raise ValueError(msg)

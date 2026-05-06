@@ -327,9 +327,7 @@ def replay_execution(
             else None
         ),
         profiles=(
-            source.profiles
-            if source.kind == ExecutionKind.COMPARE_PROFILES
-            else None
+            source.profiles if source.kind == ExecutionKind.COMPARE_PROFILES else None
         ),
         m=m,
         client=client,

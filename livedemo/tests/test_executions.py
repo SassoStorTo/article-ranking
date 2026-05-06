@@ -1,6 +1,8 @@
+import json
 import time
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 from tests.test_corpus_articles import create_corpus, upload_txt
 
@@ -62,6 +64,11 @@ def test_rank_execution_lifecycle_and_detail_payload(client: TestClient) -> None
     assert detail["profiles"] == ["representative"]
     assert detail["config_json"]["similarity_threshold"] == 0.85
     assert detail["config_json"]["selection_mode"] == "top_score"
+    assert set(detail["config_json"]["profiles"]) == {
+        "representative",
+        "comprehensive",
+        "concise",
+    }
     assert detail["results"][0]["profile"] == "representative"
     result = detail["results"][0]["result_json"]
     assert result["__type__"] == "rank_result"
@@ -153,3 +160,115 @@ def test_execution_list_filters_and_delete(client: TestClient) -> None:
     delete_response = client.delete(f"/api/executions/{select_id}")
     assert delete_response.status_code == 204
     assert client.get(f"/api/executions/{select_id}").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"linkage": "complete"},
+        {"coverage_weighting": "frequency"},
+        {"selection_mode": "rarity"},
+        {"top_m": 0},
+        {
+            "profiles": {
+                "representative": {
+                    "centrality": 0.4,
+                    "coverage": 0.5,
+                    "density": 0.1,
+                }
+            }
+        },
+        {
+            "profiles": {
+                "representative": {
+                    "centrality": -0.1,
+                    "coverage": 0.9,
+                    "density": 0.2,
+                    "entity_coverage": 0.0,
+                }
+            }
+        },
+        {
+            "profiles": {
+                "representative": {
+                    "centrality": 0.5,
+                    "coverage": 0.5,
+                    "density": 0.5,
+                    "entity_coverage": 0.0,
+                }
+            }
+        },
+    ],
+)
+def test_ranker_config_validation_failures(
+    client: TestClient,
+    config: dict[str, Any],
+) -> None:
+    corpus_id = create_corpus_with_articles(client)
+
+    response = client.post(
+        "/api/executions/rank",
+        json={
+            "corpus_id": corpus_id,
+            "profile": "representative",
+            "config": config,
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_replay_persists_byte_identical_config(client: TestClient) -> None:
+    corpus_id = create_corpus_with_articles(client)
+    execution_id = start_execution(
+        client,
+        "/api/executions/select",
+        {
+            "corpus_id": corpus_id,
+            "profile": "representative",
+            "m": 1,
+            "config": {
+                "similarity_threshold": 0.75,
+                "selection_mode": "mmr",
+                "selection_lambda": 0.65,
+                "top_m": 1,
+            },
+        },
+    )
+    source = wait_for_execution(client, execution_id)
+
+    response = client.post(f"/api/executions/{execution_id}/replay", json={})
+
+    assert response.status_code == 202
+    replay_id = response.json()["execution_id"]
+    replay = wait_for_execution(client, replay_id)
+    assert replay["status"] == "succeeded"
+    assert replay["kind"] == source["kind"]
+    assert replay["m"] == source["m"]
+    assert json.dumps(replay["config_json"], sort_keys=True) == json.dumps(
+        source["config_json"],
+        sort_keys=True,
+    )
+
+
+def test_replay_can_target_alternate_corpus(client: TestClient) -> None:
+    source_corpus_id = create_corpus_with_articles(client)
+    alternate_corpus_id = create_corpus_with_articles(client)
+    execution_id = start_execution(
+        client,
+        "/api/executions/rank",
+        {"corpus_id": source_corpus_id, "profile": "representative"},
+    )
+    source = wait_for_execution(client, execution_id)
+
+    response = client.post(
+        f"/api/executions/{execution_id}/replay",
+        json={"corpus_id": alternate_corpus_id},
+    )
+
+    assert response.status_code == 202
+    replay = wait_for_execution(client, response.json()["execution_id"])
+    assert replay["status"] == "succeeded"
+    assert replay["corpus_id"] == alternate_corpus_id
+    assert replay["profiles"] == ["representative"]
+    assert replay["config_json"] == source["config_json"]
