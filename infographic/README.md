@@ -2,8 +2,12 @@
 
 This folder is a static GitHub Pages page for the ranking-system infographic.
 
-When GitHub Pages is configured to publish from the repository root, the page is
-available at:
+When GitHub Pages is configured to publish from the repository root, the infographic is
+available at the site root:
+
+`https://<owner>.github.io/<repo>/`
+
+It is also available at:
 
 `https://<owner>.github.io/<repo>/infographic/`
 
