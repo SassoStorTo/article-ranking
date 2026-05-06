@@ -349,6 +349,15 @@ export async function getArticle(articleId: string): Promise<ArticleDetail> {
   return parseJson<ArticleDetail>(response);
 }
 
+export async function deleteArticle(articleId: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl}/api/articles/${articleId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    await parseJson<never>(response);
+  }
+}
+
 export async function decomposeArticle(
   articleId: string,
 ): Promise<StructuredArticleRecord> {

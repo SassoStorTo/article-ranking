@@ -30,6 +30,7 @@ import {
   createUserStudyBundleArtifact,
   defaultRankerConfig,
   decomposeArticle,
+  deleteArticle,
   deleteCorpus,
   deleteExecution,
   getArticle,
@@ -417,7 +418,7 @@ function ArticleManagementPage({
   selectedCorpusId: string | null;
   selectedArticleId: string | null;
   onSelectCorpus: (id: string) => void;
-  onSelectArticle: (id: string) => void;
+  onSelectArticle: (id: string | null) => void;
 }) {
   const queryClient = useQueryClient();
   const corpus = useQuery({
@@ -490,7 +491,16 @@ function ArticleManagementPage({
                   onSelectArticle={onSelectArticle}
                   selectedArticleId={selectedArticleId}
                 />
-                <ArticleBody articleId={selectedArticleId} />
+                <ArticleBody
+                  articleId={selectedArticleId}
+                  onDeleted={(corpusId) => {
+                    onSelectArticle(null);
+                    void queryClient.invalidateQueries({ queryKey: ["corpora"] });
+                    void queryClient.invalidateQueries({
+                      queryKey: ["corpus", corpusId],
+                    });
+                  }}
+                />
               </div>
             )}
           </>
@@ -943,10 +953,14 @@ function CorpusPanel({
         <button
           className="danger"
           disabled={deleteMutation.isPending}
-          onClick={() => deleteMutation.mutate()}
+          onClick={() => {
+            if (window.confirm(`Delete corpus "${heading}" and all of its data?`)) {
+              deleteMutation.mutate();
+            }
+          }}
           type="button"
         >
-          Delete
+          Delete Corpus
         </button>
       </header>
       {deleteMutation.error && (
@@ -2057,7 +2071,13 @@ function ArticleList({
   );
 }
 
-function ArticleBody({ articleId }: { articleId: string | null }) {
+function ArticleBody({
+  articleId,
+  onDeleted,
+}: {
+  articleId: string | null;
+  onDeleted?: (corpusId: string) => void;
+}) {
   const queryClient = useQueryClient();
   const article = useQuery({
     queryKey: ["article", articleId],
@@ -2071,6 +2091,20 @@ function ArticleBody({ articleId }: { articleId: string | null }) {
         queryClient.invalidateQueries({ queryKey: ["article", articleId] }),
         queryClient.invalidateQueries({ queryKey: ["corpus"] }),
       ]);
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteArticle(articleId ?? ""),
+    onSuccess: async () => {
+      const corpusId = article.data?.corpus_id;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["corpora"] }),
+        queryClient.invalidateQueries({ queryKey: ["corpus", corpusId] }),
+        queryClient.invalidateQueries({ queryKey: ["article", articleId] }),
+      ]);
+      if (corpusId) {
+        onDeleted?.(corpusId);
+      }
     },
   });
 
@@ -2094,16 +2128,35 @@ function ArticleBody({ articleId }: { articleId: string | null }) {
             <h3>{article.data.title}</h3>
             <p>{article.data.filename}</p>
           </div>
-          <button
-            disabled={decomposeMutation.isPending}
-            onClick={() => decomposeMutation.mutate()}
-            type="button"
-          >
-            {decomposeMutation.isPending ? "Running" : "Decompose"}
-          </button>
+          <div className="row-actions">
+            <button
+              disabled={decomposeMutation.isPending || deleteMutation.isPending}
+              onClick={() => decomposeMutation.mutate()}
+              type="button"
+            >
+              {decomposeMutation.isPending ? "Running" : "Decompose"}
+            </button>
+            {onDeleted && (
+              <button
+                className="danger"
+                disabled={deleteMutation.isPending}
+                onClick={() => {
+                  if (window.confirm(`Delete article "${article.data.title}"?`)) {
+                    deleteMutation.mutate();
+                  }
+                }}
+                type="button"
+              >
+                Delete Article
+              </button>
+            )}
+          </div>
         </header>
         {decomposeMutation.error && (
           <p className="error-line">{decomposeMutation.error.message}</p>
+        )}
+        {deleteMutation.error && (
+          <p className="error-line">{deleteMutation.error.message}</p>
         )}
         <pre>{article.data.body}</pre>
       </article>
