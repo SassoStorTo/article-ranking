@@ -48,7 +48,7 @@ import {
 
 const queryClient = new QueryClient();
 type RunMode = Exclude<ExecutionKind, "evaluate">;
-type AppPage = "home" | "corpora" | "executions";
+type AppPage = "home" | "corpora" | "new-corpus" | "articles" | "executions";
 
 type ParameterDraft = {
   mode: RunMode;
@@ -79,7 +79,7 @@ function App() {
         <HomePage
           corpora={corpora.data ?? []}
           isLoading={corpora.isLoading}
-          onCreateCorpus={() => setPage("corpora")}
+          onCreateCorpus={() => setPage("new-corpus")}
           onOpenCorpus={(id) => {
             setSelectedCorpusId(id);
             setSelectedArticleId(null);
@@ -87,6 +87,32 @@ function App() {
             setPage("corpora");
           }}
           onOpenExecutions={() => setPage("executions")}
+        />
+      ) : null}
+
+      {page === "new-corpus" ? (
+        <NewCorpusPage
+          onCreated={(id) => {
+            setSelectedCorpusId(id);
+            setSelectedArticleId(null);
+            setSelectedExecutionId(null);
+            setPage("articles");
+          }}
+        />
+      ) : null}
+
+      {page === "articles" ? (
+        <ArticleManagementPage
+          corpora={corpora.data ?? []}
+          isLoadingCorpora={corpora.isLoading}
+          selectedArticleId={selectedArticleId}
+          selectedCorpusId={selectedCorpusId}
+          onSelectArticle={setSelectedArticleId}
+          onSelectCorpus={(id) => {
+            setSelectedCorpusId(id);
+            setSelectedArticleId(null);
+            setSelectedExecutionId(null);
+          }}
         />
       ) : null}
 
@@ -121,13 +147,6 @@ function App() {
             />
           </aside>
           <div className="corpus-workspace">
-            <NewCorpusForm
-              onCreated={(id) => {
-                setSelectedCorpusId(id);
-                setSelectedArticleId(null);
-                setSelectedExecutionId(null);
-              }}
-            />
             {selectedCorpusId ? (
               <CorpusPanel
                 corpusId={selectedCorpusId}
@@ -181,6 +200,24 @@ function TopNavigation({
           type="button"
         >
           Corpora
+        </button>
+        <button
+          className={
+            currentPage === "new-corpus" ? "nav-button selected" : "nav-button"
+          }
+          onClick={() => onNavigate("new-corpus")}
+          type="button"
+        >
+          New Corpus
+        </button>
+        <button
+          className={
+            currentPage === "articles" ? "nav-button selected" : "nav-button"
+          }
+          onClick={() => onNavigate("articles")}
+          type="button"
+        >
+          Articles
         </button>
         <button
           className={
@@ -260,6 +297,22 @@ function HomePage({
           ))}
         </div>
       </section>
+    </section>
+  );
+}
+
+function NewCorpusPage({ onCreated }: { onCreated: (id: string) => void }) {
+  return (
+    <section className="single-page" aria-labelledby="new-corpus-title">
+      <div className="page-heading">
+        <p className="eyebrow">Create</p>
+        <h2 id="new-corpus-title">New Corpus</h2>
+        <p className="muted">
+          Start with an event name, then add article text files on the articles
+          page.
+        </p>
+      </div>
+      <NewCorpusForm onCreated={onCreated} />
     </section>
   );
 }
@@ -347,6 +400,102 @@ function CorpusList({
           </button>
         ))}
       </div>
+    </section>
+  );
+}
+
+function ArticleManagementPage({
+  corpora,
+  isLoadingCorpora,
+  selectedCorpusId,
+  selectedArticleId,
+  onSelectCorpus,
+  onSelectArticle,
+}: {
+  corpora: CorpusSummary[];
+  isLoadingCorpora: boolean;
+  selectedCorpusId: string | null;
+  selectedArticleId: string | null;
+  onSelectCorpus: (id: string) => void;
+  onSelectArticle: (id: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const corpus = useQuery({
+    queryKey: ["corpus", selectedCorpusId],
+    queryFn: () => getCorpus(selectedCorpusId ?? ""),
+    enabled: selectedCorpusId !== null,
+  });
+  const uploadMutation = useMutation({
+    mutationFn: (files: FileList) => uploadArticles(selectedCorpusId ?? "", files),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["corpora"] }),
+        queryClient.invalidateQueries({ queryKey: ["corpus", selectedCorpusId] }),
+      ]);
+    },
+  });
+  const selectedCorpus = corpora.find((item) => item.id === selectedCorpusId);
+  const articles = corpus.data?.articles ?? [];
+
+  return (
+    <section className="workspace" aria-label="Article management workspace">
+      <aside className="sidebar">
+        <CorpusList
+          corpora={corpora}
+          error={null}
+          isLoading={isLoadingCorpora}
+          onSelect={onSelectCorpus}
+          selectedCorpusId={selectedCorpusId}
+        />
+      </aside>
+      <section className="detail-panel" aria-labelledby="articles-title">
+        <header className="detail-header">
+          <div>
+            <p className="eyebrow">Articles</p>
+            <h2 id="articles-title">{selectedCorpus?.name ?? "Add Articles"}</h2>
+            <p className="notes">
+              Upload `.txt` files, then inspect each article body and structured
+              decomposition.
+            </p>
+          </div>
+        </header>
+        {!selectedCorpusId ? (
+          <EmptyWorkspace />
+        ) : (
+          <>
+            <label className="upload-zone">
+              <input
+                accept=".txt,text/plain"
+                multiple
+                onChange={(event) => {
+                  if (event.target.files?.length) {
+                    uploadMutation.mutate(event.target.files);
+                    event.target.value = "";
+                  }
+                }}
+                type="file"
+              />
+              <span>Upload .txt Articles</span>
+            </label>
+            {uploadMutation.error && (
+              <p className="error-line">{uploadMutation.error.message}</p>
+            )}
+            {uploadMutation.isPending && <p className="muted">Uploading articles</p>}
+            {corpus.isLoading && <p className="muted">Loading articles</p>}
+            {corpus.error && <p className="error-line">{corpus.error.message}</p>}
+            {corpus.data && (
+              <div className="article-grid">
+                <ArticleList
+                  articles={articles}
+                  onSelectArticle={onSelectArticle}
+                  selectedArticleId={selectedArticleId}
+                />
+                <ArticleBody articleId={selectedArticleId} />
+              </div>
+            )}
+          </>
+        )}
+      </section>
     </section>
   );
 }
@@ -772,15 +921,6 @@ function CorpusPanel({
     queryKey: ["corpus", corpusId],
     queryFn: () => getCorpus(corpusId),
   });
-  const uploadMutation = useMutation({
-    mutationFn: (files: FileList) => uploadArticles(corpusId, files),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["corpora"] }),
-        queryClient.invalidateQueries({ queryKey: ["corpus", corpusId] }),
-      ]);
-    },
-  });
   const deleteMutation = useMutation({
     mutationFn: () => deleteCorpus(corpusId),
     onSuccess: async () => {
@@ -809,28 +949,9 @@ function CorpusPanel({
           Delete
         </button>
       </header>
-
-      <label className="upload-zone">
-        <input
-          accept=".txt,text/plain"
-          multiple
-          onChange={(event) => {
-            if (event.target.files?.length) {
-              uploadMutation.mutate(event.target.files);
-              event.target.value = "";
-            }
-          }}
-          type="file"
-        />
-        <span>Upload .txt Articles</span>
-      </label>
-      {uploadMutation.error && (
-        <p className="error-line">{uploadMutation.error.message}</p>
-      )}
       {deleteMutation.error && (
         <p className="error-line">{deleteMutation.error.message}</p>
       )}
-      {uploadMutation.isPending && <p className="muted">Uploading articles</p>}
 
       {corpus.isLoading && <p className="muted">Loading articles</p>}
       {corpus.error && <p className="error-line">{corpus.error.message}</p>}
