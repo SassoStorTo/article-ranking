@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+COPY --from=ghcr.io/astral-sh/uv:0.5.29 /uv /uvx /bin/
+
+WORKDIR /workspace
+
+COPY pyproject.toml uv.lock README.md ./
+COPY news_ranker ./news_ranker
+COPY livedemo/pyproject.toml livedemo/uv.lock livedemo/README.md ./livedemo/
+
+WORKDIR /workspace/livedemo
+ENV UV_PROJECT_ENVIRONMENT="/opt/livedemo-venv"
+RUN uv sync --no-dev \
+    --index https://download.pytorch.org/whl/cpu \
+    --index-strategy unsafe-best-match \
+    --upgrade-package torch
+
+WORKDIR /workspace
+COPY livedemo ./livedemo
+
+ENV PATH="/opt/livedemo-venv/bin:${PATH}"
+ENV PYTHONPATH="/workspace"
+
+CMD ["uvicorn", "livedemo.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

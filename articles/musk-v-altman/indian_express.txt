@@ -1,0 +1,49 @@
+$30B stake, Sam Altman ties: Greg Brockman’s testimony highlights in Elon Musk-OpenAI trial
+Musk’s lawyers argued in court that Brockman’s financial interests compromised his independence and influenced his support for Sam Altman.
+By: Tech Desk
+6 min readNew DelhiUpdated: May 6, 2026 09:03 AM IST
+Greg BrockmanGreg Brockman, president of OpenAI, walks on the day of the trial in Elon Musk's lawsuit over OpenAI's for-profit conversion, outside a federal courthouse in Oakland, California, USA, on May 4, 2026. (Image: Manuel Orbegozo/Reuters)
+Make us preferred source on Google
+
+Greg Brockman, co-founder and president of OpenAI, has disclosed for the first time that his stake in the ChatGPT-maker is worth almost $30 billion. He made the disclosure on the witness stand during the second week of the ongoing, high-stakes lawsuit trial involving Elon Musk and OpenAI.
+
+Brockman on Monday, April 4, testified that he had planned to donate $100,000 to OpenAI’s nonprofit arm but never made the donation. It also emerged that Brockman has deeper financial ties with OpenAI CEO Sam Altman than previously known. Musk’s lawyers argued in court that Brockman’s independence was potentially compromised by financial incentives that led him to support Altman in his bid to transition OpenAI into a for-profit company.
+
+For context, Musk’s 2024 lawsuit alleges that OpenAI’s shift to a for-profit structure betrayed ‌its ⁠original nonprofit mission to develop artificial general intelligence (AGI) for the benefit of humanity, and that the company’s leaders wrongfully profited from his charitable contributions.
+
+The SpaceX founder is seeking changes to OpenAI’s ​leadership and $150 billion ​in damages ⁠from OpenAI and Microsoft, one of its largest investors. The trial, which began on April 28, is being held before US District Judge Yvonne Gonzalez ​Rogers in a federal courthouse in Oakland, California. Elon Musk was the first witness to be called to the stand, where he testified for more than seven hours over three days last week. Read the highlights of Musk’s testimony here.
+
+The trial is ⁠expected to last several more weeks, with a verdict possible by mid-May. Here is a roundup of Brockman’s testimony on Monday.
+Brockman’s stake in Altman’s family fund
+
+In 2017, Sam Altman gave Greg Brockman a stake in the former’s family office that was worth $10 million at the time. Brockman on Monday said that he did not discuss his compensation directly with Musk.
+
+Musk’s lawyers read out emails in court which showed that Altman ​mentioned the arrangement during a separate conversation with Jared Birchall, Musk’s head of family office, who relayed the details to Musk.
+Also Read | Elon Musk vs OpenAI trial begins: Who is suing whom, key allegations, and what to expect
+
+“One thing worth mentioning now is that he compensated Greg ‌on the ⁠side by giving him a percentage ownership of Sam’s personal family office […] Greg is going to have a greater allegiance to Sam as a result of this arrangement,” Birchall wrote in an email to Musk, who ended up forwarding the note to Brockman with two question marks.
+
+When pressed by Musk’s lawyers on whether he was loyal to Altman, Brockman said, “I don’t know I would say it quite like that.” A day prior to Brockman’s testimony, Altman showered praise on the long-time OpenAI executive. “Impossible to imagine openai succeeding without greg!” he wrote in a post on X.
+Brockman’s shares in Cerebras, Helion
+
+On Monday, Brockman disclosed that he owned shares of AI chip startup Cerebras even at times when OpenAI was planning to spend a significant amount of money to buy Cerebras chips. Brockman had also advocated for OpenAI to acquire or merge with Cerebras.
+
+When asked by Musk’s lawyers whether he thought this was a conflict of interest, Brockman replied that he had disclosed the investment to colleagues but not directly to Musk. “Elon is sometimes hard to get a hold of,” Brockman added.
+
+Brockman also testified that he has a stake in Helion Energy, a fusion startup in which Altman has already invested hundreds of millions of dollars. In March 2026, Altman stepped ​down from Helion’s board because the two companies were looking to work together.
+Other highlights from the testimony
+
+OpenAI IPO: Brockman confirmed that OpenAI is exploring an initial public offering (IPO) after closing its latest $122 billion funding round at a $825 billion valuation in March 2026. When asked if his $30 billion stake in OpenAI would be worth significantly more after the company goes public, Brockman replied, “I’m not sure how those two are connected.”
+
+Evil Demis? At a 2015 dinner that led to OpenAI’s founding, Musk asked the table whether they thought that Google DeepMind CEO Demis Hassabis was evil as per Brockman. Last week, Musk testified that OpenAI was founded with the purpose of acting as a counterbalance to Google, which was ahead of the rest in AI at that time.
+
+Diary entries: Brockman’s 2017 journal notes were entered into evidence on Monday. It showed that Brockman felt converting OpenAI to a for-profit without Musk’s knowledge would be “pretty morally bankrupt”. On the witness stand, Brockman said that he meant it would be hard to look at himself in the mirror, but that it would still serve OpenAI’s mission. Read more about Brockman’s diary entries here.
+Also Read | OpenAI lawsuit trial updates: Testy exchanges mark day 2 of Elon Musk on witness stand
+
+AGI arms race: According to Brockman, Musk left OpenAI because he believed it had a “0% chance” of getting to AGI first, and wanted to build a competitor at Tesla to counter Google’s DeepMind. However, Musk felt that the AGI work at Tesla would have to be done in secret because “the shareholders wouldn’t like it,” Brockman testified. In addition, Brockman testified that OpenAI is “80% of the way” to AGI, which he defines as machines “at least as capable as a human at specific tasks.”
+
+Settlement offer: In a new court filing a day before Brockman’s court appearance, OpenAI said that Musk had approached Brockman to gauge interest in a settlement ​two days before their high-stakes trial got underway. Brockman then suggested both sides must drop their claims. But Musk allegedly said, “By the end of this ​week, you and Sam will be the most hated ​men in America. If you insist, so it will ⁠be.” Hence, the settlement offer fell apart.
+
+After Brockman, Altman and Microsoft chief Satya Nadella are expected to testify later this month, alongside several other high-profile names that are on the witness list such as Ilya Sutskever, Mira Murati, and Shivon Zillis, to name a few.
+
+https://indianexpress.com/article/technology/tech-news-technology/greg-brockman-testimony-highlights-elon-musk-openai-trial-10673691/
