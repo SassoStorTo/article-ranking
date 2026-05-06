@@ -195,8 +195,17 @@ def test_execution_list_filters_and_delete(client: TestClient) -> None:
         "/api/executions/select",
         {"corpus_id": corpus_id, "profile": "representative", "m": 1},
     )
-    wait_for_execution(client, rank_id)
+    compare_id = start_execution(
+        client,
+        "/api/executions/compare",
+        {
+            "corpus_id": corpus_id,
+            "profiles": ["representative", "comprehensive"],
+        },
+    )
+    rank = wait_for_execution(client, rank_id)
     wait_for_execution(client, select_id)
+    wait_for_execution(client, compare_id)
 
     response = client.get(
         "/api/executions",
@@ -206,10 +215,140 @@ def test_execution_list_filters_and_delete(client: TestClient) -> None:
     assert response.status_code == 200
     executions = response.json()
     assert [execution["id"] for execution in executions] == [select_id]
+    assert executions[0]["corpus_name"]
+    assert executions[0]["profile_summary"] == "representative"
+    assert executions[0]["has_evaluation_artifacts"] is False
+
+    profile_response = client.get(
+        "/api/executions",
+        params={"profile": "comprehensive"},
+    )
+    assert profile_response.status_code == 200
+    assert [execution["id"] for execution in profile_response.json()] == [compare_id]
+
+    date_response = client.get(
+        "/api/executions",
+        params={"created_from": rank["created_at"], "limit": 10},
+    )
+    assert date_response.status_code == 200
+    assert {execution["id"] for execution in date_response.json()} >= {
+        rank_id,
+        select_id,
+        compare_id,
+    }
+
+    first_page = client.get("/api/executions", params={"limit": 1, "offset": 0})
+    second_page = client.get("/api/executions", params={"limit": 1, "offset": 1})
+    assert first_page.status_code == 200
+    assert second_page.status_code == 200
+    assert len(first_page.json()) == 1
+    assert len(second_page.json()) == 1
+    assert first_page.json()[0]["id"] != second_page.json()[0]["id"]
 
     delete_response = client.delete(f"/api/executions/{select_id}")
     assert delete_response.status_code == 204
     assert client.get(f"/api/executions/{select_id}").status_code == 404
+
+
+def test_cross_execution_compare_artifacts_persist_on_target(
+    client: TestClient,
+) -> None:
+    corpus_id = create_corpus_with_articles(client)
+    source_id = start_execution(
+        client,
+        "/api/executions/rank",
+        {"corpus_id": corpus_id, "profile": "representative"},
+    )
+    target_id = start_execution(
+        client,
+        "/api/executions/select",
+        {"corpus_id": corpus_id, "profile": "representative", "m": 1},
+    )
+    wait_for_execution(client, source_id)
+    wait_for_execution(client, target_id)
+
+    overlap_response = client.post(
+        f"/api/executions/{target_id}/eval/top-m-overlap",
+        json={"other_execution_id": source_id, "m": 1},
+    )
+    correlation_response = client.post(
+        f"/api/executions/{target_id}/eval/rank-correlation",
+        json={"other_execution_id": source_id, "method": "kendall"},
+    )
+
+    assert overlap_response.status_code == 200
+    assert correlation_response.status_code == 200
+    artifacts_response = client.get(f"/api/executions/{target_id}/eval")
+    assert artifacts_response.status_code == 200
+    assert [artifact["helper"] for artifact in artifacts_response.json()] == [
+        "top_m_overlap",
+        "rank_correlation",
+    ]
+    list_response = client.get(
+        "/api/executions",
+        params={"corpus_id": corpus_id, "profile": "representative"},
+    )
+    assert list_response.status_code == 200
+    target_row = next(
+        execution for execution in list_response.json() if execution["id"] == target_id
+    )
+    assert target_row["has_evaluation_artifacts"] is True
+
+
+def test_rank_correlation_rejects_executions_without_common_articles(
+    client: TestClient,
+) -> None:
+    source_corpus_id = create_corpus_with_articles(client)
+    target_corpus_id = create_corpus_with_articles(client)
+    source_id = start_execution(
+        client,
+        "/api/executions/rank",
+        {"corpus_id": source_corpus_id, "profile": "representative"},
+    )
+    target_id = start_execution(
+        client,
+        "/api/executions/rank",
+        {"corpus_id": target_corpus_id, "profile": "representative"},
+    )
+    wait_for_execution(client, source_id)
+    wait_for_execution(client, target_id)
+
+    response = client.post(
+        f"/api/executions/{target_id}/eval/rank-correlation",
+        json={"other_execution_id": source_id, "method": "kendall"},
+    )
+
+    assert response.status_code == 422
+    assert "at least two common article IDs" in response.json()["detail"]
+
+
+def test_cross_execution_compare_rejects_incompatible_shapes(
+    client: TestClient,
+) -> None:
+    corpus_id = create_corpus_with_articles(client)
+    rank_id = start_execution(
+        client,
+        "/api/executions/rank",
+        {"corpus_id": corpus_id, "profile": "representative"},
+    )
+    compare_id = start_execution(
+        client,
+        "/api/executions/compare",
+        {
+            "corpus_id": corpus_id,
+            "profiles": ["representative", "comprehensive"],
+        },
+    )
+    wait_for_execution(client, rank_id)
+    wait_for_execution(client, compare_id)
+
+    response = client.post(
+        f"/api/executions/{compare_id}/eval/top-m-overlap",
+        json={"other_execution_id": rank_id, "m": 1},
+    )
+
+    assert response.status_code == 422
+    assert "rank or select execution" in response.json()["detail"]
 
 
 @pytest.mark.parametrize(

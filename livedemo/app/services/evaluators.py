@@ -73,7 +73,10 @@ def evaluate_rank_correlation(
 ) -> EvaluationArtifact:
     left = _rank_like_result(db, execution_id=execution_id)
     right = _rank_like_result(db, execution_id=other_execution_id)
-    payload = _json_payload(rank_correlation(left, right, method))
+    try:
+        payload = _json_payload(rank_correlation(left, right, method))
+    except ValueError as exc:
+        raise EvaluationError(str(exc)) from exc
     return _persist_artifact(
         db,
         execution_id=execution_id,
