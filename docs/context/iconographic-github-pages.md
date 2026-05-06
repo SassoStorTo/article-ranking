@@ -44,3 +44,9 @@ Add a repository-root `index.html` that mounts the same component from
 
 Add `.nojekyll` so GitHub Pages does not run the repository through Jekyll and fall back
 to rendering Markdown.
+
+## Translation Update
+
+The infographic copy should be in English for the published Pages experience. Translate
+visible labels, descriptions, section titles, and page language metadata while preserving
+the existing formulas and static hosting approach.

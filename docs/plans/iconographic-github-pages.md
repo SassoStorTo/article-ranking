@@ -15,6 +15,7 @@ Make the `infographic/` folder directly usable as a GitHub Pages static page.
 5. Run `make check`, inspect the diff, and commit each completed point as work lands.
 6. Add a root `index.html` and `.nojekyll` after deployed Pages shows the README at the
    site root.
+7. Translate the published infographic copy and HTML language metadata to English.
 
 ## Acceptance Criteria
 
@@ -23,3 +24,4 @@ Make the `infographic/` folder directly usable as a GitHub Pages static page.
 - No new project dependencies are added.
 - Python checks still pass with `make check`.
 - The root Pages URL renders the infographic instead of the project README.
+- The published infographic text is in English.
