@@ -4,8 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import Engine
-from sqlalchemy import text
+from sqlalchemy import Engine, text
 
 from livedemo.app.config import get_settings
 from livedemo.app.db.session import engine as default_engine
