@@ -1234,6 +1234,21 @@ function RankParameterForm({
               <option value="single">single</option>
             </select>
           </label>
+          <label>
+            Coverage
+            <select
+              onChange={(event) =>
+                updateRankConfig(
+                  "coverage_weighting",
+                  event.target.value as "consensus" | "rarity",
+                )
+              }
+              value={config.coverage_weighting ?? "consensus"}
+            >
+              <option value="consensus">consensus</option>
+              <option value="rarity">rarity</option>
+            </select>
+          </label>
         </div>
       </fieldset>
 
