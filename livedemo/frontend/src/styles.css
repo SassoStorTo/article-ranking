@@ -120,6 +120,12 @@ h3 {
   box-shadow: inset 0 -4px 0 #b65c38;
 }
 
+.theme-toggle {
+  background: #fffdf8;
+  border-color: #263832;
+  color: #263832;
+}
+
 .home-page {
   display: grid;
   gap: 22px;
@@ -892,6 +898,133 @@ button:disabled {
   color: #9b2f22;
   font-weight: 700;
   margin: 0;
+}
+
+.app-shell[data-theme="dark"] {
+  background: #101412;
+  color: #eef5f0;
+}
+
+.app-shell[data-theme="dark"] .topper,
+.app-shell[data-theme="dark"] .sidebar,
+.app-shell[data-theme="dark"] .article-body header,
+.app-shell[data-theme="dark"] .structured-panel header,
+.app-shell[data-theme="dark"] .execution-panel details,
+.app-shell[data-theme="dark"] .result-table th,
+.app-shell[data-theme="dark"] .result-table td {
+  border-color: #36433c;
+}
+
+.app-shell[data-theme="dark"] .home-hero,
+.app-shell[data-theme="dark"] .new-corpus,
+.app-shell[data-theme="dark"] .parameter-form,
+.app-shell[data-theme="dark"] .compare-modal,
+.app-shell[data-theme="dark"] .article-body,
+.app-shell[data-theme="dark"] .execution-panel,
+.app-shell[data-theme="dark"] .artifact-card,
+.app-shell[data-theme="dark"] .entity-groups div,
+.app-shell[data-theme="dark"] .fact-row,
+.app-shell[data-theme="dark"] .corpus-buttons button,
+.app-shell[data-theme="dark"] .article-list button,
+.app-shell[data-theme="dark"] input,
+.app-shell[data-theme="dark"] select,
+.app-shell[data-theme="dark"] textarea {
+  background: #18201d;
+  border-color: #36433c;
+  color: #eef5f0;
+}
+
+.app-shell[data-theme="dark"] .structured-panel,
+.app-shell[data-theme="dark"] .evaluation-panel,
+.app-shell[data-theme="dark"] .upload-zone,
+.app-shell[data-theme="dark"] .checkbox-row label,
+.app-shell[data-theme="dark"] .status-pill,
+.app-shell[data-theme="dark"] .selected-badge {
+  background: #1d2a25;
+  border-color: #40534a;
+  color: #eef5f0;
+}
+
+.app-shell[data-theme="dark"] .weight-group,
+.app-shell[data-theme="dark"] .metric,
+.app-shell[data-theme="dark"] .section-heading span,
+.app-shell[data-theme="dark"] .evaluation-panel header span {
+  background: #202923;
+  border-color: #36433c;
+  color: #dfe8e2;
+}
+
+.app-shell[data-theme="dark"] .nav-button,
+.app-shell[data-theme="dark"] .secondary,
+.app-shell[data-theme="dark"] .segmented-control button,
+.app-shell[data-theme="dark"] .theme-toggle {
+  background: #18201d;
+  border-color: #40534a;
+  color: #eef5f0;
+}
+
+.app-shell[data-theme="dark"] .nav-button.selected,
+.app-shell[data-theme="dark"] .segmented-control button.selected {
+  background: #d48658;
+  border-color: #d48658;
+  color: #101412;
+}
+
+.app-shell[data-theme="dark"] button {
+  border-color: #d48658;
+}
+
+.app-shell[data-theme="dark"] button:not(.nav-button):not(.secondary):not(
+    .theme-toggle
+  ):not(.danger) {
+  background: #d48658;
+  color: #101412;
+}
+
+.app-shell[data-theme="dark"] .danger {
+  background: #b94d4d;
+  border-color: #b94d4d;
+  color: #fff8f4;
+}
+
+.app-shell[data-theme="dark"] .eyebrow {
+  color: #d48658;
+}
+
+.app-shell[data-theme="dark"] .home-hero p,
+.app-shell[data-theme="dark"] .corpus-buttons span,
+.app-shell[data-theme="dark"] .article-list span,
+.app-shell[data-theme="dark"] .article-list small,
+.app-shell[data-theme="dark"] .notes,
+.app-shell[data-theme="dark"] .muted,
+.app-shell[data-theme="dark"] .article-body p,
+.app-shell[data-theme="dark"] .metric span,
+.app-shell[data-theme="dark"] .artifact-card small,
+.app-shell[data-theme="dark"] .article-cell span,
+.app-shell[data-theme="dark"] .structured-panel small,
+.app-shell[data-theme="dark"] .fact-row span,
+.app-shell[data-theme="dark"] .entity-groups span {
+  color: #aebbb4;
+}
+
+.app-shell[data-theme="dark"] .article-cell strong,
+.app-shell[data-theme="dark"] .execution-panel summary,
+.app-shell[data-theme="dark"] .artifact-card a {
+  color: #eef5f0;
+}
+
+.app-shell[data-theme="dark"] .status-pill.failed {
+  background: #492323;
+  color: #ffc4bc;
+}
+
+.app-shell[data-theme="dark"] .status-pill.succeeded {
+  background: #1f3b2a;
+  color: #bfe8c8;
+}
+
+.app-shell[data-theme="dark"] .error-line {
+  color: #ffb3a5;
 }
 
 @media (max-width: 620px) {

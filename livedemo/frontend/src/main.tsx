@@ -50,6 +50,7 @@ import {
 const queryClient = new QueryClient();
 type RunMode = Exclude<ExecutionKind, "evaluate">;
 type AppPage = "home" | "corpora" | "new-corpus" | "articles" | "executions";
+type ThemeMode = "light" | "dark";
 
 type ParameterDraft = {
   mode: RunMode;
@@ -61,6 +62,7 @@ type ParameterDraft = {
 
 function App() {
   const [page, setPage] = useState<AppPage>("home");
+  const [theme, setTheme] = useState<ThemeMode>("light");
   const [selectedCorpusId, setSelectedCorpusId] = useState<string | null>(null);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(
@@ -73,8 +75,15 @@ function App() {
   }, [corpora.data, selectedCorpusId]);
 
   return (
-    <main className="app-shell">
-      <TopNavigation currentPage={page} onNavigate={setPage} />
+    <main className="app-shell" data-theme={theme}>
+      <TopNavigation
+        currentPage={page}
+        onNavigate={setPage}
+        onToggleTheme={() =>
+          setTheme((current) => (current === "light" ? "dark" : "light"))
+        }
+        theme={theme}
+      />
 
       {page === "home" ? (
         <HomePage
@@ -175,9 +184,13 @@ function App() {
 function TopNavigation({
   currentPage,
   onNavigate,
+  onToggleTheme,
+  theme,
 }: {
   currentPage: AppPage;
   onNavigate: (page: AppPage) => void;
+  onToggleTheme: () => void;
+  theme: ThemeMode;
 }) {
   return (
     <header className="topper">
@@ -228,6 +241,14 @@ function TopNavigation({
           type="button"
         >
           Executions
+        </button>
+        <button
+          aria-pressed={theme === "dark"}
+          className="theme-toggle"
+          onClick={onToggleTheme}
+          type="button"
+        >
+          {theme === "light" ? "Dark" : "Light"}
         </button>
       </nav>
     </header>
