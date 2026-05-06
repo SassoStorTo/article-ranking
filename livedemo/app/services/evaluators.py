@@ -27,6 +27,10 @@ class EvaluationError(ValueError):
     """Raised when persisted results cannot satisfy an evaluation helper."""
 
 
+class ExecutionNotFoundError(EvaluationError):
+    """Raised when an evaluation references an unknown execution."""
+
+
 ArticleMaterials = dict[str, dict[str, str]]
 
 
@@ -258,7 +262,7 @@ def _get_execution(db: Session, *, execution_id: str) -> Execution:
     execution = db.get(Execution, execution_id)
     if execution is None:
         msg = f"Execution {execution_id} was not found."
-        raise EvaluationError(msg)
+        raise ExecutionNotFoundError(msg)
     return execution
 
 

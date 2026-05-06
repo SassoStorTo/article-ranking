@@ -12,6 +12,7 @@ from livedemo.app.db.session import init_db
 from livedemo.app.deps import create_mistral_client, should_initialize_mistral
 from livedemo.app.routers.articles import router as articles_router
 from livedemo.app.routers.corpora import router as corpora_router
+from livedemo.app.routers.evaluations import router as evaluations_router
 from livedemo.app.routers.executions import router as executions_router
 from livedemo.app.schemas import HealthResponse
 
@@ -55,6 +56,7 @@ def create_app(db_engine: Engine = default_engine) -> FastAPI:
     app.include_router(articles_router, prefix="/api")
     app.include_router(corpora_router, prefix="/api")
     app.include_router(executions_router, prefix="/api")
+    app.include_router(evaluations_router, prefix="/api")
 
     return app
 
