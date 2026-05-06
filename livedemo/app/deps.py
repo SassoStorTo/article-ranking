@@ -1,4 +1,5 @@
-from collections.abc import Generator
+from collections.abc import Callable, Generator
+from concurrent.futures import Executor
 from sys import modules
 from typing import Annotated
 
@@ -10,6 +11,7 @@ from livedemo.app.config import get_settings as load_settings
 from livedemo.app.db.session import SessionLocal, iter_db
 from news_ranker.config import RankerConfig
 from news_ranker.decompose import DecompositionClient
+from news_ranker.embed import FactEmbedder, SentenceTransformerEmbedder
 from news_ranker.mistral import MistralDecompositionClient
 
 
@@ -22,6 +24,7 @@ def get_db() -> Generator[Session]:
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
+EmbedderProvider = Callable[[str], FactEmbedder]
 
 
 def get_session_factory() -> sessionmaker[Session]:
@@ -30,6 +33,24 @@ def get_session_factory() -> sessionmaker[Session]:
 
 def get_ranker_config() -> RankerConfig:
     return RankerConfig()
+
+
+def get_embedder_provider(request: Request) -> EmbedderProvider:
+    embedders = getattr(request.app.state, "embedders", None)
+    if embedders is None:
+        embedders = {}
+        request.app.state.embedders = embedders
+
+    def provider(model_name: str) -> FactEmbedder:
+        if model_name not in embedders:
+            embedders[model_name] = SentenceTransformerEmbedder(model_name)
+        return embedders[model_name]
+
+    return provider
+
+
+def get_executor(request: Request) -> Executor:
+    return request.app.state.executor
 
 
 def is_test_mode() -> bool:

@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -11,6 +12,7 @@ from livedemo.app.db.session import init_db
 from livedemo.app.deps import create_mistral_client, should_initialize_mistral
 from livedemo.app.routers.articles import router as articles_router
 from livedemo.app.routers.corpora import router as corpora_router
+from livedemo.app.routers.executions import router as executions_router
 from livedemo.app.schemas import HealthResponse
 
 
@@ -20,13 +22,18 @@ def create_app(db_engine: Engine = default_engine) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.db_engine = db_engine
+        app.state.executor = ThreadPoolExecutor(max_workers=1)
+        app.state.embedders = {}
         init_db(db_engine)
         app.state.mistral_client = (
             create_mistral_client(settings)
             if should_initialize_mistral(settings)
             else None
         )
-        yield
+        try:
+            yield
+        finally:
+            app.state.executor.shutdown(wait=True)
 
     app = FastAPI(
         title="News Ranker Live Demo",
@@ -47,6 +54,7 @@ def create_app(db_engine: Engine = default_engine) -> FastAPI:
 
     app.include_router(articles_router, prefix="/api")
     app.include_router(corpora_router, prefix="/api")
+    app.include_router(executions_router, prefix="/api")
 
     return app
 

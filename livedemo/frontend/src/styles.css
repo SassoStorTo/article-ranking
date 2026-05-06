@@ -200,6 +200,12 @@ button:disabled {
   position: absolute;
 }
 
+.execution-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .article-grid {
   display: grid;
   gap: 18px;
@@ -279,6 +285,111 @@ button:disabled {
 .fact-row span,
 .entity-groups span {
   color: #5f6c64;
+}
+
+.execution-panel {
+  background: #fffdf8;
+  border: 1px solid #d7d0c4;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  margin-top: 6px;
+  min-width: 0;
+  padding: 18px;
+}
+
+.execution-panel header {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.execution-panel details {
+  border-bottom: 1px solid #e1dbd1;
+  border-top: 1px solid #e1dbd1;
+  padding: 10px 0;
+}
+
+.execution-panel summary {
+  color: #263832;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.execution-panel pre {
+  line-height: 1.5;
+  margin: 12px 0 0;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.status-pill,
+.selected-badge {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
+.status-pill {
+  background: #e8efea;
+  color: #263832;
+}
+
+.status-pill.failed {
+  background: #f6ded9;
+  color: #8b2f2f;
+}
+
+.status-pill.succeeded {
+  background: #deeadb;
+  color: #2f5f3d;
+}
+
+.selected-badge {
+  background: #e8efea;
+  color: #263832;
+  margin-left: 8px;
+}
+
+.comparison-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.result-table-wrap {
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.result-table-wrap h4 {
+  font-size: 0.9rem;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.result-table {
+  border-collapse: collapse;
+  min-width: 760px;
+  width: 100%;
+}
+
+.result-table th,
+.result-table td {
+  border-bottom: 1px solid #e1dbd1;
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.result-table th {
+  color: #5f5a52;
+  font-size: 0.78rem;
+  text-transform: uppercase;
 }
 
 .entity-groups {

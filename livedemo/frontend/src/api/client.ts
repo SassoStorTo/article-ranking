@@ -85,6 +85,70 @@ export type StructuredClaim = {
   attributed_to: string | null;
 };
 
+export type ExecutionStatus = "pending" | "running" | "succeeded" | "failed";
+
+export type ExecutionKind = "rank" | "select" | "compare_profiles" | "evaluate";
+
+export type RankingEntry = {
+  article_id: string;
+  rank: number;
+  score: number;
+  components: Record<string, number>;
+};
+
+export type RankResultPayload = {
+  __type__: "rank_result";
+  profile: string;
+  entries: RankingEntry[];
+  diagnostics: Record<string, unknown>;
+};
+
+export type SelectionResultPayload = {
+  __type__: "selection_result";
+  profile: string;
+  m: number;
+  selected: RankingEntry[];
+  ranking: RankResultPayload;
+};
+
+export type ProfileComparisonPayload = {
+  __type__: "profile_comparison";
+  rankings: Record<string, RankResultPayload>;
+};
+
+export type ExecutionResultJson =
+  | RankResultPayload
+  | SelectionResultPayload
+  | ProfileComparisonPayload;
+
+export type ExecutionResultRecord = {
+  id: string;
+  execution_id: string;
+  profile: string | null;
+  result_json: ExecutionResultJson;
+  created_at: string;
+};
+
+export type ExecutionDetail = {
+  id: string;
+  corpus_id: string;
+  kind: ExecutionKind;
+  status: ExecutionStatus;
+  profiles: string[];
+  m: number | null;
+  started_at: string | null;
+  finished_at: string | null;
+  error: string | null;
+  created_at: string;
+  config_json: Record<string, unknown>;
+  results: ExecutionResultRecord[];
+};
+
+export type ExecutionAccepted = {
+  execution_id: string;
+  status: ExecutionStatus;
+};
+
 type IdResponse = {
   id: string;
 };
@@ -165,4 +229,48 @@ export async function decomposeArticle(
     method: "POST",
   });
   return parseJson<StructuredArticleRecord>(response);
+}
+
+export async function runRankExecution(
+  corpusId: string,
+): Promise<ExecutionAccepted> {
+  const response = await fetch(`${apiBaseUrl}/api/executions/rank`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ corpus_id: corpusId, profile: "representative" }),
+  });
+  return parseJson<ExecutionAccepted>(response);
+}
+
+export async function runSelectExecution(
+  corpusId: string,
+  m: number,
+): Promise<ExecutionAccepted> {
+  const response = await fetch(`${apiBaseUrl}/api/executions/select`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ corpus_id: corpusId, m, profile: "representative" }),
+  });
+  return parseJson<ExecutionAccepted>(response);
+}
+
+export async function runCompareExecution(
+  corpusId: string,
+): Promise<ExecutionAccepted> {
+  const response = await fetch(`${apiBaseUrl}/api/executions/compare`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      corpus_id: corpusId,
+      profiles: ["representative", "comprehensive", "concise"],
+    }),
+  });
+  return parseJson<ExecutionAccepted>(response);
+}
+
+export async function getExecution(
+  executionId: string,
+): Promise<ExecutionDetail> {
+  const response = await fetch(`${apiBaseUrl}/api/executions/${executionId}`);
+  return parseJson<ExecutionDetail>(response);
 }
