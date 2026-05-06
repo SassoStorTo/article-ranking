@@ -1219,6 +1219,21 @@ function RankParameterForm({
               value={config.similarity_threshold ?? 0.85}
             />
           </label>
+          <label>
+            Linkage
+            <select
+              onChange={(event) =>
+                updateRankConfig(
+                  "linkage",
+                  event.target.value as "average" | "single",
+                )
+              }
+              value={config.linkage ?? "average"}
+            >
+              <option value="average">average</option>
+              <option value="single">single</option>
+            </select>
+          </label>
         </div>
       </fieldset>
 
