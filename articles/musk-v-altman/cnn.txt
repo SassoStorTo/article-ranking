@@ -1,0 +1,69 @@
+ Takeaways from day 1 of the Elon Musk and Sam Altman trial
+By
+Hadas Gold
+Hadas Gold
+,
+Samantha Delouya
+,
+Ramishah Maruf
+Apr 29, 2026
+Elon Musk arrives at the US District Court in Oakland, California on April 28, 2026.
+Elon Musk arrives at the US District Court in Oakland, California on April 28, 2026.
+Godofredo A. Vásquez/AP
+Oakland, California — 
+
+Sam Altman and Greg Brockman, the leaders of ChatGPT-maker OpenAI, sat in an Oakland, California courtroom on Tuesday as former collaborator and one-time mentor Elon Musk testified that the pair conspired to try to “steal a charity.”
+
+Musk was the first witness called in his blockbuster case against OpenAI, a company he founded with Brockman and Altman, initially as an entirely nonprofit entity, more than a decade ago. But since then, OpenAI’s structure has shifted – and Musk, the richest man on earth, claims its executives and Microsoft have unjustly enriched themselves by straying from the company’s original charitable mission.
+
+OpenAI says Musk’s suit is really about trying to squash a rival to his own artificial intelligence company, xAI.
+
+Here are the most striking takeaways from Musk’s first day of testimony on Tuesday:
+An AI company to ‘benefit humanity’
+
+Musk testified Tuesday that he had believed that he was funding an organization that would be a “benefit for all of humanity.”
+
+He framed the case in dire terms, arguing that losing the trial would “give license to looting every charity in America.” The trial’s outcome may also significantly change the AI landscape right as OpenAI, one of the world’s most valuable AI companies, plans a massive IPO.
+Boxes are transported on the day of the trial in Elon Musk's lawsuit over OpenAI for-profit conversion at a federal courthouse in Oakland, California, on April 28, 2026.
+Boxes are transported on the day of the trial in Elon Musk's lawsuit over OpenAI for-profit conversion at a federal courthouse in Oakland, California, on April 28, 2026.
+Manuel Orbegozo/Reuters
+
+OpenAI’s attorney, William Savitt, painted a different picture, claiming that Musk had pushed for a for-profit structure but left the company when he wasn’t able to exert total control. Musk brought the lawsuit to hobble OpenAI after he founded competitor xAI, Savitt argued.
+
+Musk’s lawyer, Steven Molo, summed up the sheer notoriety of his client. “Everybody seems to know Mr. Musk, everybody has an opinion of Mr. Musk. Not every opinion is good, not every opinion is bad,” he said in his opening argument.
+‘Extreme concerns’ over AI
+
+Musk, dressed in a dark suit and tie, laid out why he got involved in an AI company back in 2015, saying he had worried about AI’s potential for years.
+
+“I have extreme concerns over AI,” he told the jury, noting that it could make everyone prosperous, “but it could also kill us all.”
+
+“We don’t want to have a ‘Terminator’ outcome,” he said, alluding to the movie franchise about a robot uprising against humanity.
+
+Musk said Google co-founder Larry Page helped inspire the idea for OpenAI after Musk found him not “sufficiently caring about AI safety.”
+
+“Larry Page called me a ‘speciesist’ for caring about humans more than AI,” Musk said Tuesday. CNN has reached out to Google for comment.
+
+Musk said he thought there needed to be “some sort of counterpoint” to Google: “an open source nonprofit as opposed to a closed source for-profit.”
+
+But since OpenAI created a for-profit subsidiary more than six years ago, it has largely shifted away from its open source model.
+
+Musk said he came up with the name “OpenAI” because “open” stood for “open source.”
+‘I came up with the idea’
+
+Savitt, OpenAI’s lead attorney, said Musk had promised he would help OpenAI raise $1 billion but pulled the plug on the company when he was not allowed full control. He left the company for dead, Savitt said, and is only suing now that OpenAI turned out to be successful.
+Steven F. Molo, attorney for Elon Musk arrives at the U.S. District Court in Oakland, California, on April 28, 2026.
+Steven F. Molo, attorney for Elon Musk arrives at the U.S. District Court in Oakland, California, on April 28, 2026.
+Godofredo A. Vásquez/AP
+OpenAI's attorney William Savitt arrives to attend the trial in Elon Musk's lawsuit over OpenAI for-profit conversion at a federal courthouse in Oakland, California, on April 28, 2026.
+OpenAI's attorney William Savitt arrives to attend the trial in Elon Musk's lawsuit over OpenAI for-profit conversion at a federal courthouse in Oakland, California, on April 28, 2026.
+Manuel Orbegozo/Reuters
+
+Savitt also suggested that while OpenAI’s other cofounders put in “sweat equity,” Musk showed up every few weeks to give advice and “occasionally yelled at people for not moving fast enough.”
+
+Musk, however, said that he had an essential role from the outset.
+
+“I came up with the idea, the name, recruited the key people, taught them everything I know, providing the initial funding,” he said.
+
+Musk said he recruited most of OpenAI’s top engineers and was instrumental in bringing in Ilya Sutskever, co-founder and former chief scientist of OpenAI. Sutskever left the company after playing a key role in Altman’s short-lived removal in 2023.
+
+Even after Musk resigned from OpenAI’s board, Altman continued to keep Musk up to date on fundraising by the AI company’s for-profit division, Savitt said. At the time of these updates, Savitt said, Musk did not raise concerns with Altman, Brockman or Microsoft that the company had strayed from its original mission.
