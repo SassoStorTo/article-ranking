@@ -3,7 +3,15 @@ from email.parser import BytesParser
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -164,6 +172,16 @@ def get_article(article_id: UUID, db: DbSession) -> ArticleDetail:
         raise _not_found("Article", article_id)
     structured = latest_structured_article(db, article_id=article.id)
     return _article_detail(article, structured)
+
+
+@router.delete("/articles/{article_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_article(article_id: UUID, db: DbSession) -> Response:
+    article = db.get(Article, str(article_id))
+    if article is None:
+        raise _not_found("Article", article_id)
+    db.delete(article)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/articles/{article_id}/decompose", response_model=StructuredArticleRecord)

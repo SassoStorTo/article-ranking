@@ -30,6 +30,7 @@ import {
   createUserStudyBundleArtifact,
   defaultRankerConfig,
   decomposeArticle,
+  deleteArticle,
   deleteCorpus,
   deleteExecution,
   getArticle,
@@ -48,6 +49,8 @@ import {
 
 const queryClient = new QueryClient();
 type RunMode = Exclude<ExecutionKind, "evaluate">;
+type AppPage = "home" | "corpora" | "new-corpus" | "articles" | "executions";
+type ThemeMode = "light" | "dark";
 
 type ParameterDraft = {
   mode: RunMode;
@@ -58,12 +61,13 @@ type ParameterDraft = {
 };
 
 function App() {
+  const [page, setPage] = useState<AppPage>("home");
+  const [theme, setTheme] = useState<ThemeMode>("light");
   const [selectedCorpusId, setSelectedCorpusId] = useState<string | null>(null);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [selectedExecutionId, setSelectedExecutionId] = useState<string | null>(
     null,
   );
-  const [showExecutionsIndex, setShowExecutionsIndex] = useState(false);
   const corpora = useQuery({ queryKey: ["corpora"], queryFn: listCorpora });
 
   const selectedCorpus = useMemo(() => {
@@ -71,80 +75,267 @@ function App() {
   }, [corpora.data, selectedCorpusId]);
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <header className="brand-block">
-          <p className="eyebrow">Live Demo</p>
-          <h1>News Ranker</h1>
-        </header>
-        <NewCorpusForm
+    <main className="app-shell" data-theme={theme}>
+      <TopNavigation
+        currentPage={page}
+        onNavigate={setPage}
+        onToggleTheme={() =>
+          setTheme((current) => (current === "light" ? "dark" : "light"))
+        }
+        theme={theme}
+      />
+
+      {page === "home" ? (
+        <HomePage
+          corpora={corpora.data ?? []}
+          isLoading={corpora.isLoading}
+          onCreateCorpus={() => setPage("new-corpus")}
+          onOpenCorpus={(id) => {
+            setSelectedCorpusId(id);
+            setSelectedArticleId(null);
+            setSelectedExecutionId(null);
+            setPage("corpora");
+          }}
+          onOpenExecutions={() => setPage("executions")}
+        />
+      ) : null}
+
+      {page === "new-corpus" ? (
+        <NewCorpusPage
           onCreated={(id) => {
             setSelectedCorpusId(id);
             setSelectedArticleId(null);
             setSelectedExecutionId(null);
-            setShowExecutionsIndex(false);
+            setPage("articles");
           }}
         />
-        <button
-          className={showExecutionsIndex ? "nav-button selected" : "nav-button"}
-          onClick={() => {
-            setShowExecutionsIndex(true);
+      ) : null}
+
+      {page === "articles" ? (
+        <ArticleManagementPage
+          corpora={corpora.data ?? []}
+          isLoadingCorpora={corpora.isLoading}
+          selectedArticleId={selectedArticleId}
+          selectedCorpusId={selectedCorpusId}
+          onSelectArticle={setSelectedArticleId}
+          onSelectCorpus={(id) => {
+            setSelectedCorpusId(id);
             setSelectedArticleId(null);
             setSelectedExecutionId(null);
           }}
-          type="button"
-        >
-          Old Executions
-        </button>
-      </aside>
+        />
+      ) : null}
 
-      {showExecutionsIndex ? (
+      {page === "executions" ? (
         <section className="workspace single-pane" aria-label="Executions workspace">
           <ExecutionsIndex
             corpora={corpora.data ?? []}
-            onClose={() => setShowExecutionsIndex(false)}
+            onClose={() => setPage("corpora")}
             onOpenExecution={(execution) => {
               setSelectedCorpusId(execution.corpus_id);
               setSelectedArticleId(null);
               setSelectedExecutionId(execution.id);
-              setShowExecutionsIndex(false);
+              setPage("corpora");
             }}
           />
         </section>
-      ) : (
-        <section className="workspace" aria-label="Corpus workspace">
-          <CorpusList
-            corpora={corpora.data ?? []}
-            isLoading={corpora.isLoading}
-            error={corpora.error}
-            selectedCorpusId={selectedCorpusId}
-            onSelect={(id) => {
-              setSelectedCorpusId(id);
-              setSelectedArticleId(null);
-              setSelectedExecutionId(null);
-              setShowExecutionsIndex(false);
-            }}
-          />
-          {selectedCorpusId ? (
-            <CorpusPanel
-              corpusId={selectedCorpusId}
-              fallbackCorpus={selectedCorpus}
-              selectedArticleId={selectedArticleId}
-              onSelectArticle={setSelectedArticleId}
-              selectedExecutionId={selectedExecutionId}
-              onSelectExecution={setSelectedExecutionId}
-              onDeleted={() => {
-                setSelectedCorpusId(null);
+      ) : null}
+
+      {page === "corpora" ? (
+        <section className="workspace" aria-label="Article set workspace">
+          <aside className="sidebar">
+            <CorpusList
+              corpora={corpora.data ?? []}
+              isLoading={corpora.isLoading}
+              error={corpora.error}
+              selectedCorpusId={selectedCorpusId}
+              onSelect={(id) => {
+                setSelectedCorpusId(id);
                 setSelectedArticleId(null);
                 setSelectedExecutionId(null);
               }}
             />
-          ) : (
-            <EmptyWorkspace />
-          )}
+          </aside>
+          <div className="corpus-workspace">
+            {selectedCorpusId ? (
+              <CorpusPanel
+                corpusId={selectedCorpusId}
+                fallbackCorpus={selectedCorpus}
+                selectedArticleId={selectedArticleId}
+                onSelectArticle={setSelectedArticleId}
+                selectedExecutionId={selectedExecutionId}
+                onSelectExecution={setSelectedExecutionId}
+                onDeleted={() => {
+                  setSelectedCorpusId(null);
+                  setSelectedArticleId(null);
+                  setSelectedExecutionId(null);
+                }}
+              />
+            ) : (
+              <EmptyWorkspace />
+            )}
+          </div>
         </section>
-      )}
+      ) : null}
     </main>
+  );
+}
+
+function TopNavigation({
+  currentPage,
+  onNavigate,
+  onToggleTheme,
+  theme,
+}: {
+  currentPage: AppPage;
+  onNavigate: (page: AppPage) => void;
+  onToggleTheme: () => void;
+  theme: ThemeMode;
+}) {
+  return (
+    <header className="topper">
+      <div className="brand-block">
+        <p className="eyebrow">Live Demo</p>
+        <h1>News Ranker</h1>
+      </div>
+      <nav className="topper-nav" aria-label="Main sections">
+        <button
+          className={currentPage === "home" ? "nav-button selected" : "nav-button"}
+          onClick={() => onNavigate("home")}
+          type="button"
+        >
+          Home
+        </button>
+        <button
+          className={
+            currentPage === "corpora" ? "nav-button selected" : "nav-button"
+          }
+          onClick={() => onNavigate("corpora")}
+          type="button"
+        >
+          Article Sets
+        </button>
+        <button
+          className={
+            currentPage === "new-corpus" ? "nav-button selected" : "nav-button"
+          }
+          onClick={() => onNavigate("new-corpus")}
+          type="button"
+        >
+          Create Set
+        </button>
+        <button
+          className={
+            currentPage === "articles" ? "nav-button selected" : "nav-button"
+          }
+          onClick={() => onNavigate("articles")}
+          type="button"
+        >
+          Articles
+        </button>
+        <button
+          className={
+            currentPage === "executions" ? "nav-button selected" : "nav-button"
+          }
+          onClick={() => onNavigate("executions")}
+          type="button"
+        >
+          Executions
+        </button>
+        <button
+          aria-pressed={theme === "dark"}
+          className="theme-toggle"
+          onClick={onToggleTheme}
+          type="button"
+        >
+          {theme === "light" ? "Dark" : "Light"}
+        </button>
+      </nav>
+    </header>
+  );
+}
+
+function HomePage({
+  corpora,
+  isLoading,
+  onCreateCorpus,
+  onOpenCorpus,
+  onOpenExecutions,
+}: {
+  corpora: CorpusSummary[];
+  isLoading: boolean;
+  onCreateCorpus: () => void;
+  onOpenCorpus: (id: string) => void;
+  onOpenExecutions: () => void;
+}) {
+  const articleCount = corpora.reduce(
+    (total, corpus) => total + corpus.article_count,
+    0,
+  );
+  const newestCorpora = corpora.slice(0, 4);
+
+  return (
+    <section className="home-page" aria-labelledby="home-title">
+      <div className="home-hero">
+        <p className="eyebrow">Workspace</p>
+        <h2 id="home-title">Rank event coverage from article set to evidence.</h2>
+        <p>
+          Create article sets, upload text files, inspect decomposition output,
+          run rankings, and compare executions from one local demo.
+        </p>
+        <div className="home-actions">
+          <button onClick={onCreateCorpus} type="button">
+            Create Article Set
+          </button>
+          <button className="secondary" onClick={onOpenExecutions} type="button">
+            View Executions
+          </button>
+        </div>
+      </div>
+      <div className="home-metrics">
+        <Metric label="Article Sets" value={corpora.length} />
+        <Metric label="Articles" value={articleCount} />
+        <Metric label="Newest" value={corpora[0]?.name ?? "none"} />
+      </div>
+      <section className="home-recent" aria-labelledby="recent-corpora-title">
+        <div className="section-heading">
+          <h3 id="recent-corpora-title">Recent Article Sets</h3>
+          <span>{corpora.length}</span>
+        </div>
+        {isLoading && <p className="muted">Loading article sets</p>}
+        {!isLoading && newestCorpora.length === 0 ? (
+          <p className="muted">Create an article set to begin ranking articles.</p>
+        ) : null}
+        <div className="corpus-buttons">
+          {newestCorpora.map((corpus) => (
+            <button
+              key={corpus.id}
+              onClick={() => onOpenCorpus(corpus.id)}
+              type="button"
+            >
+              <strong>{corpus.name}</strong>
+              <span>{corpus.article_count} articles</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function NewCorpusPage({ onCreated }: { onCreated: (id: string) => void }) {
+  return (
+    <section className="single-page" aria-labelledby="new-corpus-title">
+      <div className="page-heading">
+        <p className="eyebrow">Create</p>
+        <h2 id="new-corpus-title">Create Article Set</h2>
+        <p className="muted">
+          Start with an event name, then add article text files on the Articles
+          page.
+        </p>
+      </div>
+      <NewCorpusForm onCreated={onCreated} />
+    </section>
   );
 }
 
@@ -187,7 +378,7 @@ function NewCorpusForm({ onCreated }: { onCreated: (id: string) => void }) {
         />
       </label>
       <button type="submit" disabled={mutation.isPending || !name.trim()}>
-        Create Corpus
+        Create Article Set
       </button>
       {mutation.error && <p className="error-line">{mutation.error.message}</p>}
     </form>
@@ -210,13 +401,13 @@ function CorpusList({
   return (
     <section className="corpus-list" aria-labelledby="corpora-title">
       <div className="section-heading">
-        <h2 id="corpora-title">Corpora</h2>
+        <h2 id="corpora-title">Article Sets</h2>
         <span>{corpora.length}</span>
       </div>
-      {isLoading && <p className="muted">Loading corpora</p>}
+      {isLoading && <p className="muted">Loading article sets</p>}
       {error && <p className="error-line">{error.message}</p>}
       {!isLoading && corpora.length === 0 && (
-        <p className="muted">No corpora yet.</p>
+        <p className="muted">No article sets yet.</p>
       )}
       <div className="corpus-buttons">
         {corpora.map((corpus) => (
@@ -231,6 +422,111 @@ function CorpusList({
           </button>
         ))}
       </div>
+    </section>
+  );
+}
+
+function ArticleManagementPage({
+  corpora,
+  isLoadingCorpora,
+  selectedCorpusId,
+  selectedArticleId,
+  onSelectCorpus,
+  onSelectArticle,
+}: {
+  corpora: CorpusSummary[];
+  isLoadingCorpora: boolean;
+  selectedCorpusId: string | null;
+  selectedArticleId: string | null;
+  onSelectCorpus: (id: string) => void;
+  onSelectArticle: (id: string | null) => void;
+}) {
+  const queryClient = useQueryClient();
+  const corpus = useQuery({
+    queryKey: ["corpus", selectedCorpusId],
+    queryFn: () => getCorpus(selectedCorpusId ?? ""),
+    enabled: selectedCorpusId !== null,
+  });
+  const uploadMutation = useMutation({
+    mutationFn: (files: FileList) => uploadArticles(selectedCorpusId ?? "", files),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["corpora"] }),
+        queryClient.invalidateQueries({ queryKey: ["corpus", selectedCorpusId] }),
+      ]);
+    },
+  });
+  const selectedCorpus = corpora.find((item) => item.id === selectedCorpusId);
+  const articles = corpus.data?.articles ?? [];
+
+  return (
+    <section className="workspace" aria-label="Article management workspace">
+      <aside className="sidebar">
+        <CorpusList
+          corpora={corpora}
+          error={null}
+          isLoading={isLoadingCorpora}
+          onSelect={onSelectCorpus}
+          selectedCorpusId={selectedCorpusId}
+        />
+      </aside>
+      <section className="detail-panel" aria-labelledby="articles-title">
+        <header className="detail-header">
+          <div>
+            <p className="eyebrow">Articles</p>
+            <h2 id="articles-title">{selectedCorpus?.name ?? "Add Articles"}</h2>
+            <p className="notes">
+              Upload `.txt` files, then inspect each article body and structured
+              decomposition.
+            </p>
+          </div>
+        </header>
+        {!selectedCorpusId ? (
+          <EmptyWorkspace />
+        ) : (
+          <>
+            <label className="upload-zone">
+              <input
+                accept=".txt,text/plain"
+                multiple
+                onChange={(event) => {
+                  if (event.target.files?.length) {
+                    uploadMutation.mutate(event.target.files);
+                    event.target.value = "";
+                  }
+                }}
+                type="file"
+              />
+              <span>Upload .txt Articles</span>
+            </label>
+            {uploadMutation.error && (
+              <p className="error-line">{uploadMutation.error.message}</p>
+            )}
+            {uploadMutation.isPending && <p className="muted">Uploading articles</p>}
+            {corpus.isLoading && <p className="muted">Loading articles</p>}
+            {corpus.error && <p className="error-line">{corpus.error.message}</p>}
+            {corpus.data && (
+              <div className="article-grid">
+                <ArticleList
+                  articles={articles}
+                  onSelectArticle={onSelectArticle}
+                  selectedArticleId={selectedArticleId}
+                />
+                <ArticleBody
+                  articleId={selectedArticleId}
+                  onDeleted={(corpusId) => {
+                    onSelectArticle(null);
+                    void queryClient.invalidateQueries({ queryKey: ["corpora"] });
+                    void queryClient.invalidateQueries({
+                      queryKey: ["corpus", corpusId],
+                    });
+                  }}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </section>
     </section>
   );
 }
@@ -317,18 +613,18 @@ function ExecutionsIndex({
           <h2 id="old-title">Execution History</h2>
         </div>
         <button onClick={onClose} type="button">
-          Corpora
+          Article Sets
         </button>
       </header>
 
       <div className="execution-filters">
         <label>
-          Corpus
+          Article Set
           <select
             onChange={(event) => updateFilter("corpusId", event.target.value)}
             value={filters.corpusId}
           >
-            <option value="">All corpora</option>
+            <option value="">All article sets</option>
             {corpora.map((corpus) => (
               <option key={corpus.id} value={corpus.id}>
                 {corpus.name}
@@ -410,7 +706,7 @@ function ExecutionsIndex({
           <table className="result-table executions-table">
             <thead>
               <tr>
-                <th>Corpus</th>
+                <th>Article Set</th>
                 <th>Kind</th>
                 <th>Profile</th>
                 <th>Status</th>
@@ -565,7 +861,10 @@ function CompareExecutionModal({
         </header>
         <div className="compare-summary">
           <Metric label="Target" value={formatGroupName(target.kind)} />
-          <Metric label="Corpus" value={target.corpus_name || target.corpus_id} />
+          <Metric
+            label="Article Set"
+            value={target.corpus_name || target.corpus_id}
+          />
         </div>
         <div className="execution-filters">
           <label>
@@ -656,15 +955,6 @@ function CorpusPanel({
     queryKey: ["corpus", corpusId],
     queryFn: () => getCorpus(corpusId),
   });
-  const uploadMutation = useMutation({
-    mutationFn: (files: FileList) => uploadArticles(corpusId, files),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["corpora"] }),
-        queryClient.invalidateQueries({ queryKey: ["corpus", corpusId] }),
-      ]);
-    },
-  });
   const deleteMutation = useMutation({
     mutationFn: () => deleteCorpus(corpusId),
     onSuccess: async () => {
@@ -674,47 +964,36 @@ function CorpusPanel({
   });
 
   const detail = corpus.data;
-  const heading = detail?.name ?? fallbackCorpus?.name ?? "Corpus";
+  const heading = detail?.name ?? fallbackCorpus?.name ?? "Article Set";
 
   return (
     <section className="detail-panel" aria-labelledby="corpus-title">
       <header className="detail-header">
         <div>
-          <p className="eyebrow">Corpus</p>
+          <p className="eyebrow">Article Set</p>
           <h2 id="corpus-title">{heading}</h2>
           {detail?.notes && <p className="notes">{detail.notes}</p>}
         </div>
         <button
           className="danger"
           disabled={deleteMutation.isPending}
-          onClick={() => deleteMutation.mutate()}
-          type="button"
-        >
-          Delete
-        </button>
-      </header>
-
-      <label className="upload-zone">
-        <input
-          accept=".txt,text/plain"
-          multiple
-          onChange={(event) => {
-            if (event.target.files?.length) {
-              uploadMutation.mutate(event.target.files);
-              event.target.value = "";
+          onClick={() => {
+            if (
+              window.confirm(
+                `Delete article set "${heading}" and all of its data?`,
+              )
+            ) {
+              deleteMutation.mutate();
             }
           }}
-          type="file"
-        />
-        <span>Upload .txt Articles</span>
-      </label>
-      {uploadMutation.error && (
-        <p className="error-line">{uploadMutation.error.message}</p>
-      )}
+          type="button"
+        >
+          Delete Article Set
+        </button>
+      </header>
       {deleteMutation.error && (
         <p className="error-line">{deleteMutation.error.message}</p>
       )}
-      {uploadMutation.isPending && <p className="muted">Uploading articles</p>}
 
       {corpus.isLoading && <p className="muted">Loading articles</p>}
       {corpus.error && <p className="error-line">{corpus.error.message}</p>}
@@ -1820,7 +2099,13 @@ function ArticleList({
   );
 }
 
-function ArticleBody({ articleId }: { articleId: string | null }) {
+function ArticleBody({
+  articleId,
+  onDeleted,
+}: {
+  articleId: string | null;
+  onDeleted?: (corpusId: string) => void;
+}) {
   const queryClient = useQueryClient();
   const article = useQuery({
     queryKey: ["article", articleId],
@@ -1834,6 +2119,20 @@ function ArticleBody({ articleId }: { articleId: string | null }) {
         queryClient.invalidateQueries({ queryKey: ["article", articleId] }),
         queryClient.invalidateQueries({ queryKey: ["corpus"] }),
       ]);
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteArticle(articleId ?? ""),
+    onSuccess: async () => {
+      const corpusId = article.data?.corpus_id;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["corpora"] }),
+        queryClient.invalidateQueries({ queryKey: ["corpus", corpusId] }),
+        queryClient.invalidateQueries({ queryKey: ["article", articleId] }),
+      ]);
+      if (corpusId) {
+        onDeleted?.(corpusId);
+      }
     },
   });
 
@@ -1857,16 +2156,35 @@ function ArticleBody({ articleId }: { articleId: string | null }) {
             <h3>{article.data.title}</h3>
             <p>{article.data.filename}</p>
           </div>
-          <button
-            disabled={decomposeMutation.isPending}
-            onClick={() => decomposeMutation.mutate()}
-            type="button"
-          >
-            {decomposeMutation.isPending ? "Running" : "Decompose"}
-          </button>
+          <div className="row-actions">
+            <button
+              disabled={decomposeMutation.isPending || deleteMutation.isPending}
+              onClick={() => decomposeMutation.mutate()}
+              type="button"
+            >
+              {decomposeMutation.isPending ? "Running" : "Decompose"}
+            </button>
+            {onDeleted && (
+              <button
+                className="danger"
+                disabled={deleteMutation.isPending}
+                onClick={() => {
+                  if (window.confirm(`Delete article "${article.data.title}"?`)) {
+                    deleteMutation.mutate();
+                  }
+                }}
+                type="button"
+              >
+                Delete Article
+              </button>
+            )}
+          </div>
         </header>
         {decomposeMutation.error && (
           <p className="error-line">{decomposeMutation.error.message}</p>
+        )}
+        {deleteMutation.error && (
+          <p className="error-line">{deleteMutation.error.message}</p>
         )}
         <pre>{article.data.body}</pre>
       </article>
@@ -1980,9 +2298,14 @@ function dateEnd(value: string) {
 
 function EmptyWorkspace() {
   return (
-    <section className="detail-panel empty-state" aria-label="No corpus selected">
-      <h2>Choose a Corpus</h2>
-      <p className="muted">Create or select a corpus to manage text articles.</p>
+    <section
+      className="detail-panel empty-state"
+      aria-label="No article set selected"
+    >
+      <h2>Choose an Article Set</h2>
+      <p className="muted">
+        Create or select an article set to manage text articles.
+      </p>
     </section>
   );
 }

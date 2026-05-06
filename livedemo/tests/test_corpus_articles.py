@@ -133,3 +133,24 @@ def test_corpus_delete_cascades_articles(client: TestClient) -> None:
 
     assert delete_response.status_code == 204
     assert client.get(f"/api/articles/{article_id}").status_code == 404
+
+
+def test_article_delete_removes_article_from_corpus(client: TestClient) -> None:
+    corpus_id = create_corpus(client)
+    article_id = upload_txt(client, corpus_id)
+
+    delete_response = client.delete(f"/api/articles/{article_id}")
+
+    assert delete_response.status_code == 204
+    assert client.get(f"/api/articles/{article_id}").status_code == 404
+    corpus_response = client.get(f"/api/corpora/{corpus_id}")
+    assert corpus_response.status_code == 200
+    assert corpus_response.json()["articles"] == []
+
+
+def test_article_delete_returns_not_found_for_missing_article(
+    client: TestClient,
+) -> None:
+    response = client.delete("/api/articles/00000000-0000-0000-0000-000000000000")
+
+    assert response.status_code == 404
