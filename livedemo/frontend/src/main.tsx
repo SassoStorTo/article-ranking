@@ -265,6 +265,7 @@ function ExecutionsIndex({
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<ExecutionFilters>(emptyExecutionFilters);
   const [offset, setOffset] = useState(0);
+  const [compareTarget, setCompareTarget] = useState<ExecutionSummary | null>(null);
   const limit = 20;
   const executions = useQuery({
     queryKey: ["executions-index", filters, offset, limit],
@@ -453,6 +454,13 @@ function ExecutionsIndex({
                       >
                         Delete
                       </button>
+                      <button
+                        disabled={!isComparableExecution(execution)}
+                        onClick={() => setCompareTarget(execution)}
+                        type="button"
+                      >
+                        Compare
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -481,7 +489,141 @@ function ExecutionsIndex({
           Next
         </button>
       </div>
+      {compareTarget && (
+        <CompareExecutionModal
+          onClose={() => setCompareTarget(null)}
+          target={compareTarget}
+        />
+      )}
     </section>
+  );
+}
+
+function CompareExecutionModal({
+  target,
+  onClose,
+}: {
+  target: ExecutionSummary;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [otherExecutionId, setOtherExecutionId] = useState("");
+  const [topM, setTopM] = useState(target.m ?? 3);
+  const [method, setMethod] = useState<"kendall" | "spearman">("kendall");
+  const candidates = useQuery({
+    queryKey: ["compare-execution-candidates"],
+    queryFn: () => listExecutions({ status: "succeeded", limit: 100 }),
+  });
+  const options =
+    candidates.data?.filter(
+      (execution) =>
+        execution.id !== target.id && isComparableExecution(execution),
+    ) ?? [];
+  const compareMutation = useMutation({
+    mutationFn: async () => {
+      const overlap = await createTopMOverlapArtifact(target.id, {
+        other_execution_id: otherExecutionId,
+        m: topM,
+      });
+      const correlation = await createRankCorrelationArtifact(target.id, {
+        other_execution_id: otherExecutionId,
+        method,
+      });
+      return [overlap, correlation];
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["executions-index"] }),
+        queryClient.invalidateQueries({ queryKey: ["execution", target.id] }),
+        queryClient.invalidateQueries({
+          queryKey: ["evaluation-artifacts", target.id],
+        }),
+      ]);
+      onClose();
+    },
+  });
+  const selectedCandidate = options.find((item) => item.id === otherExecutionId);
+
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section
+        aria-labelledby="compare-title"
+        aria-modal="true"
+        className="compare-modal"
+        role="dialog"
+      >
+        <header>
+          <div>
+            <p className="eyebrow">Compare With</p>
+            <h3 id="compare-title">{target.profile_summary}</h3>
+          </div>
+          <button onClick={onClose} type="button">
+            Close
+          </button>
+        </header>
+        <div className="compare-summary">
+          <Metric label="Target" value={formatGroupName(target.kind)} />
+          <Metric label="Corpus" value={target.corpus_name || target.corpus_id} />
+        </div>
+        <div className="execution-filters">
+          <label>
+            Execution
+            <select
+              onChange={(event) => setOtherExecutionId(event.target.value)}
+              value={otherExecutionId}
+            >
+              <option value="">Choose execution</option>
+              {options.map((execution) => (
+                <option key={execution.id} value={execution.id}>
+                  {execution.corpus_name || execution.corpus_id} ·{" "}
+                  {formatGroupName(execution.kind)} · {execution.profile_summary}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            M
+            <input
+              min="1"
+              onChange={(event) => setTopM(Number(event.target.value))}
+              type="number"
+              value={topM}
+            />
+          </label>
+          <label>
+            Correlation
+            <select
+              onChange={(event) =>
+                setMethod(event.target.value as "kendall" | "spearman")
+              }
+              value={method}
+            >
+              <option value="kendall">kendall</option>
+              <option value="spearman">spearman</option>
+            </select>
+          </label>
+        </div>
+        {selectedCandidate && (
+          <p className="muted">
+            Artifacts will be stored on {target.profile_summary} from{" "}
+            {target.corpus_name || target.corpus_id}.
+          </p>
+        )}
+        {candidates.error && <p className="error-line">{candidates.error.message}</p>}
+        {compareMutation.error && (
+          <p className="error-line">{compareMutation.error.message}</p>
+        )}
+        <div className="form-actions">
+          <button
+            disabled={!otherExecutionId || topM < 1 || compareMutation.isPending}
+            onClick={() => compareMutation.mutate()}
+            type="button"
+          >
+            {compareMutation.isPending ? "Comparing" : "Run Compare"}
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -1801,6 +1943,13 @@ function formatGroupName(group: string) {
 
 function formatDateTime(value: string | null) {
   return value ? new Date(value).toLocaleString() : "n/a";
+}
+
+function isComparableExecution(execution: ExecutionSummary) {
+  return (
+    execution.status === "succeeded" &&
+    (execution.kind === "rank" || execution.kind === "select")
+  );
 }
 
 function dateStart(value: string) {
