@@ -9,7 +9,10 @@ COPY news_ranker ./news_ranker
 COPY livedemo/pyproject.toml livedemo/uv.lock livedemo/README.md ./livedemo/
 
 WORKDIR /workspace/livedemo
-RUN uv sync --no-dev
+RUN uv sync --no-dev \
+    --index https://download.pytorch.org/whl/cpu \
+    --index-strategy unsafe-best-match \
+    --upgrade-package torch
 
 WORKDIR /workspace
 COPY livedemo ./livedemo
