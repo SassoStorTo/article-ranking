@@ -1,5 +1,6 @@
 from concurrent.futures import Executor
 from copy import deepcopy
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
@@ -50,16 +51,20 @@ def _not_found(entity: str, entity_id: UUID) -> HTTPException:
 
 
 def _execution_summary(execution: Execution) -> ExecutionSummary:
+    corpus_name = execution.corpus.name if execution.corpus is not None else ""
     return ExecutionSummary(
         id=UUID(execution.id),
         corpus_id=UUID(execution.corpus_id),
+        corpus_name=corpus_name,
         kind=execution.kind.value,
         status=execution.status.value,
         profiles=execution.profiles,
+        profile_summary=_profile_summary(execution.profiles),
         m=execution.m,
         started_at=execution.started_at,
         finished_at=execution.finished_at,
         error=execution.error,
+        has_evaluation_artifacts=bool(execution.evaluation_artifacts),
         created_at=execution.created_at,
     )
 
@@ -101,6 +106,10 @@ def _execution_detail(execution: Execution) -> ExecutionDetail:
 def _validate_corpus(db: Session, corpus_id: UUID) -> None:
     if db.get(Corpus, str(corpus_id)) is None:
         raise _not_found("Corpus", corpus_id)
+
+
+def _profile_summary(profiles: list[str]) -> str:
+    return ", ".join(profiles) if profiles else "none"
 
 
 def _config_error(exc: Exception) -> HTTPException:
@@ -255,23 +264,35 @@ def list_executions(
         ExecutionStatusValue | None,
         Query(alias="status"),
     ] = None,
+    created_from: datetime | None = None,
+    created_to: datetime | None = None,
+    profile: str | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[ExecutionSummary]:
-    statement: Select[tuple[Execution]] = select(Execution)
+    statement: Select[tuple[Execution]] = select(Execution).options(
+        selectinload(Execution.corpus),
+        selectinload(Execution.evaluation_artifacts),
+    )
     if corpus_id is not None:
         statement = statement.where(Execution.corpus_id == str(corpus_id))
     if kind is not None:
         statement = statement.where(Execution.kind == kind)
     if status_filter is not None:
         statement = statement.where(Execution.status == status_filter)
-    statement = (
-        statement
-        .order_by(Execution.created_at.desc(), Execution.id)
-        .limit(limit)
-        .offset(offset)
-    )
-    return [_execution_summary(execution) for execution in db.scalars(statement)]
+    if created_from is not None:
+        statement = statement.where(Execution.created_at >= created_from)
+    if created_to is not None:
+        statement = statement.where(Execution.created_at <= created_to)
+    statement = statement.order_by(Execution.created_at.desc(), Execution.id)
+
+    executions = list(db.scalars(statement))
+    if profile is not None:
+        executions = [
+            execution for execution in executions if profile in execution.profiles
+        ]
+    paginated = executions[offset : offset + limit]
+    return [_execution_summary(execution) for execution in paginated]
 
 
 @router.get("/{execution_id}", response_model=ExecutionDetail)

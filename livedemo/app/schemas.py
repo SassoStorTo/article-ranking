@@ -204,13 +204,16 @@ class EvaluationArtifactRecord(ApiSchema):
 class ExecutionSummary(TimestampFields):
     id: UUID
     corpus_id: UUID
+    corpus_name: str
     kind: ExecutionKindValue
     status: ExecutionStatusValue
     profiles: list[str]
+    profile_summary: str
     m: int | None
     started_at: datetime | None
     finished_at: datetime | None
     error: str | None
+    has_evaluation_artifacts: bool
 
 
 class ExecutionDetail(ExecutionSummary):
