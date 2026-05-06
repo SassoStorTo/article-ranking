@@ -13,6 +13,8 @@ Make the `infographic/` folder directly usable as a GitHub Pages static page.
 4. Add short hosting instructions near the infographic so the expected Pages URL is
    obvious.
 5. Run `make check`, inspect the diff, and commit each completed point as work lands.
+6. Add a root `index.html` and `.nojekyll` after deployed Pages shows the README at the
+   site root.
 
 ## Acceptance Criteria
 
@@ -20,3 +22,4 @@ Make the `infographic/` folder directly usable as a GitHub Pages static page.
 - The existing infographic content renders from `infographic/infographic.jsx`.
 - No new project dependencies are added.
 - Python checks still pass with `make check`.
+- The root Pages URL renders the infographic instead of the project README.

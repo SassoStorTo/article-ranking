@@ -25,6 +25,10 @@ Make the newly added `infographic/` folder hostable through GitHub Pages.
 `infographic/infographic.jsx` is not directly hostable by GitHub Pages because it is only
 a JSX component file. A browser needs an HTML entrypoint and a way to load React/JSX.
 
+After the first deploy, `https://sassostorto.github.io/article-ranking/` rendered the
+project `README.md` through Jekyll. The `infographic/` subpath served the static
+infographic HTML, but the repository root still needed an explicit `index.html`.
+
 ## Hosting Shape
 
 Use a static `infographic/index.html` entrypoint that loads React and Babel from CDNs,
@@ -32,3 +36,11 @@ then mounts the local JSX component. This avoids adding a package manager or bui
 for the infographic while allowing GitHub Pages to serve it from:
 
 `https://<owner>.github.io/<repo>/infographic/`
+
+Add a repository-root `index.html` that mounts the same component from
+`infographic/infographic.jsx`, so the root Pages URL also shows the infographic:
+
+`https://<owner>.github.io/<repo>/`
+
+Add `.nojekyll` so GitHub Pages does not run the repository through Jekyll and fall back
+to rendering Markdown.
