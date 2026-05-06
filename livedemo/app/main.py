@@ -8,6 +8,7 @@ from sqlalchemy import Engine
 from livedemo.app.config import get_settings
 from livedemo.app.db.session import engine as default_engine
 from livedemo.app.db.session import init_db
+from livedemo.app.schemas import HealthResponse
 
 
 def create_app(db_engine: Engine = default_engine) -> FastAPI:
@@ -32,9 +33,9 @@ def create_app(db_engine: Engine = default_engine) -> FastAPI:
         allow_headers=["*"],
     )
 
-    @app.get("/api/health")
-    def health() -> dict[str, bool]:
-        return {"ok": True}
+    @app.get("/api/health", response_model=HealthResponse)
+    def health() -> HealthResponse:
+        return HealthResponse(ok=True)
 
     return app
 
