@@ -251,15 +251,53 @@ async function parseJson<T>(response: Response): Promise<T> {
     let detail = `Request failed with ${response.status}`;
     try {
       const body = (await response.json()) as { detail?: unknown };
-      if (typeof body.detail === "string") {
-        detail = body.detail;
-      }
+      detail = formatApiErrorDetail(body.detail) ?? detail;
     } catch {
       // Keep the status-based fallback when the response is not JSON.
     }
     throw new Error(detail);
   }
   return response.json() as Promise<T>;
+}
+
+function formatApiErrorDetail(detail: unknown): string | null {
+  if (typeof detail === "string") {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (!isApiValidationItem(item)) {
+          return null;
+        }
+        const path = item.loc.map(String).join(".");
+        return path ? `${path}: ${item.msg}` : item.msg;
+      })
+      .filter((item): item is string => item !== null);
+    return messages.length ? messages.join("; ") : null;
+  }
+  if (
+    typeof detail === "object" &&
+    detail !== null &&
+    "message" in detail &&
+    typeof detail.message === "string"
+  ) {
+    return detail.message;
+  }
+  return null;
+}
+
+function isApiValidationItem(
+  item: unknown,
+): item is { loc: (string | number)[]; msg: string } {
+  return (
+    typeof item === "object" &&
+    item !== null &&
+    "loc" in item &&
+    Array.isArray(item.loc) &&
+    "msg" in item &&
+    typeof item.msg === "string"
+  );
 }
 
 export async function listCorpora(): Promise<CorpusSummary[]> {

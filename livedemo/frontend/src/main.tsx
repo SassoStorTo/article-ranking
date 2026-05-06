@@ -299,6 +299,7 @@ function ExecutionsIndex({
     },
   });
   const rows = executions.data ?? [];
+  const hasRows = rows.length > 0;
 
   function updateFilter<K extends keyof ExecutionFilters>(
     key: K,
@@ -401,9 +402,10 @@ function ExecutionsIndex({
       {replayMutation.error && (
         <p className="error-line">{replayMutation.error.message}</p>
       )}
-      {!executions.isLoading && rows.length === 0 ? (
+      {!executions.isLoading && !executions.error && !hasRows ? (
         <p className="muted">No executions match these filters.</p>
-      ) : (
+      ) : null}
+      {hasRows ? (
         <div className="result-table-wrap">
           <table className="result-table executions-table">
             <thead>
@@ -468,27 +470,27 @@ function ExecutionsIndex({
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
 
-      <div className="pagination-controls">
-        <button
-          disabled={offset === 0 || executions.isFetching}
-          onClick={() => setOffset((current) => Math.max(0, current - limit))}
-          type="button"
-        >
-          Previous
-        </button>
-        <span>
-          {offset + 1}-{offset + rows.length}
-        </span>
-        <button
-          disabled={rows.length < limit || executions.isFetching}
-          onClick={() => setOffset((current) => current + limit)}
-          type="button"
-        >
-          Next
-        </button>
-      </div>
+      {(hasRows || offset > 0) && (
+        <div className="pagination-controls">
+          <button
+            disabled={offset === 0 || executions.isFetching}
+            onClick={() => setOffset((current) => Math.max(0, current - limit))}
+            type="button"
+          >
+            Previous
+          </button>
+          <span>{hasRows ? `${offset + 1}-${offset + rows.length}` : "0"}</span>
+          <button
+            disabled={rows.length < limit || executions.isFetching}
+            onClick={() => setOffset((current) => current + limit)}
+            type="button"
+          >
+            Next
+          </button>
+        </div>
+      )}
       {compareTarget && (
         <CompareExecutionModal
           onClose={() => setCompareTarget(null)}
@@ -603,6 +605,10 @@ function CompareExecutionModal({
             </select>
           </label>
         </div>
+        {candidates.isLoading && <p className="muted">Loading candidates</p>}
+        {!candidates.isLoading && options.length === 0 && (
+          <p className="muted">No compatible succeeded executions yet.</p>
+        )}
         {selectedCandidate && (
           <p className="muted">
             Artifacts will be stored on {target.profile_summary} from{" "}
@@ -708,6 +714,7 @@ function CorpusPanel({
       {deleteMutation.error && (
         <p className="error-line">{deleteMutation.error.message}</p>
       )}
+      {uploadMutation.isPending && <p className="muted">Uploading articles</p>}
 
       {corpus.isLoading && <p className="muted">Loading articles</p>}
       {corpus.error && <p className="error-line">{corpus.error.message}</p>}
@@ -1189,18 +1196,25 @@ function ExecutionPanel({
         </div>
       </header>
       {execution.data.error && <p className="error-line">{execution.data.error}</p>}
+      {execution.data.status !== "succeeded" && (
+        <p className="muted">Execution is {execution.data.status}.</p>
+      )}
       <details>
         <summary>Parameters</summary>
         <pre>{JSON.stringify(execution.data.config_json, null, 2)}</pre>
       </details>
-      {execution.data.results.map((result) => (
-        <ResultPayloadTable
-          key={result.id}
-          articles={articles}
-          payload={result.result_json}
-          selectedArticleIds={selectedArticleIds(result.result_json)}
-        />
-      ))}
+      {execution.data.results.length === 0 ? (
+        <p className="muted">No persisted result rows yet.</p>
+      ) : (
+        execution.data.results.map((result) => (
+          <ResultPayloadTable
+            key={result.id}
+            articles={articles}
+            payload={result.result_json}
+            selectedArticleIds={selectedArticleIds(result.result_json)}
+          />
+        ))
+      )}
       {execution.data.status === "succeeded" && (
         <EvaluationPanel
           artifacts={artifacts.data ?? execution.data.evaluation_artifacts}
@@ -1362,6 +1376,10 @@ function EvaluationPanel({
         </label>
       </div>
       {baselines.error && <p className="error-line">{baselines.error.message}</p>}
+      {baselines.isLoading && <p className="muted">Loading baselines</p>}
+      {!baselines.isLoading && baselineOptions.length === 0 && (
+        <p className="muted">Run another succeeded execution to compare against.</p>
+      )}
       <div className="evaluation-actions">
         <button
           disabled={needsBaseline || topOverlap.isPending}

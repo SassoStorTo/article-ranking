@@ -76,6 +76,35 @@ def test_rank_execution_lifecycle_and_detail_payload(client: TestClient) -> None
     assert [entry["rank"] for entry in result["entries"]] == [1, 2]
 
 
+def test_rank_execution_is_deterministic_for_same_corpus_and_config(
+    client: TestClient,
+) -> None:
+    corpus_id = create_corpus_with_articles(client)
+    payload = {
+        "corpus_id": corpus_id,
+        "profile": "representative",
+        "config": {
+            "similarity_threshold": 0.85,
+            "linkage": "average",
+            "coverage_weighting": "consensus",
+            "selection_mode": "top_score",
+            "selection_lambda": 0.8,
+            "top_m": 3,
+        },
+    }
+
+    first_id = start_execution(client, "/api/executions/rank", payload)
+    second_id = start_execution(client, "/api/executions/rank", payload)
+    first = wait_for_execution(client, first_id)
+    second = wait_for_execution(client, second_id)
+
+    assert first["status"] == "succeeded"
+    assert second["status"] == "succeeded"
+    assert json.dumps(first["results"][0]["result_json"], sort_keys=True) == (
+        json.dumps(second["results"][0]["result_json"], sort_keys=True)
+    )
+
+
 def test_select_execution_persists_selected_rows(client: TestClient) -> None:
     corpus_id = create_corpus_with_articles(client)
     execution_id = start_execution(
