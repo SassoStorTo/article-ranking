@@ -1264,6 +1264,19 @@ function RankParameterForm({
               <option value="mmr">mmr</option>
             </select>
           </label>
+          <label>
+            Selection lambda
+            <input
+              max="1"
+              min="0"
+              onChange={(event) =>
+                updateRankConfig("selection_lambda", Number(event.target.value))
+              }
+              step="0.05"
+              type="number"
+              value={config.selection_lambda ?? 0.8}
+            />
+          </label>
         </div>
       </fieldset>
 
