@@ -15,6 +15,7 @@ export type ArticleSummary = {
   filename: string;
   title: string;
   body_length: number;
+  decomposition_status: "not_started" | "decomposed";
   uploaded_at: string;
 };
 
@@ -32,7 +33,56 @@ export type ArticleDetail = {
   filename: string;
   title: string;
   body: string;
+  decomposition_status: "not_started" | "decomposed";
+  structured_article: StructuredArticleRecord | null;
   uploaded_at: string;
+};
+
+export type StructuredArticleRecord = {
+  id: string;
+  article_id: string;
+  llm_model: string;
+  prompt_version: string;
+  schema_version: string;
+  payload_json: StructuredArticlePayload;
+  created_at: string;
+};
+
+export type StructuredArticlePayload = {
+  article_id?: string | null;
+  headline_neutral: string;
+  topic: string;
+  entities: {
+    people: StructuredEntity[];
+    organizations: StructuredEntity[];
+    locations: StructuredEntity[];
+  };
+  events: StructuredEvent[];
+  claims: StructuredClaim[];
+  context: string[];
+};
+
+export type StructuredEntity = {
+  name: string;
+  role: string | null;
+};
+
+export type StructuredEvent = {
+  id: string;
+  when: string | null;
+  who: string[];
+  what: string;
+  where: string | null;
+  why: string | null;
+  how: string | null;
+  depends_on: string[];
+};
+
+export type StructuredClaim = {
+  id: string;
+  statement: string;
+  type: "fact" | "quote" | "estimate" | "prediction";
+  attributed_to: string | null;
 };
 
 type IdResponse = {
@@ -106,4 +156,13 @@ export async function uploadArticles(
 export async function getArticle(articleId: string): Promise<ArticleDetail> {
   const response = await fetch(`${apiBaseUrl}/api/articles/${articleId}`);
   return parseJson<ArticleDetail>(response);
+}
+
+export async function decomposeArticle(
+  articleId: string,
+): Promise<StructuredArticleRecord> {
+  const response = await fetch(`${apiBaseUrl}/api/articles/${articleId}/decompose`, {
+    method: "POST",
+  });
+  return parseJson<StructuredArticleRecord>(response);
 }
