@@ -8,6 +8,8 @@ from sqlalchemy import Engine
 from livedemo.app.config import get_settings
 from livedemo.app.db.session import engine as default_engine
 from livedemo.app.db.session import init_db
+from livedemo.app.routers.articles import router as articles_router
+from livedemo.app.routers.corpora import router as corpora_router
 from livedemo.app.schemas import HealthResponse
 
 
@@ -36,6 +38,9 @@ def create_app(db_engine: Engine = default_engine) -> FastAPI:
     @app.get("/api/health", response_model=HealthResponse)
     def health() -> HealthResponse:
         return HealthResponse(ok=True)
+
+    app.include_router(articles_router, prefix="/api")
+    app.include_router(corpora_router, prefix="/api")
 
     return app
 

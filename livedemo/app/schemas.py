@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ApiSchema(BaseModel):
@@ -32,3 +32,44 @@ class ValidationErrorItem(ApiSchema):
 
 class ErrorResponse(ApiSchema):
     detail: str | ErrorDetail | list[ValidationErrorItem]
+
+
+class CorpusCreate(ApiSchema):
+    name: str = Field(min_length=1, max_length=200)
+    notes: str | None = None
+
+
+class CorpusSummary(TimestampFields):
+    id: UUID
+    name: str
+    notes: str | None
+    article_count: int
+
+
+class ArticleSummary(ApiSchema):
+    id: UUID
+    corpus_id: UUID
+    filename: str
+    title: str
+    body_length: int
+    uploaded_at: datetime
+
+
+class ArticleDetail(ApiSchema):
+    id: UUID
+    corpus_id: UUID
+    filename: str
+    title: str
+    body: str
+    uploaded_at: datetime
+
+
+class ArticleUploadResponse(ApiSchema):
+    article_ids: list[UUID]
+
+
+class CorpusDetail(TimestampFields):
+    id: UUID
+    name: str
+    notes: str | None
+    articles: list[ArticleSummary]
