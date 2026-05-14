@@ -250,6 +250,14 @@ button:disabled {
   justify-content: space-between;
 }
 
+.detail-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .section-heading span {
   background: #ece4d8;
   border-radius: 999px;
@@ -334,6 +342,11 @@ button:disabled {
   inset: 0;
   opacity: 0;
   position: absolute;
+}
+
+.upload-zone.compact {
+  min-height: 42px;
+  padding: 10px 12px;
 }
 
 .execution-controls {
