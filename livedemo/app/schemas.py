@@ -223,6 +223,56 @@ class ExecutionDetail(ExecutionSummary):
     evaluation_artifacts: list[EvaluationArtifactRecord]
 
 
+class ExecutionComparisonMetadata(ExecutionSummary):
+    config_json: dict[str, Any]
+
+
+class ExecutionComparisonWarning(ApiSchema):
+    code: str
+    message: str
+    left_section_key: str | None = None
+    right_section_key: str | None = None
+
+
+class ExecutionComparisonSection(ApiSchema):
+    key: str
+    label: str
+    profile: str | None
+    result_type: Literal["rank_result", "selection_result", "profile_comparison"]
+    rank_result_json: dict[str, Any]
+    result_json: dict[str, Any]
+    entry_count: int
+    selected_article_ids: list[str]
+    cluster_count: int | None
+    cluster_inspection_rows: list[dict[str, Any]]
+
+
+class ExecutionComparisonMetrics(ApiSchema):
+    top_m: int | None
+    top_m_overlap: dict[str, Any] | None
+    rank_correlation: dict[str, Any] | None
+    left_cluster_count: int | None
+    right_cluster_count: int | None
+    shared_cluster_count: int | None
+    shared_canonical_cluster_texts: list[str]
+
+
+class ExecutionComparisonSectionPair(ApiSchema):
+    key: str
+    label: str
+    left: ExecutionComparisonSection | None
+    right: ExecutionComparisonSection | None
+    metrics: ExecutionComparisonMetrics | None
+    warnings: list[ExecutionComparisonWarning]
+
+
+class ExecutionComparisonResponse(ApiSchema):
+    left: ExecutionComparisonMetadata
+    right: ExecutionComparisonMetadata
+    section_pairs: list[ExecutionComparisonSectionPair]
+    warnings: list[ExecutionComparisonWarning]
+
+
 class TopMOverlapRequest(ApiSchema):
     other_execution_id: UUID
     m: int = Field(ge=1)

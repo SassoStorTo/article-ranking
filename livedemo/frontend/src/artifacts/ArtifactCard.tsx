@@ -1,4 +1,5 @@
-import { EvaluationArtifact } from "../api/client";
+import { ArticleSummary, EvaluationArtifact } from "../api/client";
+import { Metric } from "../components/Metric";
 import {
   formatCell,
   formatGroupName,
@@ -6,10 +7,19 @@ import {
   formatUnknownScore,
 } from "../utils/format";
 import { arrayPayload } from "../utils/payload";
-import { Metric } from "../components/Metric";
+import { ClusterInspectionRows } from "./ClusterInspectionRows";
 
-export function ArtifactCard({ artifact }: { artifact: EvaluationArtifact }) {
+export function ArtifactCard({
+  artifact,
+  articles = [],
+}: {
+  artifact: EvaluationArtifact;
+  articles?: ArticleSummary[];
+}) {
   const payload = artifact.payload_json;
+  const articleFilenameById = Object.fromEntries(
+    articles.map((article) => [article.id, article.filename]),
+  );
   return (
     <article className="artifact-card">
       <header>
@@ -28,12 +38,21 @@ export function ArtifactCard({ artifact }: { artifact: EvaluationArtifact }) {
           </a>
         )}
       </header>
-      <ArtifactPayload artifact={artifact} />
+      <ArtifactPayload
+        articleFilenameById={articleFilenameById}
+        artifact={artifact}
+      />
     </article>
   );
 }
 
-function ArtifactPayload({ artifact }: { artifact: EvaluationArtifact }) {
+function ArtifactPayload({
+  articleFilenameById,
+  artifact,
+}: {
+  articleFilenameById: Record<string, string>;
+  artifact: EvaluationArtifact;
+}) {
   const payload = artifact.payload_json;
   if (artifact.helper === "top_m_overlap") {
     return (
@@ -65,20 +84,10 @@ function ArtifactPayload({ artifact }: { artifact: EvaluationArtifact }) {
   }
   if (artifact.helper === "cluster_inspection_rows") {
     return (
-      <div className="cluster-artifacts">
-        {arrayPayload(payload.rows).map((row, index) => (
-          <details key={`${row.cluster_index}-${index}`}>
-            <summary>
-              {String(row.canonical_fact_text ?? "Cluster")} · support{" "}
-              {String(row.support_count ?? "0")}{" "}
-              {row.is_rare ? <span className="selected-badge">Rare</span> : null}
-            </summary>
-            <p>Articles: {formatIdList(row.support_article_ids)}</p>
-            <p>Facts: {formatIdList(row.member_fact_ids)}</p>
-            <p>{formatIdList(row.member_texts)}</p>
-          </details>
-        ))}
-      </div>
+      <ClusterInspectionRows
+        articleFilenameById={articleFilenameById}
+        rows={arrayPayload(payload.rows)}
+      />
     );
   }
   if (artifact.helper === "anonymized_user_study_bundle") {

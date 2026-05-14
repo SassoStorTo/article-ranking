@@ -13,6 +13,7 @@ import { CorpusPanel } from "../pages/CorpusPanel";
 import { CorpusList } from "../components/CorpusList";
 import { EmptyWorkspace } from "../components/EmptyWorkspace";
 import { ThemeMode, TopNavigation } from "../components/TopNavigation";
+import { ExecutionComparisonPage } from "../pages/ExecutionComparisonPage";
 import { ExecutionsIndex } from "../pages/ExecutionsIndex";
 import { HomePage } from "../pages/HomePage";
 import { NewCorpusPage } from "../pages/NewCorpusPage";
@@ -22,6 +23,7 @@ export default function App() {
     routeForPathname(window.location.pathname),
   );
   const page = route.page;
+  const currentTopNavPage = page === "execution-comparison" ? "executions" : page;
   const [theme, setTheme] = useState<ThemeMode>("light");
   const [selectedCorpusId, setSelectedCorpusId] = useState<string | null>(null);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
@@ -195,7 +197,7 @@ export default function App() {
   return (
     <main className="app-shell" data-theme={theme}>
       <TopNavigation
-        currentPage={page === "articles" ? "corpora" : page}
+        currentPage={currentTopNavPage === "articles" ? "corpora" : currentTopNavPage}
         onNavigate={(nextPage) =>
           navigate(routeForPage(nextPage), { clearSelection: true })
         }
@@ -229,6 +231,22 @@ export default function App() {
             onOpenExecution={(execution) =>
               navigate({ executionId: execution.id, page: "executions" })
             }
+            onCompareExecution={(execution) =>
+              navigate({ leftExecutionId: execution.id, page: "execution-comparison" })
+            }
+          />
+        </section>
+      ) : null}
+
+      {page === "execution-comparison" ? (
+        <section className="workspace single-pane" aria-label="Comparison workspace">
+          <ExecutionComparisonPage
+            leftExecutionId={route.leftExecutionId}
+            onBack={() => navigate({ page: "executions" })}
+            onSelectExecutions={(leftExecutionId, rightExecutionId) =>
+              navigate({ leftExecutionId, page: "execution-comparison", rightExecutionId })
+            }
+            rightExecutionId={route.rightExecutionId}
           />
         </section>
       ) : null}
