@@ -1,4 +1,5 @@
 import { EvaluationArtifact } from "../api/client";
+import { Metric } from "../components/Metric";
 import {
   formatCell,
   formatGroupName,
@@ -6,7 +7,7 @@ import {
   formatUnknownScore,
 } from "../utils/format";
 import { arrayPayload } from "../utils/payload";
-import { Metric } from "../components/Metric";
+import { ClusterInspectionRows } from "./ClusterInspectionRows";
 
 export function ArtifactCard({ artifact }: { artifact: EvaluationArtifact }) {
   const payload = artifact.payload_json;
@@ -64,22 +65,7 @@ function ArtifactPayload({ artifact }: { artifact: EvaluationArtifact }) {
     return <ArtifactRows rows={arrayPayload(payload.rows)} />;
   }
   if (artifact.helper === "cluster_inspection_rows") {
-    return (
-      <div className="cluster-artifacts">
-        {arrayPayload(payload.rows).map((row, index) => (
-          <details key={`${row.cluster_index}-${index}`}>
-            <summary>
-              {String(row.canonical_fact_text ?? "Cluster")} · support{" "}
-              {String(row.support_count ?? "0")}{" "}
-              {row.is_rare ? <span className="selected-badge">Rare</span> : null}
-            </summary>
-            <p>Articles: {formatIdList(row.support_article_ids)}</p>
-            <p>Facts: {formatIdList(row.member_fact_ids)}</p>
-            <p>{formatIdList(row.member_texts)}</p>
-          </details>
-        ))}
-      </div>
-    );
+    return <ClusterInspectionRows rows={arrayPayload(payload.rows)} />;
   }
   if (artifact.helper === "anonymized_user_study_bundle") {
     return (

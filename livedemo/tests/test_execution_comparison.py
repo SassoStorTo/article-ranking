@@ -55,6 +55,17 @@ def test_rank_vs_select_comparison_returns_metadata_sections_and_metrics(
     assert pair["left"]["result_type"] == "rank_result"
     assert pair["right"]["result_type"] == "selection_result"
     assert pair["right"]["selected_article_ids"]
+    assert pair["left"]["cluster_count"] == len(pair["left"]["cluster_inspection_rows"])
+    assert pair["left"]["cluster_inspection_rows"]
+    assert {
+        "cluster_index",
+        "canonical_fact_text",
+        "support_article_ids",
+        "support_count",
+        "member_fact_ids",
+        "member_texts",
+        "is_rare",
+    }.issubset(pair["left"]["cluster_inspection_rows"][0])
     assert pair["metrics"]["top_m_overlap"]["overlap_count"] == 2
     assert pair["metrics"]["rank_correlation"]["coefficient"] == 1.0
     assert pair["metrics"]["left_cluster_count"] >= 1

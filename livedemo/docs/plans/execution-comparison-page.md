@@ -67,3 +67,18 @@ Rejected: reusing old compare modal as final UI because it is not durable/deep-l
 ## Open questions
 
 - None before implementation.
+
+## Follow-up: Section Pair cluster inspection
+
+Add the same cluster inspection rows available from `/executions/:id` evaluation
+artifacts into each `/executions/compare/:id` Section Pair without persisting new
+artifacts. Extend the backend comparison section payload with
+`cluster_inspection_rows`, derive counts and shared texts from those rows, add a
+focused backend assertion for row shape, then share a frontend renderer between
+artifact cards and comparison section pairs. Verify with
+`uv run python -m pytest tests/test_execution_comparison.py`, frontend build, and
+`make check`.
+
+Add a frontend-only summary to cluster inspection rows that totals fact-points
+from `member_fact_ids` and groups clusters by fact-point size. Keep unequal
+left/right cluster lists top-aligned so one side can end before the other.

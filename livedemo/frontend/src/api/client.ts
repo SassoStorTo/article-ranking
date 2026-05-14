@@ -211,6 +211,16 @@ export type EvaluationArtifact = {
   created_at: string;
 };
 
+export type ClusterInspectionRow = {
+  cluster_index: number;
+  canonical_fact_text: string;
+  support_article_ids: string[];
+  support_count: number;
+  member_fact_ids: string[];
+  member_texts: string[];
+  is_rare: boolean;
+};
+
 export type ExecutionSummary = {
   id: string;
   corpus_id: string;
@@ -254,6 +264,7 @@ export type ExecutionComparisonSection = {
   entry_count: number;
   selected_article_ids: string[];
   cluster_count: number | null;
+  cluster_inspection_rows: ClusterInspectionRow[];
 };
 
 export type ExecutionComparisonMetrics = {

@@ -4,6 +4,7 @@ import {
   RankingEntry,
 } from "../api/client";
 import { formatGroupName, formatScore } from "../utils/format";
+import { ClusterInspectionRows } from "./ClusterInspectionRows";
 
 export function ComparisonResultTables({
   pair,
@@ -11,10 +12,24 @@ export function ComparisonResultTables({
   pair: ExecutionComparisonSectionPair;
 }) {
   return (
-    <div className="comparison-section-tables">
-      <ComparisonSectionTable section={pair.left} side="Left" />
-      <ComparisonSectionTable section={pair.right} side="Right" />
-    </div>
+    <>
+      <div className="comparison-section-tables">
+        <ComparisonSectionTable section={pair.left} side="Left" />
+        <ComparisonSectionTable section={pair.right} side="Right" />
+      </div>
+      <div className="comparison-cluster-inspection">
+        <header>
+          <div>
+            <p className="eyebrow">Cluster Inspection</p>
+            <h4>Cluster inspection rows</h4>
+          </div>
+        </header>
+        <div className="comparison-cluster-grid">
+          <ComparisonClusterRows section={pair.left} side="Left" />
+          <ComparisonClusterRows section={pair.right} side="Right" />
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -92,5 +107,32 @@ function ComparisonRow({
       <td>{formatScore(entry.components.density)}</td>
       <td>{formatScore(entry.components.entity_coverage)}</td>
     </tr>
+  );
+}
+
+function ComparisonClusterRows({
+  section,
+  side,
+}: {
+  section: ExecutionComparisonSection | null;
+  side: string;
+}) {
+  if (!section) {
+    return (
+      <div className="comparison-cluster-card empty-state">
+        <h4>{side}</h4>
+        <p className="muted">Section unavailable.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="comparison-cluster-card">
+      <h4>
+        {side}: {formatGroupName(section.label)}
+      </h4>
+      <p className="muted">{section.cluster_count ?? 0} clusters</p>
+      <ClusterInspectionRows rows={section.cluster_inspection_rows} />
+    </div>
   );
 }

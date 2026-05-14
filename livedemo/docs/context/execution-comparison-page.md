@@ -24,6 +24,10 @@ or rerun ranking.
 - Metrics are non-persisted payloads: top-M overlap, Kendall rank correlation
   when available, left/right cluster counts, shared cluster count, and shared
   canonical cluster texts.
+- Each normalized comparison section also includes non-persisted cluster
+  inspection rows derived from its rank result with rare threshold 1. These rows
+  mirror the `/executions/{id}/eval/cluster-inspection` artifact payload shape
+  but do not create evaluation artifacts.
 
 ## Frontend ownership
 
@@ -40,8 +44,12 @@ or rerun ranking.
   only after both ids are present.
 - `frontend/src/artifacts/ComparisonResultTables.tsx` renders side-by-side result
   tables for each section pair.
+- `frontend/src/artifacts/ClusterInspectionRows.tsx` renders cluster inspection
+  row details for both evaluation artifacts and comparison section pairs,
+  including total fact-points and cluster-size distribution summaries.
 - `frontend/src/styles.css` owns comparison page, metadata, warning, metric, and
-  table layout styles.
+  table/cluster inspection layout styles. Cluster inspection columns align to
+  the top so left/right sides can finish at different heights.
 
 ## Gotchas
 

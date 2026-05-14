@@ -732,14 +732,65 @@ button:disabled {
 }
 
 .cluster-artifacts {
+  align-content: start;
+  align-items: start;
   display: grid;
   gap: 8px;
 }
 
 .cluster-artifacts details {
+  align-self: start;
   border: 1px solid #e1dbd1;
   border-radius: 8px;
   padding: 10px;
+}
+
+.cluster-summary {
+  align-items: start;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.cluster-summary div {
+  background: #f6f3ed;
+  border: 1px solid #e1dbd1;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.cluster-summary span {
+  color: #686158;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cluster-summary strong {
+  overflow-wrap: anywhere;
+}
+
+.cluster-summary ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.cluster-list-toggle {
+  border: 1px solid #e1dbd1;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.cluster-list-toggle > summary {
+  color: #263832;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.cluster-list-toggle .cluster-artifacts {
+  margin-top: 10px;
 }
 
 .result-table.compact {
@@ -845,7 +896,9 @@ button:disabled {
 
 .comparison-selectors,
 .comparison-metadata-grid,
-.comparison-section-tables {
+.comparison-section-tables,
+.comparison-cluster-grid {
+  align-items: start;
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -903,6 +956,32 @@ button:disabled {
 }
 
 .comparison-warnings .error-line {
+  margin: 0;
+}
+
+.comparison-cluster-inspection {
+  border-top: 1px solid #e1dbd1;
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+}
+
+.comparison-cluster-inspection h4,
+.comparison-cluster-card h4 {
+  font-size: 0.9rem;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.comparison-cluster-card {
+  align-content: start;
+  align-self: start;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.comparison-cluster-card .muted {
   margin: 0;
 }
 
@@ -976,7 +1055,9 @@ button:disabled {
 .app-shell[data-theme="dark"] .article-body header,
 .app-shell[data-theme="dark"] .structured-panel header,
 .app-shell[data-theme="dark"] .execution-panel details,
+.app-shell[data-theme="dark"] .cluster-list-toggle,
 .app-shell[data-theme="dark"] .comparison-metadata-card details,
+.app-shell[data-theme="dark"] .comparison-cluster-inspection,
 .app-shell[data-theme="dark"] .result-table th,
 .app-shell[data-theme="dark"] .result-table td {
   border-color: #36433c;
@@ -1017,6 +1098,7 @@ button:disabled {
 
 .app-shell[data-theme="dark"] .weight-group,
 .app-shell[data-theme="dark"] .metric,
+.app-shell[data-theme="dark"] .cluster-summary div,
 .app-shell[data-theme="dark"] .section-heading span,
 .app-shell[data-theme="dark"] .evaluation-panel header span {
   background: #202923;
@@ -1086,8 +1168,11 @@ button:disabled {
 
 .app-shell[data-theme="dark"] .article-cell strong,
 .app-shell[data-theme="dark"] .execution-panel summary,
+.app-shell[data-theme="dark"] .cluster-list-toggle > summary,
 .app-shell[data-theme="dark"] .artifact-card a,
 .app-shell[data-theme="dark"] .artifact-card h4,
+.app-shell[data-theme="dark"] .comparison-cluster-inspection h4,
+.app-shell[data-theme="dark"] .comparison-cluster-card h4,
 .app-shell[data-theme="dark"] .result-table-wrap h4,
 .app-shell[data-theme="dark"] .result-table th,
 .app-shell[data-theme="dark"] .structured-panel h4 {
@@ -1135,7 +1220,8 @@ button:disabled {
   .article-inspector,
   .comparison-selectors,
   .comparison-metadata-grid,
-  .comparison-section-tables {
+  .comparison-section-tables,
+  .comparison-cluster-grid {
     grid-template-columns: 1fr;
   }
 

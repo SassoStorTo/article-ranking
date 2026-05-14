@@ -244,6 +244,7 @@ class ExecutionComparisonSection(ApiSchema):
     entry_count: int
     selected_article_ids: list[str]
     cluster_count: int | None
+    cluster_inspection_rows: list[dict[str, Any]]
 
 
 class ExecutionComparisonMetrics(ApiSchema):

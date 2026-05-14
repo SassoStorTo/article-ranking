@@ -172,6 +172,7 @@ def _section_from_rank(
         "rank_result", "selection_result", "profile_comparison"
     ] = "rank_result",
 ) -> ExecutionComparisonSection:
+    cluster_rows = _cluster_rows(rank_result)
     return ExecutionComparisonSection(
         key=key,
         label=label,
@@ -181,7 +182,8 @@ def _section_from_rank(
         result_json=result_json,
         entry_count=len(rank_result.entries),
         selected_article_ids=selected_article_ids or [],
-        cluster_count=_cluster_count(rank_result),
+        cluster_count=len(cluster_rows),
+        cluster_inspection_rows=cluster_rows,
     )
 
 
@@ -273,8 +275,8 @@ def _metrics(
             )
         )
 
-    left_cluster_texts = _cluster_texts(left_rank)
-    right_cluster_texts = _cluster_texts(right_rank)
+    left_cluster_texts = _cluster_texts(left.cluster_inspection_rows)
+    right_cluster_texts = _cluster_texts(right.cluster_inspection_rows)
     shared_cluster_texts = sorted(set(left_cluster_texts) & set(right_cluster_texts))
     return (
         ExecutionComparisonMetrics(
@@ -298,15 +300,24 @@ def _rank_result(payload: dict[str, Any]) -> RankResult:
     return result
 
 
-def _cluster_count(rank_result: RankResult) -> int | None:
-    return len(cluster_inspection_rows(rank_result, 1))
+def _cluster_rows(rank_result: RankResult) -> list[dict[str, Any]]:
+    rows = to_jsonable(cluster_inspection_rows(rank_result, 1))
+    if not isinstance(rows, list):
+        return []
+    normalized: list[dict[str, Any]] = []
+    for row in rows:
+        if isinstance(row, dict):
+            normalized.append({str(key): value for key, value in row.items()})
+    return normalized
 
 
-def _cluster_texts(rank_result: RankResult) -> list[str]:
-    return [
-        str(row["canonical_fact_text"])
-        for row in cluster_inspection_rows(rank_result, 1)
-    ]
+def _cluster_texts(rows: list[dict[str, Any]]) -> list[str]:
+    texts: list[str] = []
+    for row in rows:
+        text = row.get("canonical_fact_text")
+        if text is not None:
+            texts.append(str(text))
+    return texts
 
 
 def _json_payload(value: Any) -> dict[str, Any]:
