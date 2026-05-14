@@ -15,7 +15,7 @@ Add GitHub Actions CI that runs both repository Python test suites on pull reque
 
 ## Approach
 
-Create `.github/workflows/ci.yml` with two independent jobs: `library-tests` and `livedemo-tests`. Both jobs run on `ubuntu-latest`, check out the repository, set up Python 3.11, install `uv`, sync dependencies, then run pytest. Separate jobs make GitHub UI show root and livedemo failures separately. Use commands matching issue scope and project docs; prefer `uv sync --locked` if current lockfiles are valid.
+Create `.github/workflows/ci.yml` with two independent jobs: `library-tests` and `livedemo-tests`. Both jobs run on `ubuntu-latest`, check out the repository, set up Python 3.11, install `uv`, sync dependencies, then run pytest. Separate jobs make GitHub UI show root and livedemo failures separately. Use commands matching issue scope and project docs; prefer `uv sync --locked` if current lockfiles are valid. Limit workflow token permissions to `contents: read` because CI only needs checkout access.
 
 ## Risks / decisions
 
@@ -29,7 +29,7 @@ Create `.github/workflows/ci.yml` with two independent jobs: `library-tests` and
 
 1. **Add workflow skeleton**
    - **Files touched**: `.github/workflows/ci.yml`
-   - **Change summary**: Add workflow named `CI` with triggers `pull_request.branches: [main]` and `push.branches: [main]`.
+   - **Change summary**: Add workflow named `CI` with triggers `pull_request.branches: [main]`, `push.branches: [main]`, and least-privilege `permissions.contents: read`.
    - **Validation**: Inspect YAML for GitHub Actions syntax and trigger branch names.
 
 2. **Add root library test job**

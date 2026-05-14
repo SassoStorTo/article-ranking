@@ -8,6 +8,7 @@ This context covers GitHub Actions CI for repository test surfaces. CI validates
 
 - Workflow file exists at `.github/workflows/ci.yml`.
 - Workflow name is `CI` and triggers on `pull_request` targeting `main` plus `push` to `main`.
+- Workflow token permissions are limited to `contents: read`.
 - Root project uses `uv`, Python `>=3.11`, hatchling, pytest, ruff, and mypy.
 - Root CI job `library-tests` runs on `ubuntu-latest`, checks out the repo, sets up Python 3.11, installs `uv` with `astral-sh/setup-uv@v5`, runs `uv sync --locked`, then runs `uv run python -m pytest tests`.
 - `Makefile` provides `make check`, but it only covers root typecheck, lint, format check, and root pytest suite.
@@ -32,6 +33,7 @@ This context covers GitHub Actions CI for repository test surfaces. CI validates
 - Trigger on `pull_request` targeting `main` and `push` to `main`.
 - Use Python 3.11 to satisfy project `>=3.11` while matching local documented runtime.
 - Install `uv` in workflow instead of adding repository dependencies.
+- Keep workflow token permissions least-privilege; CI only needs `contents: read` for checkout.
 - Run root and livedemo suites as separate jobs or clearly separated steps so failures identify failing surface.
 - Keep commands close to issue-suggested commands with locked dependency sync:
   - root: `uv sync --locked`, then `uv run python -m pytest tests`
