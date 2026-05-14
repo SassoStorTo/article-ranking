@@ -116,10 +116,12 @@ def test_json_corpus_rank_select_compare_skip_mistral(
     rank_result = rank["results"][0]["result_json"]
     assert {entry["article_id"] for entry in rank_result["entries"]} == article_ids
     selection_result = selection["results"][0]["result_json"]
-    assert {entry["article_id"] for entry in selection_result["ranking"]["entries"]} == (
-        article_ids
-    )
-    assert {entry["article_id"] for entry in selection_result["selected"]} <= article_ids
+    selected_ranking_ids = {
+        entry["article_id"] for entry in selection_result["ranking"]["entries"]
+    }
+    assert selected_ranking_ids == article_ids
+    selected_ids = {entry["article_id"] for entry in selection_result["selected"]}
+    assert selected_ids <= article_ids
     comparison_result = comparison["results"][0]["result_json"]
     assert set(comparison_result["rankings"]) == {"representative", "comprehensive"}
     for ranking in comparison_result["rankings"].values():
