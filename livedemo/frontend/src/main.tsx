@@ -5,7 +5,13 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import React, { FormEvent, useMemo, useState } from "react";
+import React, {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import ReactDOM from "react-dom/client";
 import "./styles.css";
 
@@ -51,7 +57,113 @@ import {
 const queryClient = new QueryClient();
 type RunMode = Exclude<ExecutionKind, "evaluate">;
 type AppPage = "home" | "corpora" | "new-corpus" | "articles" | "executions";
+type AppRoute =
+  | { page: "home" }
+  | { page: "corpora"; corpusId?: string }
+  | { page: "new-corpus" }
+  | { page: "articles"; articleId?: string }
+  | { page: "executions"; executionId?: string };
 type ThemeMode = "light" | "dark";
+
+function routeForPage(page: AppPage): AppRoute {
+  if (page === "home") {
+    return { page: "home" };
+  }
+  if (page === "corpora") {
+    return { page: "corpora" };
+  }
+  if (page === "new-corpus") {
+    return { page: "new-corpus" };
+  }
+  if (page === "articles") {
+    return { page: "articles" };
+  }
+  return { page: "executions" };
+}
+
+function pathForRoute(route: AppRoute): string {
+  if (route.page === "home") {
+    return "/";
+  }
+  if (route.page === "new-corpus") {
+    return "/corpora/new";
+  }
+  if (route.page === "corpora") {
+    return route.corpusId
+      ? `/corpora/${encodeURIComponent(route.corpusId)}`
+      : "/corpora";
+  }
+  if (route.page === "articles") {
+    return route.articleId
+      ? `/articles/${encodeURIComponent(route.articleId)}`
+      : "/articles";
+  }
+  return route.executionId
+    ? `/executions/${encodeURIComponent(route.executionId)}`
+    : "/executions";
+}
+
+function routeForPathname(pathname: string): AppRoute {
+  const normalizedPathname = normalizePathname(pathname);
+  const segments = normalizedPathname.split("/").filter(Boolean);
+
+  try {
+    if (segments.length === 0) {
+      return { page: "home" };
+    }
+    if (segments.length === 1) {
+      if (segments[0] === "corpora") {
+        return { page: "corpora" };
+      }
+      if (segments[0] === "articles") {
+        return { page: "articles" };
+      }
+      if (segments[0] === "executions") {
+        return { page: "executions" };
+      }
+      return { page: "home" };
+    }
+    if (segments.length === 2) {
+      if (segments[0] === "corpora" && segments[1] === "new") {
+        return { page: "new-corpus" };
+      }
+      if (segments[0] === "corpora") {
+        const corpusId = decodeRouteParam(segments[1]);
+        return corpusId ? { corpusId, page: "corpora" } : { page: "home" };
+      }
+      if (segments[0] === "articles") {
+        const articleId = decodeRouteParam(segments[1]);
+        return articleId ? { articleId, page: "articles" } : { page: "home" };
+      }
+      if (segments[0] === "executions") {
+        const executionId = decodeRouteParam(segments[1]);
+        return executionId
+          ? { executionId, page: "executions" }
+          : { page: "home" };
+      }
+    }
+  } catch {
+    return { page: "home" };
+  }
+
+  return { page: "home" };
+}
+
+function routeEquals(left: AppRoute, right: AppRoute): boolean {
+  return pathForRoute(left) === pathForRoute(right);
+}
+
+function normalizePathname(pathname: string): string {
+  if (pathname === "") {
+    return "/";
+  }
+  return pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+}
+
+function decodeRouteParam(value: string): string | null {
+  const decoded = decodeURIComponent(value);
+  return decoded.length > 0 ? decoded : null;
+}
 
 type ParameterDraft = {
   mode: RunMode;
@@ -62,7 +174,10 @@ type ParameterDraft = {
 };
 
 function App() {
-  const [page, setPage] = useState<AppPage>("home");
+  const [route, setRoute] = useState<AppRoute>(() =>
+    routeForPathname(window.location.pathname),
+  );
+  const page = route.page;
   const [theme, setTheme] = useState<ThemeMode>("light");
   const [selectedCorpusId, setSelectedCorpusId] = useState<string | null>(null);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
@@ -70,6 +185,124 @@ function App() {
     null,
   );
   const corpora = useQuery({ queryKey: ["corpora"], queryFn: listCorpora });
+  const navigate = useCallback(
+    (
+      nextRoute: AppRoute,
+      options?: { clearSelection?: boolean; replace?: boolean },
+    ) => {
+      const nextPath = pathForRoute(nextRoute);
+      const currentPath = pathForRoute(routeForPathname(window.location.pathname));
+      if (nextPath !== currentPath) {
+        if (options?.replace) {
+          window.history.replaceState(null, "", nextPath);
+        } else {
+          window.history.pushState(null, "", nextPath);
+        }
+      }
+      if (options?.clearSelection) {
+        setSelectedCorpusId(null);
+        setSelectedArticleId(null);
+        setSelectedExecutionId(null);
+      }
+      setRoute((currentRoute) =>
+        routeEquals(currentRoute, nextRoute) ? currentRoute : nextRoute,
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    const currentRoute = routeForPathname(currentPath);
+    const normalizedPath = pathForRoute(currentRoute);
+    if (normalizedPath !== currentPath) {
+      window.history.replaceState(null, "", normalizedPath);
+    }
+
+    function handlePopState() {
+      const nextRoute = routeForPathname(window.location.pathname);
+      setRoute((currentRoute) =>
+        routeEquals(currentRoute, nextRoute) ? currentRoute : nextRoute,
+      );
+    }
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    if (route.page === "corpora") {
+      setSelectedCorpusId(route.corpusId ?? null);
+      setSelectedArticleId(null);
+      setSelectedExecutionId(null);
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    if (route.page === "articles") {
+      setSelectedArticleId(route.articleId ?? null);
+      setSelectedExecutionId(null);
+      setSelectedCorpusId(null);
+      if (!route.articleId) {
+        setSelectedCorpusId(null);
+        return () => {
+          isCurrent = false;
+        };
+      }
+
+      void getArticle(route.articleId)
+        .then((article) => {
+          if (isCurrent) {
+            setSelectedCorpusId(article.corpus_id);
+          }
+        })
+        .catch(() => {
+          if (isCurrent) {
+            navigate({ page: "articles" }, { replace: true });
+          }
+        });
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    if (route.page === "executions") {
+      setSelectedArticleId(null);
+      setSelectedExecutionId(route.executionId ?? null);
+      setSelectedCorpusId(null);
+      if (!route.executionId) {
+        setSelectedCorpusId(null);
+        return () => {
+          isCurrent = false;
+        };
+      }
+
+      void getExecution(route.executionId)
+        .then((execution) => {
+          if (isCurrent) {
+            setSelectedCorpusId(execution.corpus_id);
+          }
+        })
+        .catch(() => {
+          if (isCurrent) {
+            navigate({ page: "executions" }, { replace: true });
+          }
+        });
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    setSelectedCorpusId(null);
+    setSelectedArticleId(null);
+    setSelectedExecutionId(null);
+    return () => {
+      isCurrent = false;
+    };
+  }, [navigate, route]);
 
   const selectedCorpus = useMemo(() => {
     return corpora.data?.find((corpus) => corpus.id === selectedCorpusId) ?? null;
@@ -79,7 +312,9 @@ function App() {
     <main className="app-shell" data-theme={theme}>
       <TopNavigation
         currentPage={page}
-        onNavigate={setPage}
+        onNavigate={(nextPage) =>
+          navigate(routeForPage(nextPage), { clearSelection: true })
+        }
         onToggleTheme={() =>
           setTheme((current) => (current === "light" ? "dark" : "light"))
         }
@@ -90,25 +325,15 @@ function App() {
         <HomePage
           corpora={corpora.data ?? []}
           isLoading={corpora.isLoading}
-          onCreateCorpus={() => setPage("new-corpus")}
-          onOpenCorpus={(id) => {
-            setSelectedCorpusId(id);
-            setSelectedArticleId(null);
-            setSelectedExecutionId(null);
-            setPage("corpora");
-          }}
-          onOpenExecutions={() => setPage("executions")}
+          onCreateCorpus={() => navigate({ page: "new-corpus" })}
+          onOpenCorpus={(id) => navigate({ corpusId: id, page: "corpora" })}
+          onOpenExecutions={() => navigate({ page: "executions" })}
         />
       ) : null}
 
       {page === "new-corpus" ? (
         <NewCorpusPage
-          onCreated={(id) => {
-            setSelectedCorpusId(id);
-            setSelectedArticleId(null);
-            setSelectedExecutionId(null);
-            setPage("articles");
-          }}
+          onCreated={(id) => navigate({ corpusId: id, page: "corpora" })}
         />
       ) : null}
 
@@ -118,7 +343,11 @@ function App() {
           isLoadingCorpora={corpora.isLoading}
           selectedArticleId={selectedArticleId}
           selectedCorpusId={selectedCorpusId}
-          onSelectArticle={setSelectedArticleId}
+          onSelectArticle={(id) =>
+            navigate(
+              id ? { articleId: id, page: "articles" } : { page: "articles" },
+            )
+          }
           onSelectCorpus={(id) => {
             setSelectedCorpusId(id);
             setSelectedArticleId(null);
@@ -127,22 +356,19 @@ function App() {
         />
       ) : null}
 
-      {page === "executions" ? (
+      {page === "executions" && !route.executionId ? (
         <section className="workspace single-pane" aria-label="Executions workspace">
           <ExecutionsIndex
             corpora={corpora.data ?? []}
-            onClose={() => setPage("corpora")}
-            onOpenExecution={(execution) => {
-              setSelectedCorpusId(execution.corpus_id);
-              setSelectedArticleId(null);
-              setSelectedExecutionId(execution.id);
-              setPage("corpora");
-            }}
+            onClose={() => navigate({ page: "corpora" })}
+            onOpenExecution={(execution) =>
+              navigate({ executionId: execution.id, page: "executions" })
+            }
           />
         </section>
       ) : null}
 
-      {page === "corpora" ? (
+      {page === "corpora" || (page === "executions" && route.executionId) ? (
         <section className="workspace" aria-label="Article set workspace">
           <aside className="sidebar">
             <CorpusList
@@ -150,11 +376,7 @@ function App() {
               isLoading={corpora.isLoading}
               error={corpora.error}
               selectedCorpusId={selectedCorpusId}
-              onSelect={(id) => {
-                setSelectedCorpusId(id);
-                setSelectedArticleId(null);
-                setSelectedExecutionId(null);
-              }}
+              onSelect={(id) => navigate({ corpusId: id, page: "corpora" })}
             />
           </aside>
           <div className="corpus-workspace">
@@ -163,14 +385,18 @@ function App() {
                 corpusId={selectedCorpusId}
                 fallbackCorpus={selectedCorpus}
                 selectedArticleId={selectedArticleId}
-                onSelectArticle={setSelectedArticleId}
+                onSelectArticle={(id) =>
+                  navigate(
+                    id ? { articleId: id, page: "articles" } : { page: "corpora" },
+                  )
+                }
                 selectedExecutionId={selectedExecutionId}
-                onSelectExecution={setSelectedExecutionId}
-                onDeleted={() => {
-                  setSelectedCorpusId(null);
-                  setSelectedArticleId(null);
-                  setSelectedExecutionId(null);
-                }}
+                onSelectExecution={(id) =>
+                  navigate(
+                    id ? { executionId: id, page: "executions" } : { page: "corpora" },
+                  )
+                }
+                onDeleted={() => navigate({ page: "corpora" }, { replace: true })}
               />
             ) : (
               <EmptyWorkspace />
