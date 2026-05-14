@@ -40,6 +40,23 @@ def test_json_upload_skips_background_decomposition(
     assert detail["structured_article"]["payload_json"]["article_id"] == article_id
 
 
+def test_mixed_txt_json_upload_decomposes_only_txt_article(
+    client: TestClient,
+    fake_decomposition_client: FakeDecompositionClient,
+) -> None:
+    corpus_id = create_corpus(client)
+    json_id = upload_json(client, corpus_id, filename="structured.json")
+    txt_id = upload_txt(client, corpus_id, filename="story.txt")
+
+    assert len(fake_decomposition_client.calls) == 1
+    json_detail = client.get(f"/api/articles/{json_id}").json()
+    txt_detail = client.get(f"/api/articles/{txt_id}").json()
+    assert json_detail["decomposition_status"] == "decomposed"
+    assert txt_detail["decomposition_status"] == "decomposed"
+    assert json_detail["structured_article"]["payload_json"]["article_id"] == json_id
+    assert txt_detail["structured_article"]["payload_json"]["article_id"] == txt_id
+
+
 def test_manual_decompose_upserts_matching_metadata_row(
     client: TestClient,
     fake_decomposition_client: FakeDecompositionClient,

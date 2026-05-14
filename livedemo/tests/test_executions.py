@@ -4,7 +4,13 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from tests.test_corpus_articles import create_corpus, upload_txt
+from tests.conftest import FakeDecompositionClient
+from tests.test_corpus_articles import (
+    create_corpus,
+    upload_json,
+    upload_txt,
+    valid_structured_payload,
+)
 
 
 def wait_for_execution(client: TestClient, execution_id: str) -> dict[str, Any]:
@@ -37,6 +43,33 @@ def create_corpus_with_articles(client: TestClient) -> str:
     return corpus_id
 
 
+def create_json_corpus_with_articles(client: TestClient) -> tuple[str, set[str]]:
+    corpus_id = create_corpus(client)
+    first_payload = valid_structured_payload()
+    first_payload["headline_neutral"] = "First uploaded headline"
+    first_payload["topic"] = "first topic"
+    first_payload["claims"][0]["statement"] = "First upload covered one fact."
+    second_payload = valid_structured_payload()
+    second_payload["headline_neutral"] = "Second uploaded headline"
+    second_payload["topic"] = "second topic"
+    second_payload["entities"]["people"][0]["name"] = "Carol"
+    second_payload["claims"][0]["statement"] = "Second upload covered another fact."
+
+    first_id = upload_json(
+        client,
+        corpus_id,
+        filename="first.json",
+        payload=first_payload,
+    )
+    second_id = upload_json(
+        client,
+        corpus_id,
+        filename="second.json",
+        payload=second_payload,
+    )
+    return corpus_id, {first_id, second_id}
+
+
 def start_execution(
     client: TestClient,
     path: str,
@@ -47,6 +80,50 @@ def start_execution(
     body = response.json()
     assert body["status"] == "pending"
     return str(body["execution_id"])
+
+
+def test_json_corpus_rank_select_compare_skip_mistral(
+    client: TestClient,
+    fake_decomposition_client: FakeDecompositionClient,
+) -> None:
+    corpus_id, article_ids = create_json_corpus_with_articles(client)
+
+    rank_id = start_execution(
+        client,
+        "/api/executions/rank",
+        {"corpus_id": corpus_id, "profile": "representative"},
+    )
+    select_id = start_execution(
+        client,
+        "/api/executions/select",
+        {"corpus_id": corpus_id, "profile": "representative", "m": 1},
+    )
+    compare_id = start_execution(
+        client,
+        "/api/executions/compare",
+        {"corpus_id": corpus_id, "profiles": ["representative", "comprehensive"]},
+    )
+
+    rank = wait_for_execution(client, rank_id)
+    selection = wait_for_execution(client, select_id)
+    comparison = wait_for_execution(client, compare_id)
+
+    assert fake_decomposition_client.calls == []
+    assert rank["status"] == "succeeded"
+    assert selection["status"] == "succeeded"
+    assert comparison["status"] == "succeeded"
+
+    rank_result = rank["results"][0]["result_json"]
+    assert {entry["article_id"] for entry in rank_result["entries"]} == article_ids
+    selection_result = selection["results"][0]["result_json"]
+    assert {entry["article_id"] for entry in selection_result["ranking"]["entries"]} == (
+        article_ids
+    )
+    assert {entry["article_id"] for entry in selection_result["selected"]} <= article_ids
+    comparison_result = comparison["results"][0]["result_json"]
+    assert set(comparison_result["rankings"]) == {"representative", "comprehensive"}
+    for ranking in comparison_result["rankings"].values():
+        assert {entry["article_id"] for entry in ranking["entries"]} == article_ids
 
 
 def test_rank_execution_lifecycle_and_detail_payload(client: TestClient) -> None:
