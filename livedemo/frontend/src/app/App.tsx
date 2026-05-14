@@ -81,6 +81,35 @@ export default function App() {
       setSelectedCorpusId(route.corpusId ?? null);
       setSelectedArticleId(route.articleId ?? null);
       setSelectedExecutionId(null);
+
+      if (!route.corpusId || !route.articleId) {
+        return () => {
+          isCurrent = false;
+        };
+      }
+
+      void getArticle(route.articleId)
+        .then((article) => {
+          if (!isCurrent || article.corpus_id === route.corpusId) {
+            return;
+          }
+          navigate(
+            {
+              articleId: route.articleId,
+              corpusId: article.corpus_id,
+              page: "corpora",
+            },
+            { replace: true },
+          );
+        })
+        .catch(() => {
+          if (isCurrent) {
+            navigate(
+              { corpusId: route.corpusId, page: "corpora" },
+              { replace: true },
+            );
+          }
+        });
       return () => {
         isCurrent = false;
       };
