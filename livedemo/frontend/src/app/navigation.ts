@@ -5,7 +5,12 @@ export type AppRoute =
   | { page: "corpora"; articleId?: string; corpusId?: string }
   | { page: "new-corpus" }
   | { page: "articles"; articleId?: string }
-  | { page: "executions"; executionId?: string };
+  | { page: "executions"; executionId?: string }
+  | {
+      page: "execution-comparison";
+      leftExecutionId?: string;
+      rightExecutionId?: string;
+    };
 
 export function routeForPage(page: AppPage): AppRoute {
   if (page === "home") {
@@ -39,6 +44,14 @@ export function pathForRoute(route: AppRoute): string {
     return route.articleId
       ? `/articles/${encodeURIComponent(route.articleId)}`
       : "/articles";
+  }
+  if (route.page === "execution-comparison") {
+    if (route.leftExecutionId && route.rightExecutionId) {
+      return `/executions/compare/${encodeURIComponent(route.leftExecutionId)}/${encodeURIComponent(route.rightExecutionId)}`;
+    }
+    return route.leftExecutionId
+      ? `/executions/compare/${encodeURIComponent(route.leftExecutionId)}`
+      : "/executions/compare";
   }
   return route.executionId
     ? `/executions/${encodeURIComponent(route.executionId)}`
@@ -78,11 +91,34 @@ export function routeForPathname(pathname: string): AppRoute {
         return articleId ? { articleId, page: "articles" } : { page: "home" };
       }
       if (segments[0] === "executions") {
+        if (segments[1] === "compare") {
+          return { page: "execution-comparison" };
+        }
         const executionId = decodeRouteParam(segments[1]);
         return executionId
           ? { executionId, page: "executions" }
           : { page: "home" };
       }
+    }
+    if (segments.length === 3 && segments[0] === "executions") {
+      if (segments[1] === "compare") {
+        const leftExecutionId = decodeRouteParam(segments[2]);
+        return leftExecutionId
+          ? { leftExecutionId, page: "execution-comparison" }
+          : { page: "home" };
+      }
+      return { page: "home" };
+    }
+    if (
+      segments.length === 4 &&
+      segments[0] === "executions" &&
+      segments[1] === "compare"
+    ) {
+      const leftExecutionId = decodeRouteParam(segments[2]);
+      const rightExecutionId = decodeRouteParam(segments[3]);
+      return leftExecutionId && rightExecutionId
+        ? { leftExecutionId, page: "execution-comparison", rightExecutionId }
+        : { page: "home" };
     }
     if (
       segments.length === 4 &&

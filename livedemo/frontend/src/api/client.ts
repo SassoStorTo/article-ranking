@@ -233,6 +233,55 @@ export type ExecutionDetail = ExecutionSummary & {
   evaluation_artifacts: EvaluationArtifact[];
 };
 
+export type ExecutionComparisonMetadata = ExecutionSummary & {
+  config_json: Record<string, unknown>;
+};
+
+export type ExecutionComparisonWarning = {
+  code: string;
+  message: string;
+  left_section_key: string | null;
+  right_section_key: string | null;
+};
+
+export type ExecutionComparisonSection = {
+  key: string;
+  label: string;
+  profile: string | null;
+  result_type: "rank_result" | "selection_result" | "profile_comparison";
+  rank_result_json: RankResultPayload;
+  result_json: ExecutionResultJson;
+  entry_count: number;
+  selected_article_ids: string[];
+  cluster_count: number | null;
+};
+
+export type ExecutionComparisonMetrics = {
+  top_m: number | null;
+  top_m_overlap: Record<string, unknown> | null;
+  rank_correlation: Record<string, unknown> | null;
+  left_cluster_count: number | null;
+  right_cluster_count: number | null;
+  shared_cluster_count: number | null;
+  shared_canonical_cluster_texts: string[];
+};
+
+export type ExecutionComparisonSectionPair = {
+  key: string;
+  label: string;
+  left: ExecutionComparisonSection | null;
+  right: ExecutionComparisonSection | null;
+  metrics: ExecutionComparisonMetrics | null;
+  warnings: ExecutionComparisonWarning[];
+};
+
+export type ExecutionComparison = {
+  left: ExecutionComparisonMetadata;
+  right: ExecutionComparisonMetadata;
+  section_pairs: ExecutionComparisonSectionPair[];
+  warnings: ExecutionComparisonWarning[];
+};
+
 export type ExecutionAccepted = {
   execution_id: string;
   status: ExecutionStatus;
@@ -427,6 +476,20 @@ export async function getExecution(
 ): Promise<ExecutionDetail> {
   const response = await fetch(`${apiBaseUrl}/api/executions/${executionId}`);
   return parseJson<ExecutionDetail>(response);
+}
+
+export async function getExecutionComparison(params: {
+  left_execution_id: string;
+  right_execution_id: string;
+}): Promise<ExecutionComparison> {
+  const search = new URLSearchParams({
+    left_execution_id: params.left_execution_id,
+    right_execution_id: params.right_execution_id,
+  });
+  const response = await fetch(
+    `${apiBaseUrl}/api/executions/comparison?${search.toString()}`,
+  );
+  return parseJson<ExecutionComparison>(response);
 }
 
 export async function listExecutions(params: {

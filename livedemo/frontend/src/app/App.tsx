@@ -22,6 +22,7 @@ export default function App() {
     routeForPathname(window.location.pathname),
   );
   const page = route.page;
+  const currentTopNavPage = page === "execution-comparison" ? "executions" : page;
   const [theme, setTheme] = useState<ThemeMode>("light");
   const [selectedCorpusId, setSelectedCorpusId] = useState<string | null>(null);
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
@@ -195,7 +196,7 @@ export default function App() {
   return (
     <main className="app-shell" data-theme={theme}>
       <TopNavigation
-        currentPage={page === "articles" ? "corpora" : page}
+        currentPage={currentTopNavPage === "articles" ? "corpora" : currentTopNavPage}
         onNavigate={(nextPage) =>
           navigate(routeForPage(nextPage), { clearSelection: true })
         }
