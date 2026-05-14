@@ -90,14 +90,13 @@ export default function App() {
     if (route.page === "articles") {
       setSelectedArticleId(route.articleId ?? null);
       setSelectedExecutionId(null);
-      setSelectedCorpusId(null);
       if (!route.articleId) {
-        setSelectedCorpusId(null);
         return () => {
           isCurrent = false;
         };
       }
 
+      setSelectedCorpusId(null);
       void getArticle(route.articleId)
         .then((article) => {
           if (isCurrent) {
@@ -194,6 +193,7 @@ export default function App() {
             )
           }
           onSelectCorpus={(id) => {
+            navigate({ page: "articles" });
             setSelectedCorpusId(id);
             setSelectedArticleId(null);
             setSelectedExecutionId(null);
