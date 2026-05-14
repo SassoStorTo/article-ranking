@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from livedemo.app.db.models import Execution, ExecutionStatus
+from livedemo.app.db.models import Corpus, Execution, ExecutionStatus
 from livedemo.app.schemas import (
     ExecutionComparisonMetadata,
     ExecutionComparisonMetrics,
@@ -64,7 +64,7 @@ def _get_execution(db: Session, *, execution_id: str) -> Execution:
         select(Execution)
         .where(Execution.id == execution_id)
         .options(
-            selectinload(Execution.corpus),
+            selectinload(Execution.corpus).selectinload(Corpus.articles),
             selectinload(Execution.results),
             selectinload(Execution.evaluation_artifacts),
         )
@@ -107,6 +107,7 @@ def _sections(
     sections: list[ExecutionComparisonSection] = []
     warnings: list[ExecutionComparisonWarning] = []
     results = sorted(execution.results, key=lambda item: (item.profile or "", item.id))
+    article_filename_by_id = _article_filename_lookup(execution)
     if not results:
         return [], [
             ExecutionComparisonWarning(
@@ -128,16 +129,27 @@ def _sections(
                 )
             )
             continue
-        sections.extend(_sections_for_result(parsed, result.result_json))
+        sections.extend(
+            _sections_for_result(parsed, result.result_json, article_filename_by_id)
+        )
     return sections, warnings
 
 
 def _sections_for_result(
     result: RankResult | SelectionResult | ProfileComparison,
     result_json: dict[str, Any],
+    article_filename_by_id: dict[str, str],
 ) -> list[ExecutionComparisonSection]:
     if isinstance(result, RankResult):
-        return [_section_from_rank("result", result.profile, result, result_json)]
+        return [
+            _section_from_rank(
+                "result",
+                result.profile,
+                result,
+                result_json,
+                article_filename_by_id=article_filename_by_id,
+            )
+        ]
     if isinstance(result, SelectionResult):
         return [
             _section_from_rank(
@@ -147,6 +159,7 @@ def _sections_for_result(
                 result_json,
                 selected_article_ids=[entry.article_id for entry in result.selected],
                 result_type="selection_result",
+                article_filename_by_id=article_filename_by_id,
             )
         ]
     return [
@@ -156,6 +169,7 @@ def _sections_for_result(
             ranking,
             result_json,
             result_type="profile_comparison",
+            article_filename_by_id=article_filename_by_id,
         )
         for profile, ranking in sorted(result.rankings.items())
     ]
@@ -167,12 +181,13 @@ def _section_from_rank(
     rank_result: RankResult,
     result_json: dict[str, Any],
     *,
+    article_filename_by_id: dict[str, str],
     selected_article_ids: list[str] | None = None,
     result_type: Literal[
         "rank_result", "selection_result", "profile_comparison"
     ] = "rank_result",
 ) -> ExecutionComparisonSection:
-    cluster_rows = _cluster_rows(rank_result)
+    cluster_rows = _cluster_rows(rank_result, article_filename_by_id)
     return ExecutionComparisonSection(
         key=key,
         label=label,
@@ -300,14 +315,34 @@ def _rank_result(payload: dict[str, Any]) -> RankResult:
     return result
 
 
-def _cluster_rows(rank_result: RankResult) -> list[dict[str, Any]]:
+def _cluster_rows(
+    rank_result: RankResult,
+    article_filename_by_id: dict[str, str],
+) -> list[dict[str, Any]]:
     rows = to_jsonable(cluster_inspection_rows(rank_result, 1))
     if not isinstance(rows, list):
         return []
+    fact_universe = rank_result.diagnostics.fact_universe
     normalized: list[dict[str, Any]] = []
     for row in rows:
         if isinstance(row, dict):
-            normalized.append({str(key): value for key, value in row.items()})
+            normalized_row = {str(key): value for key, value in row.items()}
+            support_article_ids = _string_list(
+                normalized_row.get("support_article_ids")
+            )
+            normalized_row["support_article_filenames"] = [
+                article_filename_by_id.get(article_id, article_id)
+                for article_id in support_article_ids
+            ]
+            member_raw_indices = _int_list(normalized_row.get("member_raw_indices"))
+            normalized_row["member_article_filenames"] = [
+                article_filename_by_id.get(article_id, article_id)
+                for article_id in _member_article_ids(
+                    fact_universe.raw_fact_article_ids,
+                    member_raw_indices,
+                )
+            ]
+            normalized.append(normalized_row)
     return normalized
 
 
@@ -328,3 +363,32 @@ def _json_payload(value: Any) -> dict[str, Any]:
     if not isinstance(payload, dict):
         return {"value": payload}
     return payload
+
+
+def _article_filename_lookup(execution: Execution) -> dict[str, str]:
+    if execution.corpus is None:
+        return {}
+    return {article.id: article.filename for article in execution.corpus.articles}
+
+
+def _member_article_ids(
+    raw_fact_article_ids: tuple[str, ...],
+    member_raw_indices: list[int],
+) -> list[str]:
+    article_ids: list[str] = []
+    for index in member_raw_indices:
+        if 0 <= index < len(raw_fact_article_ids):
+            article_ids.append(raw_fact_article_ids[index])
+    return article_ids
+
+
+def _string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value]
+
+
+def _int_list(value: Any) -> list[int]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, int)]

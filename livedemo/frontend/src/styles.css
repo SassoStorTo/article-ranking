@@ -793,6 +793,42 @@ button:disabled {
   margin-top: 10px;
 }
 
+.cluster-points {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cluster-point {
+  background: #f6f3ed;
+  border: 1px solid #e1dbd1;
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+
+.cluster-point span {
+  color: #686158;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cluster-point strong {
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.cluster-point small {
+  color: #686158;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
 .result-table.compact {
   min-width: 620px;
 }
@@ -1099,6 +1135,7 @@ button:disabled {
 .app-shell[data-theme="dark"] .weight-group,
 .app-shell[data-theme="dark"] .metric,
 .app-shell[data-theme="dark"] .cluster-summary div,
+.app-shell[data-theme="dark"] .cluster-point,
 .app-shell[data-theme="dark"] .section-heading span,
 .app-shell[data-theme="dark"] .evaluation-panel header span {
   background: #202923;
@@ -1159,6 +1196,8 @@ button:disabled {
 .app-shell[data-theme="dark"] .metric span,
 .app-shell[data-theme="dark"] .artifact-card small,
 .app-shell[data-theme="dark"] .article-cell span,
+.app-shell[data-theme="dark"] .cluster-point span,
+.app-shell[data-theme="dark"] .cluster-point small,
 .app-shell[data-theme="dark"] .structured-panel small,
 .app-shell[data-theme="dark"] .fact-row span,
 .app-shell[data-theme="dark"] .entity-groups span,
@@ -1171,6 +1210,7 @@ button:disabled {
 .app-shell[data-theme="dark"] .cluster-list-toggle > summary,
 .app-shell[data-theme="dark"] .artifact-card a,
 .app-shell[data-theme="dark"] .artifact-card h4,
+.app-shell[data-theme="dark"] .cluster-point strong,
 .app-shell[data-theme="dark"] .comparison-cluster-inspection h4,
 .app-shell[data-theme="dark"] .comparison-cluster-card h4,
 .app-shell[data-theme="dark"] .result-table-wrap h4,

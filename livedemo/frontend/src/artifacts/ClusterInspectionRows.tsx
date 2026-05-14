@@ -1,8 +1,10 @@
 import { formatIdList } from "../utils/format";
 
 export function ClusterInspectionRows({
+  articleFilenameById = {},
   rows,
 }: {
+  articleFilenameById?: Record<string, string>;
   rows: readonly Record<string, unknown>[];
 }) {
   if (rows.length === 0) {
@@ -37,14 +39,36 @@ export function ClusterInspectionRows({
                 {String(row.support_count ?? "0")}{" "}
                 {row.is_rare ? <span className="selected-badge">Rare</span> : null}
               </summary>
-              <p>Articles: {formatIdList(row.support_article_ids)}</p>
-              <p>Facts: {formatIdList(row.member_fact_ids)}</p>
-              <p>{formatIdList(row.member_texts)}</p>
+              <p>Files: {formatIdList(articleNames(row, articleFilenameById))}</p>
+              <ClusterPointList row={row} />
             </details>
           ))}
         </div>
       </details>
     </>
+  );
+}
+
+function ClusterPointList({ row }: { row: Record<string, unknown> }) {
+  const factIds = arrayValues(row.member_fact_ids);
+  const filenames = arrayValues(row.member_article_filenames);
+  const texts = arrayValues(row.member_texts);
+  const pointCount = Math.max(factIds.length, filenames.length, texts.length);
+
+  if (pointCount === 0) {
+    return <p>Facts: none</p>;
+  }
+
+  return (
+    <div className="cluster-points">
+      {Array.from({ length: pointCount }, (_, index) => (
+        <div className="cluster-point" key={`${factIds[index] ?? "point"}-${index}`}>
+          <span>Point {index + 1}</span>
+          <strong>{texts[index] ?? "No text available"}</strong>
+          <small>{filenames[index] ?? factIds[index] ?? "Unknown file"}</small>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -71,4 +95,21 @@ function clusterSize(row: Record<string, unknown>): number {
     return row.member_texts.length;
   }
   return 0;
+}
+
+function arrayValues(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(String) : [];
+}
+
+function articleNames(
+  row: Record<string, unknown>,
+  articleFilenameById: Record<string, string>,
+): string[] {
+  const filenames = arrayValues(row.support_article_filenames);
+  if (filenames.length > 0) {
+    return filenames;
+  }
+  return arrayValues(row.support_article_ids).map(
+    (articleId) => articleFilenameById[articleId] ?? articleId,
+  );
 }

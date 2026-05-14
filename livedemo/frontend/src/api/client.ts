@@ -215,7 +215,9 @@ export type ClusterInspectionRow = {
   cluster_index: number;
   canonical_fact_text: string;
   support_article_ids: string[];
+  support_article_filenames?: string[];
   support_count: number;
+  member_article_filenames?: string[];
   member_fact_ids: string[];
   member_texts: string[];
   is_rare: boolean;

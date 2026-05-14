@@ -61,11 +61,22 @@ def test_rank_vs_select_comparison_returns_metadata_sections_and_metrics(
         "cluster_index",
         "canonical_fact_text",
         "support_article_ids",
+        "support_article_filenames",
         "support_count",
+        "member_article_filenames",
         "member_fact_ids",
         "member_texts",
         "is_rare",
     }.issubset(pair["left"]["cluster_inspection_rows"][0])
+    assert set(pair["left"]["cluster_inspection_rows"][0]["support_article_filenames"])
+    assert set(pair["left"]["cluster_inspection_rows"][0]["member_article_filenames"])
+    support_filenames = set(
+        pair["left"]["cluster_inspection_rows"][0]["support_article_filenames"]
+    )
+    assert support_filenames <= {
+        "first.txt",
+        "second.txt",
+    }
     assert pair["metrics"]["top_m_overlap"]["overlap_count"] == 2
     assert pair["metrics"]["rank_correlation"]["coefficient"] == 1.0
     assert pair["metrics"]["left_cluster_count"] >= 1

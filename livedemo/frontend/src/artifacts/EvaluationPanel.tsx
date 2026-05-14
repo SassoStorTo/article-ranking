@@ -233,7 +233,11 @@ export function EvaluationPanel({
       ) : (
         <div className="artifact-list">
           {artifacts.map((artifact) => (
-            <ArtifactCard artifact={artifact} key={artifact.id} />
+            <ArtifactCard
+              artifact={artifact}
+              articles={articles}
+              key={artifact.id}
+            />
           ))}
         </div>
       )}
