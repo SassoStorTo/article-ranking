@@ -178,8 +178,8 @@ function MetricsSummary({ metrics }: { metrics: ExecutionComparisonMetrics | nul
     return <p className="muted">Metrics unavailable for this section pair.</p>;
   }
   const overlapCount = metricValue(metrics.top_m_overlap, "overlap_count");
-  const overlapRatio = metricValue(metrics.top_m_overlap, "overlap_ratio");
-  const correlation = metricValue(metrics.rank_correlation, "correlation");
+  const overlapRatio = metricValue(metrics.top_m_overlap, "jaccard");
+  const correlation = metricValue(metrics.rank_correlation, "coefficient");
 
   return (
     <div className="metric-grid">
