@@ -13,7 +13,6 @@ import { CorpusPanel } from "../pages/CorpusPanel";
 import { CorpusList } from "../components/CorpusList";
 import { EmptyWorkspace } from "../components/EmptyWorkspace";
 import { ThemeMode, TopNavigation } from "../components/TopNavigation";
-import { ArticleManagementPage } from "../pages/ArticleManagementPage";
 import { ExecutionsIndex } from "../pages/ExecutionsIndex";
 import { HomePage } from "../pages/HomePage";
 import { NewCorpusPage } from "../pages/NewCorpusPage";
@@ -91,6 +90,7 @@ export default function App() {
       setSelectedArticleId(route.articleId ?? null);
       setSelectedExecutionId(null);
       if (!route.articleId) {
+        navigate({ page: "corpora" }, { clearSelection: true, replace: true });
         return () => {
           isCurrent = false;
         };
@@ -100,12 +100,19 @@ export default function App() {
       void getArticle(route.articleId)
         .then((article) => {
           if (isCurrent) {
-            setSelectedCorpusId(article.corpus_id);
+            navigate(
+              {
+                articleId: route.articleId,
+                corpusId: article.corpus_id,
+                page: "corpora",
+              },
+              { replace: true },
+            );
           }
         })
         .catch(() => {
           if (isCurrent) {
-            navigate({ page: "articles" }, { replace: true });
+            navigate({ page: "corpora" }, { clearSelection: true, replace: true });
           }
         });
       return () => {
@@ -155,7 +162,7 @@ export default function App() {
   return (
     <main className="app-shell" data-theme={theme}>
       <TopNavigation
-        currentPage={page}
+        currentPage={page === "articles" ? "corpora" : page}
         onNavigate={(nextPage) =>
           navigate(routeForPage(nextPage), { clearSelection: true })
         }
@@ -178,26 +185,6 @@ export default function App() {
       {page === "new-corpus" ? (
         <NewCorpusPage
           onCreated={(id) => navigate({ corpusId: id, page: "corpora" })}
-        />
-      ) : null}
-
-      {page === "articles" ? (
-        <ArticleManagementPage
-          corpora={corpora.data ?? []}
-          isLoadingCorpora={corpora.isLoading}
-          selectedArticleId={selectedArticleId}
-          selectedCorpusId={selectedCorpusId}
-          onSelectArticle={(id) =>
-            navigate(
-              id ? { articleId: id, page: "articles" } : { page: "articles" },
-            )
-          }
-          onSelectCorpus={(id) => {
-            navigate({ page: "articles" });
-            setSelectedCorpusId(id);
-            setSelectedArticleId(null);
-            setSelectedExecutionId(null);
-          }}
         />
       ) : null}
 

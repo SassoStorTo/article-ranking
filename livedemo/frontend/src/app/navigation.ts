@@ -1,4 +1,4 @@
-export type AppPage = "home" | "corpora" | "new-corpus" | "articles" | "executions";
+export type AppPage = "home" | "corpora" | "new-corpus" | "executions";
 
 export type AppRoute =
   | { page: "home" }
@@ -16,9 +16,6 @@ export function routeForPage(page: AppPage): AppRoute {
   }
   if (page === "new-corpus") {
     return { page: "new-corpus" };
-  }
-  if (page === "articles") {
-    return { page: "articles" };
   }
   return { page: "executions" };
 }
