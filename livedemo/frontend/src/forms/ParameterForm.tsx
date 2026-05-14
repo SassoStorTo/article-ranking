@@ -537,6 +537,99 @@ const profileWeightComponents = [
   "entity_coverage",
 ] as const satisfies readonly (keyof ProfileWeights)[];
 
+const metadataFields = [
+  "llm_model_name",
+  "prompt_version",
+  "schema_version",
+  "embedding_model_name",
+] as const satisfies readonly (keyof RankerConfigPayload)[];
+
+type RankingParameterKey =
+  | "similarity_threshold"
+  | "linkage"
+  | "coverage_weighting";
+
+function RankingParametersSection({
+  config,
+  onUpdateConfig,
+}: {
+  config: RankerConfigPayload;
+  onUpdateConfig: <K extends RankingParameterKey>(
+    key: K,
+    value: RankerConfigPayload[K],
+  ) => void;
+}) {
+  return (
+    <fieldset>
+      <legend>Ranking Parameters</legend>
+      <div className="parameter-grid">
+        <label>
+          Similarity
+          <input
+            max="1"
+            min="-1"
+            onChange={(event) =>
+              onUpdateConfig(
+                "similarity_threshold",
+                Number(event.target.value),
+              )
+            }
+            step="0.01"
+            type="number"
+            value={config.similarity_threshold ?? 0.85}
+          />
+        </label>
+        <label>
+          Linkage
+          <select
+            onChange={(event) =>
+              onUpdateConfig(
+                "linkage",
+                event.target.value as "average" | "single",
+              )
+            }
+            value={config.linkage ?? "average"}
+          >
+            <option value="average">average</option>
+            <option value="single">single</option>
+          </select>
+        </label>
+        <label>
+          Coverage
+          <select
+            onChange={(event) =>
+              onUpdateConfig(
+                "coverage_weighting",
+                event.target.value as "consensus" | "rarity",
+              )
+            }
+            value={config.coverage_weighting ?? "consensus"}
+          >
+            <option value="consensus">consensus</option>
+            <option value="rarity">rarity</option>
+          </select>
+        </label>
+      </div>
+    </fieldset>
+  );
+}
+
+function MetadataSection({ config }: { config: RankerConfigPayload }) {
+  return (
+    <fieldset>
+      <legend>Metadata</legend>
+      <div className="parameter-grid">
+        {metadataFields.map((field) => (
+          <label key={field}>
+            {formatGroupName(field)}
+            <input readOnly value={String(config[field] ?? "")} />
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 function ProfileWeightsSection({
   config,
   onSelectProfile,
