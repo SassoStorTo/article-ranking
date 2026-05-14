@@ -12,15 +12,14 @@ later milestones.
 - `app/db/models.py` already defines `Execution` and `ExecutionResult` with
   enum kind/status fields, JSON config/profiles/result columns, timestamps, and
   corpus cascade behavior.
-- `app/routers/articles.py` and `app/routers/corpora.py` are the only routers
-  currently mounted in `app/main.py`.
+- `app/main.py` mounts corpus, article, execution, and evaluation routers.
 - Uploaded article bodies are stored in `Article`; structured Mistral output
   and validated JSON-upload decompositions are stored in
   `StructuredArticle.payload_json`.
 - Tests use `create_app(db_engine=...)` plus dependency overrides for the DB
   session factory and fake decomposition client.
-- The frontend is a compact single-file React app backed by
-  `frontend/src/api/client.ts`.
+- The frontend is split into `frontend/src/app`, `pages`, `components`,
+  `forms`, `artifacts`, and `utils`, backed by `frontend/src/api/client.ts`.
 
 ## Library interfaces
 

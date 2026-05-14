@@ -15,8 +15,8 @@ changes beyond the existing tables.
 - SQLAlchemy models already include `Corpus` and `Article`, with articles
   unique by `(corpus_id, filename)` and cascaded by the corpus relationship.
 - Tests use `TestClient` with an isolated in-memory SQLite engine.
-- The frontend is a minimal Vite app in `frontend/src/main.tsx` with TanStack
-  Query already installed.
+- The frontend is a Vite/TanStack Query app split across `frontend/src/app`,
+  `pages`, `components`, `forms`, `artifacts`, and `utils`.
 
 ## Milestone 3 interfaces
 
@@ -28,7 +28,8 @@ changes beyond the existing tables.
 - Article endpoints:
   - `POST /api/corpora/{id}/articles` for multipart `.txt` and `.json` uploads
   - `GET /api/articles/{id}` for article detail and body
-- Article deletion is by corpus cascade only for this milestone.
+- Article deletion is available through `DELETE /api/articles/{id}`; corpus
+  deletion still cascades related articles and execution data.
 
 ## Ingestion constraints
 

@@ -1,6 +1,13 @@
+import json
+
 from fastapi.testclient import TestClient
 from tests.conftest import FakeDecompositionClient
-from tests.test_corpus_articles import create_corpus, upload_json, upload_txt
+from tests.test_corpus_articles import (
+    create_corpus,
+    upload_json,
+    upload_txt,
+    valid_structured_payload,
+)
 
 
 def test_upload_triggers_decomposition_and_detail_payload_shape(
@@ -45,9 +52,23 @@ def test_mixed_txt_json_upload_decomposes_only_txt_article(
     fake_decomposition_client: FakeDecompositionClient,
 ) -> None:
     corpus_id = create_corpus(client)
-    json_id = upload_json(client, corpus_id, filename="structured.json")
-    txt_id = upload_txt(client, corpus_id, filename="story.txt")
+    response = client.post(
+        f"/api/corpora/{corpus_id}/articles",
+        files=[
+            (
+                "files",
+                (
+                    "structured.json",
+                    json.dumps(valid_structured_payload()).encode("utf-8"),
+                    "application/json",
+                ),
+            ),
+            ("files", ("story.txt", b"Story title\n\nBody text", "text/plain")),
+        ],
+    )
 
+    assert response.status_code == 201
+    json_id, txt_id = [str(article_id) for article_id in response.json()["article_ids"]]
     assert len(fake_decomposition_client.calls) == 1
     json_detail = client.get(f"/api/articles/{json_id}").json()
     txt_detail = client.get(f"/api/articles/{txt_id}").json()

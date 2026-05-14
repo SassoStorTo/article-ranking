@@ -5,8 +5,9 @@
 Improve the live demo frontend around navigation, page structure, content
 management, large article display, and theme switching. The work stays inside
 the existing React/Vite frontend plus the minimal API support needed for article
-deletion. It does not add dependencies, authentication, scraping, URL handling,
-new providers, or public ranking API changes.
+deletion. It does not add dependencies, authentication, scraping, new providers,
+or public ranking API changes. Later URL-backed navigation is implemented with
+local History API helpers and no router dependency.
 
 ## Current Behavior
 
@@ -19,18 +20,18 @@ new providers, or public ranking API changes.
   article bodies and wide structured payloads can force the workspace to grow
   horizontally because the app does not constrain pane heights and overflow
   consistently.
-- `frontend/src/api/client.ts` already supports corpus and execution deletion,
-  but not article deletion.
+- `frontend/src/api/client.ts` supports corpus, execution, and article deletion.
 - `app/routers/corpora.py` has `DELETE /api/corpora/{corpus_id}` and the model
   cascade removes articles, executions, results, and evaluation artifacts for a
   deleted corpus.
-- `app/routers/articles.py` exposes upload, detail, and decomposition endpoints.
-  It needs `DELETE /api/articles/{article_id}` for frontend article management.
+- `app/routers/articles.py` exposes upload, detail, decomposition, and
+  `DELETE /api/articles/{article_id}` endpoints for frontend article management.
 
 ## Constraints
 
 - Keep the frontend dependency-free; use existing React, TanStack Query, and CSS.
-- Keep changes scoped to demo UX and the article delete endpoint.
+- Keep changes scoped to demo UX, local URL-backed navigation, and the article
+  delete endpoint.
 - Keep corpus deletion behavior unchanged.
 - Preserve existing execution and evaluation flows while making them reachable
   through clearer sections.

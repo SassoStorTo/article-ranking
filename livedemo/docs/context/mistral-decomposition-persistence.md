@@ -16,8 +16,9 @@ library behavior.
 - `app/services/ingestion.py` creates `Article` rows after `.txt`/`.json`
   validation and commits them atomically with any uploaded structured payloads.
 - Tests use dependency overrides and in-memory SQLite through `tests/conftest.py`.
-- The frontend has a single corpus workspace in `frontend/src/main.tsx` with
-  article list/detail calls in `frontend/src/api/client.ts`.
+- The frontend entrypoint is tiny; app composition lives in `frontend/src/app`,
+  page/component modules render article lists/details, and API calls live in
+  `frontend/src/api/client.ts`.
 
 ## Library interfaces
 
