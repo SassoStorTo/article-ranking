@@ -250,9 +250,27 @@ button:disabled {
   justify-content: space-between;
 }
 
+.detail-header {
+  align-items: flex-start;
+}
+
+.detail-header-copy {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.workspace-intro {
+  color: #686158;
+  line-height: 1.45;
+  margin: 0;
+  max-width: 680px;
+}
+
 .detail-header-actions {
   align-items: center;
   display: flex;
+  flex-shrink: 0;
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
@@ -317,7 +335,7 @@ button:disabled {
 
 .notes {
   line-height: 1.45;
-  margin: 8px 0 0;
+  margin: 0;
 }
 
 .danger {
@@ -1008,6 +1026,7 @@ button:disabled {
 }
 
 .app-shell[data-theme="dark"] .home-hero p,
+.app-shell[data-theme="dark"] .workspace-intro,
 .app-shell[data-theme="dark"] .new-corpus label,
 .app-shell[data-theme="dark"] .execution-filters label,
 .app-shell[data-theme="dark"] .parameter-form label,
@@ -1074,9 +1093,18 @@ button:disabled {
     padding: 0 0 24px;
   }
 
+  .detail-header,
   .workspace,
   .article-grid,
   .article-inspector {
     grid-template-columns: 1fr;
+  }
+
+  .detail-header {
+    display: grid;
+  }
+
+  .detail-header-actions {
+    justify-content: flex-start;
   }
 }

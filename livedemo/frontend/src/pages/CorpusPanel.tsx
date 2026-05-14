@@ -60,9 +60,13 @@ export function CorpusPanel({
   return (
     <section className="detail-panel" aria-labelledby="corpus-title">
       <header className="detail-header">
-        <div>
-          <p className="eyebrow">Article Set</p>
+        <div className="detail-header-copy">
+          <p className="eyebrow">Article Set Workspace</p>
           <h2 id="corpus-title">{heading}</h2>
+          <p className="workspace-intro">
+            Upload articles, inspect source text, decompose facts, run rankings,
+            and evaluate results from one workspace.
+          </p>
           {detail?.notes && <p className="notes">{detail.notes}</p>}
         </div>
         <div className="detail-header-actions">
@@ -106,7 +110,7 @@ export function CorpusPanel({
         <p className="error-line">{uploadMutation.error.message}</p>
       )}
       {uploadMutation.isPending && (
-        <p className="muted">Uploading articles and decompositions</p>
+        <p className="muted">Uploading articles into this workspace</p>
       )}
 
       {corpus.isLoading && <p className="muted">Loading articles</p>}
