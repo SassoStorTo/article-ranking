@@ -13,6 +13,7 @@ import { CorpusPanel } from "../pages/CorpusPanel";
 import { CorpusList } from "../components/CorpusList";
 import { EmptyWorkspace } from "../components/EmptyWorkspace";
 import { ThemeMode, TopNavigation } from "../components/TopNavigation";
+import { ExecutionComparisonPage } from "../pages/ExecutionComparisonPage";
 import { ExecutionsIndex } from "../pages/ExecutionsIndex";
 import { HomePage } from "../pages/HomePage";
 import { NewCorpusPage } from "../pages/NewCorpusPage";
@@ -230,6 +231,19 @@ export default function App() {
             onOpenExecution={(execution) =>
               navigate({ executionId: execution.id, page: "executions" })
             }
+          />
+        </section>
+      ) : null}
+
+      {page === "execution-comparison" ? (
+        <section className="workspace single-pane" aria-label="Comparison workspace">
+          <ExecutionComparisonPage
+            leftExecutionId={route.leftExecutionId}
+            onBack={() => navigate({ page: "executions" })}
+            onSelectExecutions={(leftExecutionId, rightExecutionId) =>
+              navigate({ leftExecutionId, page: "execution-comparison", rightExecutionId })
+            }
+            rightExecutionId={route.rightExecutionId}
           />
         </section>
       ) : null}

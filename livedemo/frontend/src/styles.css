@@ -873,6 +873,75 @@ button:disabled {
   gap: 14px;
 }
 
+.comparison-page,
+.comparison-pair-list {
+  display: grid;
+  gap: 18px;
+}
+
+.comparison-selectors,
+.comparison-metadata-grid,
+.comparison-section-tables {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.comparison-selectors label {
+  color: #5f5a52;
+  display: grid;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.comparison-metadata-card,
+.comparison-pair-card,
+.comparison-table-card {
+  background: #fffdf8;
+  border: 1px solid #d7d0c4;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+}
+
+.comparison-metadata-card header,
+.comparison-pair-card header {
+  align-items: start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.comparison-metadata-card details {
+  border-top: 1px solid #e1dbd1;
+  padding-top: 10px;
+}
+
+.comparison-metadata-card summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.comparison-metadata-card pre {
+  line-height: 1.5;
+  margin: 12px 0 0;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.comparison-warnings {
+  display: grid;
+  gap: 6px;
+}
+
+.comparison-warnings .error-line {
+  margin: 0;
+}
+
 .result-table-wrap {
   max-width: 100%;
   min-width: 0;
@@ -943,6 +1012,7 @@ button:disabled {
 .app-shell[data-theme="dark"] .article-body header,
 .app-shell[data-theme="dark"] .structured-panel header,
 .app-shell[data-theme="dark"] .execution-panel details,
+.app-shell[data-theme="dark"] .comparison-metadata-card details,
 .app-shell[data-theme="dark"] .result-table th,
 .app-shell[data-theme="dark"] .result-table td {
   border-color: #36433c;
@@ -954,6 +1024,9 @@ button:disabled {
 .app-shell[data-theme="dark"] .compare-modal,
 .app-shell[data-theme="dark"] .article-body,
 .app-shell[data-theme="dark"] .execution-panel,
+.app-shell[data-theme="dark"] .comparison-metadata-card,
+.app-shell[data-theme="dark"] .comparison-pair-card,
+.app-shell[data-theme="dark"] .comparison-table-card,
 .app-shell[data-theme="dark"] .artifact-card,
 .app-shell[data-theme="dark"] .entity-groups div,
 .app-shell[data-theme="dark"] .fact-row,
@@ -1096,7 +1169,10 @@ button:disabled {
   .detail-header,
   .workspace,
   .article-grid,
-  .article-inspector {
+  .article-inspector,
+  .comparison-selectors,
+  .comparison-metadata-grid,
+  .comparison-section-tables {
     grid-template-columns: 1fr;
   }
 
