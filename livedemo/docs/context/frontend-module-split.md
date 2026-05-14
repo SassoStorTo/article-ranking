@@ -12,11 +12,14 @@ re-reading the full refactor history.
 - `frontend/src/main.tsx` is a 15-line bootstrapper. It imports global styles,
   `App`, and the shared TanStack Query client, then renders the provider tree.
 - `frontend/src/app/App.tsx` owns URL-backed route state, theme state, selected
-  corpus/article/execution IDs, top-level corpus query, and page composition.
-  It does not contain form internals, artifact renderers, execution polling, or
+  corpus/article/execution IDs, top-level corpus query, legacy `/articles`
+  redirects, nested corpus/article URL validation, and page composition. It does
+  not contain form internals, artifact renderers, execution polling, or
   page-specific markup beyond workspace shells.
 - `frontend/src/app/navigation.ts` owns route/page types, URL normalization,
-  route equality, route-to-path mapping, and path decoding.
+  route equality, route-to-path mapping, path decoding, nested
+  `/corpora/:corpusId/article/:articleId` paths, and legacy `/articles` path
+  parsing for redirects.
 - `frontend/src/forms/` owns execution parameter drafts, normalization, replay
   prefill, validation warnings, and the execution parameter form UI.
 - `frontend/src/artifacts/` owns evaluation controls, artifact cards, ranking
@@ -26,7 +29,9 @@ re-reading the full refactor history.
   corpus/article lists, article body rendering, execution controls, metrics, and
   empty workspace state.
 - `frontend/src/pages/` owns route/workspace-level screens: home, corpus create,
-  article management, executions index, corpus workspace, and execution detail.
+  executions index, corpus workspace, and execution detail. Article upload,
+  inspection, decomposition, and deletion live in `CorpusPanel`; there is no
+  separate top-level Articles page.
 - `frontend/src/utils/` owns shared formatting and payload guard helpers.
 
 ## Boundary Notes

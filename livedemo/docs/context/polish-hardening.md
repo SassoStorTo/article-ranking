@@ -22,9 +22,9 @@ library.
 - `tests/test_serialize.py` round-trips rank, select, and compare payloads, but
   it does not pin exact JSON payload shape.
 - API errors are mostly `404`, `409`, or `422` with string details. The
-  frontend currently shows raw string errors and misses some loading/empty
-  states in the executions index, baseline picker, corpus detail, and execution
-  results.
+  frontend shows errors through shared page/workspace components, including the
+  corpus workspace where article upload, inspection, decomposition, and deletion
+  now live.
 - `README.md` still describes the milestone 1 skeleton and needs to become a
   handoff guide for setup, environment, common failures, reset, tests, and local
   workflow.
@@ -36,7 +36,7 @@ library.
   Mistral is not.
 - Snapshot tests should be deterministic without adding a snapshot dependency.
   Inline expected payloads are sufficient for this project.
-- Frontend polish should remain inside the existing single-file React app and
+- Frontend polish should remain inside the existing React/Vite module split and
   compact CSS, avoiding new dependencies or a redesign.
 - The final milestone commit is only for formatting, verification, and cleanup
   notes if files changed; it should not hide feature work.

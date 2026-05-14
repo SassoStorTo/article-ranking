@@ -10,8 +10,8 @@ export function NewCorpusPage({ onCreated }: { onCreated: (id: string) => void }
         <p className="eyebrow">Create</p>
         <h2 id="new-corpus-title">Create Article Set</h2>
         <p className="muted">
-          Start with an event name, then add article text files on the Articles
-          page.
+          Start with an event name, then add article text or JSON files in the
+          article set workspace.
         </p>
       </div>
       <NewCorpusForm onCreated={onCreated} />
