@@ -370,6 +370,13 @@ function CompareProfilesParameterForm({
     }
   }
 
+  function updateRankConfig<K extends RankingParameterKey>(
+    key: K,
+    value: RankerConfigPayload[K],
+  ) {
+    setConfig((current) => ({ ...current, [key]: value }));
+  }
+
   return (
     <form className="parameter-form" onSubmit={handleSubmit}>
       <ParameterFormHeader
@@ -404,6 +411,13 @@ function CompareProfilesParameterForm({
         profileOptions={profileNames}
         profiles={profiles}
       />
+
+      <RankingParametersSection
+        config={config}
+        onUpdateConfig={updateRankConfig}
+      />
+
+      <MetadataSection config={config} />
 
       <ParameterErrors errors={weightWarnings} mutationError={mutation.error} />
       <div className="form-actions">
