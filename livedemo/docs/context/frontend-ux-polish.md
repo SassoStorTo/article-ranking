@@ -10,10 +10,11 @@ new providers, or public ranking API changes.
 
 ## Current Behavior
 
-- `frontend/src/main.tsx` is a single React entry point with a sidebar layout.
-  Corpus creation, corpus selection, article upload, article inspection,
-  execution controls, execution history, and evaluation controls all live on the
-  same screen.
+- `frontend/src/main.tsx` is now a tiny React entry point. Route/page
+  composition lives in `frontend/src/app/App.tsx`, with page modules under
+  `frontend/src/pages/`, reusable UI under `frontend/src/components/`, execution
+  forms under `frontend/src/forms/`, and result/evaluation views under
+  `frontend/src/artifacts/`.
 - `frontend/src/styles.css` uses a warm light palette and two-column grids. Large
   article bodies and wide structured payloads can force the workspace to grow
   horizontally because the app does not constrain pane heights and overflow
