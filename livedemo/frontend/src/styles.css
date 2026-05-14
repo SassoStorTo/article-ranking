@@ -412,42 +412,6 @@ button:disabled {
   font-weight: 800;
 }
 
-.modal-backdrop {
-  align-items: center;
-  background: rgb(23 32 38 / 0.38);
-  display: flex;
-  inset: 0;
-  justify-content: center;
-  padding: 24px;
-  position: fixed;
-  z-index: 10;
-}
-
-.compare-modal {
-  background: #fffdf8;
-  border: 1px solid #d7d0c4;
-  border-radius: 8px;
-  box-shadow: 0 24px 80px rgb(23 32 38 / 0.24);
-  display: grid;
-  gap: 16px;
-  max-width: 760px;
-  padding: 18px;
-  width: min(760px, 100%);
-}
-
-.compare-modal header {
-  align-items: center;
-  display: flex;
-  gap: 14px;
-  justify-content: space-between;
-}
-
-.compare-summary {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-}
-
 .parameter-form {
   background: #fffdf8;
   border: 1px solid #d7d0c4;
@@ -1021,7 +985,6 @@ button:disabled {
 .app-shell[data-theme="dark"] .home-hero,
 .app-shell[data-theme="dark"] .new-corpus,
 .app-shell[data-theme="dark"] .parameter-form,
-.app-shell[data-theme="dark"] .compare-modal,
 .app-shell[data-theme="dark"] .article-body,
 .app-shell[data-theme="dark"] .execution-panel,
 .app-shell[data-theme="dark"] .comparison-metadata-card,

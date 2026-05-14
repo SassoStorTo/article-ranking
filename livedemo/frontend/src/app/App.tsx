@@ -231,6 +231,9 @@ export default function App() {
             onOpenExecution={(execution) =>
               navigate({ executionId: execution.id, page: "executions" })
             }
+            onCompareExecution={(execution) =>
+              navigate({ leftExecutionId: execution.id, page: "execution-comparison" })
+            }
           />
         </section>
       ) : null}
