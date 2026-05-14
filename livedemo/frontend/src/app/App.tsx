@@ -80,7 +80,7 @@ export default function App() {
 
     if (route.page === "corpora") {
       setSelectedCorpusId(route.corpusId ?? null);
-      setSelectedArticleId(null);
+      setSelectedArticleId(route.articleId ?? null);
       setSelectedExecutionId(null);
       return () => {
         isCurrent = false;
@@ -232,7 +232,13 @@ export default function App() {
                 selectedArticleId={selectedArticleId}
                 onSelectArticle={(id) =>
                   navigate(
-                    id ? { articleId: id, page: "articles" } : { page: "corpora" },
+                    id
+                      ? {
+                          articleId: id,
+                          corpusId: selectedCorpusId,
+                          page: "corpora",
+                        }
+                      : { corpusId: selectedCorpusId, page: "corpora" },
                   )
                 }
                 selectedExecutionId={selectedExecutionId}

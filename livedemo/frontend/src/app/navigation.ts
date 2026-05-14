@@ -2,7 +2,7 @@ export type AppPage = "home" | "corpora" | "new-corpus" | "articles" | "executio
 
 export type AppRoute =
   | { page: "home" }
-  | { page: "corpora"; corpusId?: string }
+  | { page: "corpora"; articleId?: string; corpusId?: string }
   | { page: "new-corpus" }
   | { page: "articles"; articleId?: string }
   | { page: "executions"; executionId?: string };
@@ -31,6 +31,9 @@ export function pathForRoute(route: AppRoute): string {
     return "/corpora/new";
   }
   if (route.page === "corpora") {
+    if (route.corpusId && route.articleId) {
+      return `/corpora/${encodeURIComponent(route.corpusId)}/article/${encodeURIComponent(route.articleId)}`;
+    }
     return route.corpusId
       ? `/corpora/${encodeURIComponent(route.corpusId)}`
       : "/corpora";
@@ -83,6 +86,17 @@ export function routeForPathname(pathname: string): AppRoute {
           ? { executionId, page: "executions" }
           : { page: "home" };
       }
+    }
+    if (
+      segments.length === 4 &&
+      segments[0] === "corpora" &&
+      segments[2] === "article"
+    ) {
+      const corpusId = decodeRouteParam(segments[1]);
+      const articleId = decodeRouteParam(segments[3]);
+      return corpusId && articleId
+        ? { articleId, corpusId, page: "corpora" }
+        : { page: "home" };
     }
   } catch {
     return { page: "home" };
