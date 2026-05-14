@@ -2,15 +2,15 @@
 
 ## Scope
 
-Milestone 3 adds corpus management and plain-text article ingestion only. It
-does not add Mistral decomposition, execution/ranking endpoints, evaluation
-helpers, replay, or database schema changes beyond using the existing Milestone
-2 tables.
+Milestone 3 added corpus management and plain-text article ingestion. Later
+milestones added Mistral decomposition, execution/ranking endpoints, evaluation
+helpers, and JSON structured decomposition upload without database schema
+changes beyond the existing tables.
 
 ## Current repository shape
 
-- The FastAPI app is created in `app/main.py` and currently exposes only
-  `GET /api/health`.
+- The FastAPI app is created in `app/main.py` and exposes health, corpus,
+  article, execution, and evaluation endpoints.
 - Database sessions are provided through `app.deps.get_db`.
 - SQLAlchemy models already include `Corpus` and `Article`, with articles
   unique by `(corpus_id, filename)` and cascaded by the corpus relationship.
@@ -26,17 +26,20 @@ helpers, replay, or database schema changes beyond using the existing Milestone
   - `GET /api/corpora/{id}`
   - `DELETE /api/corpora/{id}`
 - Article endpoints:
-  - `POST /api/corpora/{id}/articles` for multipart `.txt` uploads
+  - `POST /api/corpora/{id}/articles` for multipart `.txt` and `.json` uploads
   - `GET /api/articles/{id}` for article detail and body
 - Article deletion is by corpus cascade only for this milestone.
 
 ## Ingestion constraints
 
-- Accept `.txt` filenames only.
+- Accept `.txt` and `.json` filenames only.
 - Decode file bytes as UTF-8 text.
-- Derive the title from the first non-empty line when it is shorter than 200
-  characters; otherwise use the filename stem.
-- Store article bodies verbatim in SQLite.
+- For `.txt`, derive the title from the first non-empty line when it is shorter
+  than 200 characters; otherwise use the filename stem.
+- For `.json`, validate content as `news_ranker.schemas.StructuredArticle`,
+  derive title from `headline_neutral` plus filename, persist a matching
+  `StructuredArticle` row immediately, and skip background decomposition.
+- Store uploaded bodies verbatim in SQLite, including raw JSON source text.
 - Duplicate filenames within the same corpus should return a conflict instead
   of silently replacing stored article bodies.
 
