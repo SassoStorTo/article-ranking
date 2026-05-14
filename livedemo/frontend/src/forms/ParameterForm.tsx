@@ -114,11 +114,6 @@ function RankParameterForm({
     setConfig((current) => ({ ...current, [key]: value }));
   }
 
-  function updateRankTopM(value: number) {
-    setTopM(value);
-    setConfig((current) => ({ ...current, top_m: value }));
-  }
-
   return (
     <form className="parameter-form" onSubmit={handleSubmit}>
       <ParameterFormHeader
@@ -138,114 +133,12 @@ function RankParameterForm({
         selectedProfile={profile}
       />
 
-      <fieldset>
-        <legend>Ranking Parameters</legend>
-        <div className="parameter-grid">
-          <label>
-            Similarity
-            <input
-              max="1"
-              min="-1"
-              onChange={(event) =>
-                updateRankConfig(
-                  "similarity_threshold",
-                  Number(event.target.value),
-                )
-              }
-              step="0.01"
-              type="number"
-              value={config.similarity_threshold ?? 0.85}
-            />
-          </label>
-          <label>
-            Linkage
-            <select
-              onChange={(event) =>
-                updateRankConfig(
-                  "linkage",
-                  event.target.value as "average" | "single",
-                )
-              }
-              value={config.linkage ?? "average"}
-            >
-              <option value="average">average</option>
-              <option value="single">single</option>
-            </select>
-          </label>
-          <label>
-            Coverage
-            <select
-              onChange={(event) =>
-                updateRankConfig(
-                  "coverage_weighting",
-                  event.target.value as "consensus" | "rarity",
-                )
-              }
-              value={config.coverage_weighting ?? "consensus"}
-            >
-              <option value="consensus">consensus</option>
-              <option value="rarity">rarity</option>
-            </select>
-          </label>
-          <label>
-            Selection mode
-            <select
-              onChange={(event) =>
-                updateRankConfig(
-                  "selection_mode",
-                  event.target.value as "top_score" | "mmr",
-                )
-              }
-              value={config.selection_mode ?? "top_score"}
-            >
-              <option value="top_score">top_score</option>
-              <option value="mmr">mmr</option>
-            </select>
-          </label>
-          <label>
-            Selection lambda
-            <input
-              max="1"
-              min="0"
-              onChange={(event) =>
-                updateRankConfig("selection_lambda", Number(event.target.value))
-              }
-              step="0.05"
-              type="number"
-              value={config.selection_lambda ?? 0.8}
-            />
-          </label>
-          <label>
-            Top M
-            <input
-              min="1"
-              onChange={(event) => updateRankTopM(Number(event.target.value))}
-              step="1"
-              type="number"
-              value={topM}
-            />
-          </label>
-        </div>
-      </fieldset>
+      <RankingParametersSection
+        config={config}
+        onUpdateConfig={updateRankConfig}
+      />
 
-      <fieldset>
-        <legend>Metadata</legend>
-        <div className="parameter-grid">
-          {(
-            [
-              "llm_model_name",
-              "prompt_version",
-              "schema_version",
-              "embedding_model_name",
-            ] as const
-          ).map((field) => (
-            <label key={field}>
-              {formatGroupName(field)}
-              <input readOnly value={String(config[field] ?? "")} />
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <MetadataSection config={config} />
 
       <ParameterErrors errors={weightWarnings} mutationError={mutation.error} />
       <div className="form-actions">
