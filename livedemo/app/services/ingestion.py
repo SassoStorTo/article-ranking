@@ -66,7 +66,9 @@ def derive_title(filename: str, body: str) -> str:
     return PurePath(filename).stem
 
 
-def derive_structured_title(filename: str, structured: NewsRankerStructuredArticle) -> str:
+def derive_structured_title(
+    filename: str, structured: NewsRankerStructuredArticle
+) -> str:
     headline = structured.headline_neutral.strip()
     stem = PurePath(filename).stem
     if not headline:
@@ -95,7 +97,8 @@ def create_articles(
         suffix = PurePath(filename).suffix.lower()
         if suffix not in {".txt", ".json"}:
             raise UnsupportedArticleTypeError(
-                f"{filename} is not a supported .txt or .json file."
+                f"{filename}: unsupported file type {suffix or '(none)'}. "
+                "Upload a .txt or .json file."
             )
         if filename in seen_filenames or filename in existing_filenames:
             raise DuplicateFilenameError(f"{filename} already exists in this corpus.")
@@ -105,7 +108,7 @@ def create_articles(
             body = upload.content.decode("utf-8")
         except UnicodeDecodeError as exc:
             raise ArticleDecodeError(
-                f"{filename} could not be decoded as UTF-8 text."
+                f"{filename}: could not be decoded as UTF-8 text at byte {exc.start}."
             ) from exc
 
         if suffix == ".json":
@@ -178,7 +181,8 @@ def _validate_structured_article(
         payload = json.loads(body)
     except json.JSONDecodeError as exc:
         raise StructuredArticleJsonError(
-            f"{filename} contains malformed JSON: {exc.msg}."
+            f"{filename}: malformed JSON at line {exc.lineno}, "
+            f"column {exc.colno}: {exc.msg}."
         ) from exc
 
     try:
@@ -187,7 +191,8 @@ def _validate_structured_article(
         first_error = exc.errors()[0]
         loc = ".".join(str(part) for part in first_error.get("loc", ()))
         msg = str(first_error.get("msg", "invalid value"))
-        detail = f"{loc}: {msg}" if loc else msg
+        error_type = str(first_error.get("type", "value_error"))
+        detail = f"{loc}: {msg} ({error_type})" if loc else f"{msg} ({error_type})"
         raise StructuredArticleValidationError(
-            f"{filename} does not match StructuredArticle schema: {detail}."
+            f"{filename}: StructuredArticle schema validation failed: {detail}."
         ) from exc

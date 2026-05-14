@@ -173,7 +173,10 @@ def test_upload_rejects_non_txt_or_json_files(client: TestClient) -> None:
     )
 
     assert response.status_code == 422
-    assert "supported .txt or .json" in response.json()["detail"]
+    detail = response.json()["detail"]
+    assert "story.md" in detail
+    assert "unsupported file type .md" in detail
+    assert "Upload a .txt or .json file" in detail
 
 
 def test_upload_rejects_duplicate_filename(client: TestClient) -> None:
@@ -214,21 +217,70 @@ def test_json_upload_rejects_malformed_json(client: TestClient) -> None:
     detail = response.json()["detail"]
     assert "broken.json" in detail
     assert "malformed JSON" in detail
+    assert "line 1" in detail
+    assert "column 2" in detail
 
 
-def test_json_upload_rejects_schema_missing_fields(client: TestClient) -> None:
+def test_json_upload_rejects_non_utf8_content(client: TestClient) -> None:
     corpus_id = create_corpus(client)
 
     response = client.post(
         f"/api/corpora/{corpus_id}/articles",
-        files={"files": ("missing.json", b'{"headline_neutral":"Title"}', "application/json")},
+        files={"files": ("latin1.json", b"{\xff}", "application/json")},
     )
 
     assert response.status_code == 422
     detail = response.json()["detail"]
-    assert "missing.json" in detail
+    assert "latin1.json" in detail
+    assert "UTF-8" in detail
+    assert "byte 1" in detail
+
+
+def test_json_upload_rejects_invalid_claim_type(client: TestClient) -> None:
+    corpus_id = create_corpus(client)
+    payload = valid_structured_payload()
+    payload["claims"][0]["type"] = "rumor"
+
+    response = client.post(
+        f"/api/corpora/{corpus_id}/articles",
+        files={
+            "files": (
+                "bad-claim.json",
+                json.dumps(payload).encode("utf-8"),
+                "application/json",
+            )
+        },
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert "bad-claim.json" in detail
+    assert "claims.0.type" in detail
+    assert "literal_error" in detail
+
+
+def test_json_upload_rejects_schema_missing_entities(client: TestClient) -> None:
+    corpus_id = create_corpus(client)
+    payload = valid_structured_payload()
+    del payload["entities"]
+
+    response = client.post(
+        f"/api/corpora/{corpus_id}/articles",
+        files={
+            "files": (
+                "missing-entities.json",
+                json.dumps(payload).encode("utf-8"),
+                "application/json",
+            )
+        },
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert "missing-entities.json" in detail
     assert "StructuredArticle schema" in detail
-    assert "topic" in detail
+    assert "entities" in detail
+    assert "missing" in detail
 
 
 def test_upload_rejects_duplicate_filename_within_same_request(
