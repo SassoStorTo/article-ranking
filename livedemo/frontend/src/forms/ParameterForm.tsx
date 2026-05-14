@@ -84,7 +84,7 @@ function RankParameterForm({
   const [config, setConfig] = useState<RankerConfigPayload>(initialConfig);
   const profileNames = Object.keys(config.profiles ?? {});
   const [profile, setProfile] = useState(draft.profile ?? profileNames[0]);
-  const [topM, setTopM] = useState(draft.m ?? initialConfig.top_m ?? 3);
+  const [topM] = useState(draft.m ?? initialConfig.top_m ?? 3);
   const weightWarnings = profileWeightWarnings([profile], config);
   const canSubmit = Boolean(profile) && weightWarnings.length === 0 && topM >= 1;
   const mutation = useMutation({
