@@ -245,6 +245,7 @@ function App() {
     if (route.page === "articles") {
       setSelectedArticleId(route.articleId ?? null);
       setSelectedExecutionId(null);
+      setSelectedCorpusId(null);
       if (!route.articleId) {
         setSelectedCorpusId(null);
         return () => {
@@ -271,6 +272,7 @@ function App() {
     if (route.page === "executions") {
       setSelectedArticleId(null);
       setSelectedExecutionId(route.executionId ?? null);
+      setSelectedCorpusId(null);
       if (!route.executionId) {
         setSelectedCorpusId(null);
         return () => {
