@@ -21,6 +21,7 @@ from livedemo.app.schemas import (
     CompareProfilesExecutionRequest,
     EvaluationArtifactRecord,
     ExecutionAccepted,
+    ExecutionComparisonResponse,
     ExecutionDetail,
     ExecutionKindValue,
     ExecutionResultRecord,
@@ -31,6 +32,11 @@ from livedemo.app.schemas import (
     SelectExecutionRequest,
     normalize_ranker_config,
     ranker_config_from_json,
+)
+from livedemo.app.services.execution_comparison import (
+    ExecutionComparisonError,
+    ExecutionComparisonNotFoundError,
+    build_execution_comparison,
 )
 from livedemo.app.services.pipeline_runner import create_execution, submit_execution
 from news_ranker.decompose import DecompositionClient
@@ -293,6 +299,30 @@ def list_executions(
         ]
     paginated = executions[offset : offset + limit]
     return [_execution_summary(execution) for execution in paginated]
+
+
+@router.get("/comparison", response_model=ExecutionComparisonResponse)
+def get_execution_comparison(
+    db: DbSession,
+    left_execution_id: UUID,
+    right_execution_id: UUID,
+) -> ExecutionComparisonResponse:
+    try:
+        return build_execution_comparison(
+            db,
+            left_execution_id=str(left_execution_id),
+            right_execution_id=str(right_execution_id),
+        )
+    except ExecutionComparisonNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    except ExecutionComparisonError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
 
 
 @router.get("/{execution_id}", response_model=ExecutionDetail)

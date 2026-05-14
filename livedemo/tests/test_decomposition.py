@@ -1,6 +1,13 @@
+import json
+
 from fastapi.testclient import TestClient
 from tests.conftest import FakeDecompositionClient
-from tests.test_corpus_articles import create_corpus, upload_txt
+from tests.test_corpus_articles import (
+    create_corpus,
+    upload_json,
+    upload_txt,
+    valid_structured_payload,
+)
 
 
 def test_upload_triggers_decomposition_and_detail_payload_shape(
@@ -25,6 +32,50 @@ def test_upload_triggers_decomposition_and_detail_payload_shape(
     assert structured["payload_json"]["entities"]["people"][0]["name"] == "Alice"
     assert structured["payload_json"]["events"][0]["what"] == "reported the event"
     assert structured["payload_json"]["claims"][0]["type"] == "fact"
+
+
+def test_json_upload_skips_background_decomposition(
+    client: TestClient,
+    fake_decomposition_client: FakeDecompositionClient,
+) -> None:
+    corpus_id = create_corpus(client)
+    article_id = upload_json(client, corpus_id)
+
+    assert fake_decomposition_client.calls == []
+    detail = client.get(f"/api/articles/{article_id}").json()
+    assert detail["decomposition_status"] == "decomposed"
+    assert detail["structured_article"]["payload_json"]["article_id"] == article_id
+
+
+def test_mixed_txt_json_upload_decomposes_only_txt_article(
+    client: TestClient,
+    fake_decomposition_client: FakeDecompositionClient,
+) -> None:
+    corpus_id = create_corpus(client)
+    response = client.post(
+        f"/api/corpora/{corpus_id}/articles",
+        files=[
+            (
+                "files",
+                (
+                    "structured.json",
+                    json.dumps(valid_structured_payload()).encode("utf-8"),
+                    "application/json",
+                ),
+            ),
+            ("files", ("story.txt", b"Story title\n\nBody text", "text/plain")),
+        ],
+    )
+
+    assert response.status_code == 201
+    json_id, txt_id = [str(article_id) for article_id in response.json()["article_ids"]]
+    assert len(fake_decomposition_client.calls) == 1
+    json_detail = client.get(f"/api/articles/{json_id}").json()
+    txt_detail = client.get(f"/api/articles/{txt_id}").json()
+    assert json_detail["decomposition_status"] == "decomposed"
+    assert txt_detail["decomposition_status"] == "decomposed"
+    assert json_detail["structured_article"]["payload_json"]["article_id"] == json_id
+    assert txt_detail["structured_article"]["payload_json"]["article_id"] == txt_id
 
 
 def test_manual_decompose_upserts_matching_metadata_row(

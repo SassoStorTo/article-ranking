@@ -36,6 +36,8 @@ from livedemo.app.services.ingestion import (
     ArticleDecodeError,
     ArticleUpload,
     DuplicateFilenameError,
+    StructuredArticleJsonError,
+    StructuredArticleValidationError,
     UnsupportedArticleTypeError,
     create_articles,
 )
@@ -109,7 +111,7 @@ async def _parse_multipart_uploads(request: Request) -> list[ArticleUpload]:
     if not uploads:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Upload at least one .txt file.",
+            detail="Upload at least one .txt or .json file.",
         )
     return uploads
 
@@ -133,14 +135,23 @@ async def upload_articles(
 
     uploads = await _parse_multipart_uploads(request)
     try:
-        articles = create_articles(db, corpus_id=corpus_id, uploads=uploads)
+        results = create_articles(
+            db,
+            corpus_id=corpus_id,
+            uploads=uploads,
+            ranker_config=ranker_config,
+        )
     except UnsupportedArticleTypeError as exc:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
-    except ArticleDecodeError as exc:
+    except (
+        ArticleDecodeError,
+        StructuredArticleJsonError,
+        StructuredArticleValidationError,
+    ) as exc:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -153,16 +164,19 @@ async def upload_articles(
             detail=str(exc),
         ) from exc
 
-    for article in articles:
-        background_tasks.add_task(
-            decompose_article_by_id,
-            session_factory,
-            article_id=article.id,
-            client=client,
-            ranker_config=ranker_config,
-        )
+    for result in results:
+        if result.needs_decomposition:
+            background_tasks.add_task(
+                decompose_article_by_id,
+                session_factory,
+                article_id=result.article.id,
+                client=client,
+                ranker_config=ranker_config,
+            )
 
-    return ArticleUploadResponse(article_ids=[UUID(article.id) for article in articles])
+    return ArticleUploadResponse(
+        article_ids=[UUID(result.article.id) for result in results]
+    )
 
 
 @router.get("/articles/{article_id}", response_model=ArticleDetail)

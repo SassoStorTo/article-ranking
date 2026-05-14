@@ -2,32 +2,38 @@
 
 ## Scope
 
-The Articles Sets page currently opens one shared execution parameter form from
-the Run Rank, Run Select, and Compare Profiles buttons. This change narrows that
-experience to three locked, mode-specific forms.
+The Articles Sets page opens locked execution parameter forms from the Run Rank,
+Run Select, and Compare Profiles buttons. Each form keeps mode-specific controls
+while sharing the same ranking parameter and metadata sections.
 
 ## Current Behavior
 
-- `frontend/src/main.tsx` owns the compact React SPA, including
-  `ExecutionControls`, `ParameterForm`, execution replay prefill, and result
-  polling.
-- `ParameterForm` stores `mode` in local state and renders a segmented control
-  that lets users switch among rank, select, and compare after the form opens.
-- The form shows every configurable section for every mode: profile/profile
-  checkboxes, all profile weights, similarity/linkage/coverage controls,
-  selection controls, top M, and read-only metadata.
-- New runs and replay drafts use the same `ParameterDraft` shape, so a locked
-  form still needs to honor stored mode/profile/config values from replay.
+- `frontend/src/pages/CorpusPanel.tsx` owns corpus workspace state, including
+  execution draft selection and result polling.
+- `frontend/src/components/ExecutionControls.tsx` owns the Run Rank, Run Select,
+  and Compare Profiles buttons; each button opens a draft with a fixed mode.
+- `frontend/src/forms/ParameterForm.tsx` dispatches to locked rank, select, or
+  compare form components from `draft.mode`; users cannot switch execution type
+  after a form opens.
+- Rank exposes a selected profile, profile weights, shared `Ranking Parameters`,
+  and read-only `Metadata`.
+- Select exposes selection defaults, Top M, selection mode/lambda, a selected
+  profile with weights, shared `Ranking Parameters`, and read-only `Metadata`.
+- Compare Profiles exposes profile checkboxes, weights for selected profiles,
+  shared `Ranking Parameters`, and read-only `Metadata`.
+- New runs and replay drafts use the same `ParameterDraft` shape, so locked forms
+  still honor stored mode/profile/config values from replay.
 
 ## Constraints
 
 - The three Article Sets buttons must open three different forms, and the user
   must not be able to change the execution type after a form opens.
-- Rank should expose only the controls needed for ranking, with a single Profile
-  Weights section for the selected profile.
-- Select should expose only selection inputs and include a dropdown that can load
-  default selection values.
-- Compare Profiles should expose only the profile set and profile weights needed
-  for profile comparison.
+- Rank should expose only ranking controls: selected profile, profile weights,
+  shared ranking parameters, and read-only metadata.
+- Select should expose selection inputs and default selection loading, plus the
+  same shared ranking parameters and read-only metadata.
+- Compare Profiles should expose the profile set and profile weights needed for
+  profile comparison, plus the same shared ranking parameters and read-only
+  metadata.
 - API payload shapes remain unchanged; the frontend can keep submitting effective
   `RankerConfigPayload` objects through the existing client helpers.
