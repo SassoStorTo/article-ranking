@@ -47,15 +47,6 @@ export function TopNavigation({
         </button>
         <button
           className={
-            currentPage === "articles" ? "nav-button selected" : "nav-button"
-          }
-          onClick={() => onNavigate("articles")}
-          type="button"
-        >
-          Articles
-        </button>
-        <button
-          className={
             currentPage === "executions" ? "nav-button selected" : "nav-button"
           }
           onClick={() => onNavigate("executions")}

@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { CorpusSummary, deleteCorpus, getCorpus } from "../api/client";
+import {
+  CorpusSummary,
+  deleteCorpus,
+  getCorpus,
+  uploadArticles,
+} from "../api/client";
 import { ArticleBody } from "../components/ArticleBody";
 import { ArticleList } from "../components/ArticleList";
 import { ExecutionControls } from "../components/ExecutionControls";
@@ -39,6 +44,15 @@ export function CorpusPanel({
       onDeleted();
     },
   });
+  const uploadMutation = useMutation({
+    mutationFn: (files: FileList) => uploadArticles(corpusId, files),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["corpora"] }),
+        queryClient.invalidateQueries({ queryKey: ["corpus", corpusId] }),
+      ]);
+    },
+  });
 
   const detail = corpus.data;
   const heading = detail?.name ?? fallbackCorpus?.name ?? "Article Set";
@@ -46,30 +60,57 @@ export function CorpusPanel({
   return (
     <section className="detail-panel" aria-labelledby="corpus-title">
       <header className="detail-header">
-        <div>
-          <p className="eyebrow">Article Set</p>
+        <div className="detail-header-copy">
+          <p className="eyebrow">Article Set Workspace</p>
           <h2 id="corpus-title">{heading}</h2>
+          <p className="workspace-intro">
+            Upload articles, inspect source text, decompose facts, run rankings,
+            and evaluate results from one workspace.
+          </p>
           {detail?.notes && <p className="notes">{detail.notes}</p>}
         </div>
-        <button
-          className="danger"
-          disabled={deleteMutation.isPending}
-          onClick={() => {
-            if (
-              window.confirm(
-                `Delete article set "${heading}" and all of its data?`,
-              )
-            ) {
-              deleteMutation.mutate();
-            }
-          }}
-          type="button"
-        >
-          Delete Article Set
-        </button>
+        <div className="detail-header-actions">
+          <label className="upload-zone compact">
+            <input
+              accept=".txt,.json,text/plain,application/json"
+              disabled={uploadMutation.isPending}
+              multiple
+              onChange={(event) => {
+                if (event.target.files?.length) {
+                  uploadMutation.mutate(event.target.files);
+                  event.target.value = "";
+                }
+              }}
+              type="file"
+            />
+            <span>Add articles</span>
+          </label>
+          <button
+            className="danger"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Delete article set "${heading}" and all of its data?`,
+                )
+              ) {
+                deleteMutation.mutate();
+              }
+            }}
+            type="button"
+          >
+            Delete Article Set
+          </button>
+        </div>
       </header>
       {deleteMutation.error && (
         <p className="error-line">{deleteMutation.error.message}</p>
+      )}
+      {uploadMutation.error && (
+        <p className="error-line">{uploadMutation.error.message}</p>
+      )}
+      {uploadMutation.isPending && (
+        <p className="muted">Uploading articles into this workspace</p>
       )}
 
       {corpus.isLoading && <p className="muted">Loading articles</p>}
@@ -116,7 +157,10 @@ export function CorpusPanel({
               selectedArticleId={selectedArticleId}
               onSelectArticle={onSelectArticle}
             />
-            <ArticleBody articleId={selectedArticleId} />
+            <ArticleBody
+              articleId={selectedArticleId}
+              onDeleted={() => onSelectArticle(null)}
+            />
           </div>
           <ExecutionPanel
             articles={detail.articles}

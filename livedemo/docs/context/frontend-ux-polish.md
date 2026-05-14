@@ -20,12 +20,16 @@ local History API helpers and no router dependency.
   article bodies and wide structured payloads can force the workspace to grow
   horizontally because the app does not constrain pane heights and overflow
   consistently.
-- `frontend/src/api/client.ts` supports corpus, execution, and article deletion.
+- `frontend/src/api/client.ts` supports corpus, execution, article upload,
+  article detail/decomposition, and article deletion calls.
 - `app/routers/corpora.py` has `DELETE /api/corpora/{corpus_id}` and the model
   cascade removes articles, executions, results, and evaluation artifacts for a
   deleted corpus.
 - `app/routers/articles.py` exposes upload, detail, decomposition, and
-  `DELETE /api/articles/{article_id}` endpoints for frontend article management.
+  `DELETE /api/articles/{article_id}` endpoints. The frontend uses them from the
+  corpus workspace; browser article detail URLs are nested under
+  `/corpora/:corpusId/article/:articleId`, while legacy `/articles` paths
+  redirect back into article sets.
 
 ## Constraints
 

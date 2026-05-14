@@ -51,4 +51,10 @@ changes beyond the existing tables.
 - Keep routing lightweight for this milestone; no new router dependency is
   required.
 - Frontend should call the implemented backend endpoints and expose create,
-  upload, list, detail, and delete-corpus workflows.
+  upload, list, article detail/decomposition, article deletion, and delete-corpus
+  workflows from the corpus workspace.
+- Browser article detail URLs are corpus-scoped as
+  `/corpora/:corpusId/article/:articleId`; backend article APIs remain under
+  `/api/articles/:id`.
+- Legacy `/articles` browser paths should redirect into the corpus workspace
+  instead of exposing a separate top-level Articles page.
