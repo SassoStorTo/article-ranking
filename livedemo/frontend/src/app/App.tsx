@@ -45,116 +45,28 @@ import {
   runSelectExecution,
   uploadArticles,
 } from "../api/client";
+import {
+  AppPage,
+  AppRoute,
+  pathForRoute,
+  routeEquals,
+  routeForPage,
+  routeForPathname,
+} from "./navigation";
+import {
+  dateEnd,
+  dateStart,
+  formatCell,
+  formatDateTime,
+  formatGroupName,
+  formatIdList,
+  formatScore,
+  formatUnknownScore,
+} from "../utils/format";
+import { arrayPayload } from "../utils/payload";
 
 type RunMode = Exclude<ExecutionKind, "evaluate">;
-type AppPage = "home" | "corpora" | "new-corpus" | "articles" | "executions";
-type AppRoute =
-  | { page: "home" }
-  | { page: "corpora"; corpusId?: string }
-  | { page: "new-corpus" }
-  | { page: "articles"; articleId?: string }
-  | { page: "executions"; executionId?: string };
 type ThemeMode = "light" | "dark";
-
-function routeForPage(page: AppPage): AppRoute {
-  if (page === "home") {
-    return { page: "home" };
-  }
-  if (page === "corpora") {
-    return { page: "corpora" };
-  }
-  if (page === "new-corpus") {
-    return { page: "new-corpus" };
-  }
-  if (page === "articles") {
-    return { page: "articles" };
-  }
-  return { page: "executions" };
-}
-
-function pathForRoute(route: AppRoute): string {
-  if (route.page === "home") {
-    return "/";
-  }
-  if (route.page === "new-corpus") {
-    return "/corpora/new";
-  }
-  if (route.page === "corpora") {
-    return route.corpusId
-      ? `/corpora/${encodeURIComponent(route.corpusId)}`
-      : "/corpora";
-  }
-  if (route.page === "articles") {
-    return route.articleId
-      ? `/articles/${encodeURIComponent(route.articleId)}`
-      : "/articles";
-  }
-  return route.executionId
-    ? `/executions/${encodeURIComponent(route.executionId)}`
-    : "/executions";
-}
-
-function routeForPathname(pathname: string): AppRoute {
-  const normalizedPathname = normalizePathname(pathname);
-  const segments = normalizedPathname.split("/").filter(Boolean);
-
-  try {
-    if (segments.length === 0) {
-      return { page: "home" };
-    }
-    if (segments.length === 1) {
-      if (segments[0] === "corpora") {
-        return { page: "corpora" };
-      }
-      if (segments[0] === "articles") {
-        return { page: "articles" };
-      }
-      if (segments[0] === "executions") {
-        return { page: "executions" };
-      }
-      return { page: "home" };
-    }
-    if (segments.length === 2) {
-      if (segments[0] === "corpora" && segments[1] === "new") {
-        return { page: "new-corpus" };
-      }
-      if (segments[0] === "corpora") {
-        const corpusId = decodeRouteParam(segments[1]);
-        return corpusId ? { corpusId, page: "corpora" } : { page: "home" };
-      }
-      if (segments[0] === "articles") {
-        const articleId = decodeRouteParam(segments[1]);
-        return articleId ? { articleId, page: "articles" } : { page: "home" };
-      }
-      if (segments[0] === "executions") {
-        const executionId = decodeRouteParam(segments[1]);
-        return executionId
-          ? { executionId, page: "executions" }
-          : { page: "home" };
-      }
-    }
-  } catch {
-    return { page: "home" };
-  }
-
-  return { page: "home" };
-}
-
-function routeEquals(left: AppRoute, right: AppRoute): boolean {
-  return pathForRoute(left) === pathForRoute(right);
-}
-
-function normalizePathname(pathname: string): string {
-  if (pathname === "") {
-    return "/";
-  }
-  return pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-}
-
-function decodeRouteParam(value: string): string | null {
-  const decoded = decodeURIComponent(value);
-  return decoded.length > 0 ? decoded : null;
-}
 
 type ParameterDraft = {
   mode: RunMode;
@@ -2526,40 +2438,6 @@ function articleMaterials(
   );
 }
 
-function arrayPayload(value: unknown): Record<string, unknown>[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => isRecord(item))
-    : [];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function formatCell(value: unknown): string {
-  if (typeof value === "number") {
-    return formatScore(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map(String).join(", ");
-  }
-  if (value === null || value === undefined) {
-    return "n/a";
-  }
-  return String(value);
-}
-
-function formatIdList(value: unknown): string {
-  if (Array.isArray(value)) {
-    return value.length ? value.map(String).join(", ") : "none";
-  }
-  return typeof value === "string" ? value : "none";
-}
-
-function formatUnknownScore(value: unknown): string {
-  return typeof value === "number" ? formatScore(value) : String(value ?? "n/a");
-}
-
 function normalizeConfigDraft(config?: RankerConfigPayload): RankerConfigPayload {
   const source = config as (RankerConfigPayload & { m?: number | null }) | undefined;
   const normalized = {
@@ -2604,10 +2482,6 @@ function draftFromExecution(execution: ExecutionDetail): ParameterDraft {
       : ["representative", "comprehensive", "concise"],
     m: storedM ?? config.top_m ?? 3,
   };
-}
-
-function formatScore(value: number | undefined) {
-  return typeof value === "number" ? value.toFixed(3) : "n/a";
 }
 
 function ArticleList({
@@ -2820,27 +2694,11 @@ function StructuredPanel({
   );
 }
 
-function formatGroupName(group: string) {
-  return group.replaceAll("_", " ");
-}
-
-function formatDateTime(value: string | null) {
-  return value ? new Date(value).toLocaleString() : "n/a";
-}
-
 function isComparableExecution(execution: ExecutionSummary) {
   return (
     execution.status === "succeeded" &&
     (execution.kind === "rank" || execution.kind === "select")
   );
-}
-
-function dateStart(value: string) {
-  return value ? `${value}T00:00:00` : undefined;
-}
-
-function dateEnd(value: string) {
-  return value ? `${value}T23:59:59` : undefined;
 }
 
 function EmptyWorkspace() {
