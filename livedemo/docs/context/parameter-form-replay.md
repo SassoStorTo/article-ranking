@@ -45,8 +45,9 @@ polish from later milestones.
   `config_json` byte-for-byte after JSON round-trip.
 - The new replay endpoint should infer the original execution kind, profile
   list, and selection `m` from the prior execution row/config.
-- The parameter form should support rank, select, and compare modes, default
-  configs for new runs, and read-only metadata fields.
+- The parameter form should support locked rank, select, and compare modes,
+  default configs for new runs, shared ranking parameter controls in every mode,
+  and read-only metadata fields in every mode.
 - Frontend changes should stay inside the current compact SPA/module structure
   rather than introducing routing or state libraries beyond TanStack Query.
 - Milestone 6 tests should focus on validation failures, effective default

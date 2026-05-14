@@ -22,7 +22,9 @@ re-reading the full refactor history.
   `/executions/compare/:leftExecutionId?/:rightExecutionId?` paths, and legacy
   `/articles` path parsing for redirects.
 - `frontend/src/forms/` owns execution parameter drafts, normalization, replay
-  prefill, validation warnings, and the execution parameter form UI.
+  prefill, validation warnings, locked execution parameter form UI, and shared
+  Ranking Parameters/Metadata sections rendered by rank, select, and compare
+  forms.
 - `frontend/src/artifacts/` owns evaluation controls, artifact cards, ranking
   tables, article-material generation, selected-article helpers, result payload
   rendering, and reusable comparison result tables.
