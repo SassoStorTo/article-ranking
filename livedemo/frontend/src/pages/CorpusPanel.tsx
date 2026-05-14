@@ -153,7 +153,10 @@ export function CorpusPanel({
               selectedArticleId={selectedArticleId}
               onSelectArticle={onSelectArticle}
             />
-            <ArticleBody articleId={selectedArticleId} />
+            <ArticleBody
+              articleId={selectedArticleId}
+              onDeleted={() => onSelectArticle(null)}
+            />
           </div>
           <ExecutionPanel
             articles={detail.articles}
