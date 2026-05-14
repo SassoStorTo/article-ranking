@@ -787,7 +787,8 @@ button:disabled {
 }
 
 .status-pill,
-.selected-badge {
+.selected-badge,
+.source-badge {
   border-radius: 999px;
   display: inline-block;
   font-size: 0.75rem;
@@ -796,7 +797,8 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.status-pill {
+.status-pill,
+.source-badge {
   background: #e8efea;
   color: #263832;
 }
@@ -939,7 +941,8 @@ button:disabled {
 .app-shell[data-theme="dark"] .upload-zone,
 .app-shell[data-theme="dark"] .checkbox-row label,
 .app-shell[data-theme="dark"] .status-pill,
-.app-shell[data-theme="dark"] .selected-badge {
+.app-shell[data-theme="dark"] .selected-badge,
+.app-shell[data-theme="dark"] .source-badge {
   background: #1d2a25;
   border-color: #40534a;
   color: #eef5f0;

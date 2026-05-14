@@ -12,14 +12,14 @@ later milestones.
 - `app/db/models.py` already defines `Execution` and `ExecutionResult` with
   enum kind/status fields, JSON config/profiles/result columns, timestamps, and
   corpus cascade behavior.
-- `app/routers/articles.py` and `app/routers/corpora.py` are the only routers
-  currently mounted in `app/main.py`.
-- Uploaded article bodies are stored in `Article`, while structured Mistral
-  output is stored in `StructuredArticle.payload_json`.
+- `app/main.py` mounts corpus, article, execution, and evaluation routers.
+- Uploaded article bodies are stored in `Article`; structured Mistral output
+  and validated JSON-upload decompositions are stored in
+  `StructuredArticle.payload_json`.
 - Tests use `create_app(db_engine=...)` plus dependency overrides for the DB
   session factory and fake decomposition client.
-- The frontend is a compact single-file React app backed by
-  `frontend/src/api/client.ts`.
+- The frontend is split into `frontend/src/app`, `pages`, `components`,
+  `forms`, `artifacts`, and `utils`, backed by `frontend/src/api/client.ts`.
 
 ## Library interfaces
 
@@ -43,6 +43,12 @@ later milestones.
 - Tests must not download embedding models or call Mistral; the app needs an
   overridable embedder dependency and should use the existing fake decomposition
   flow.
+- Execution loading first uses the latest persisted `StructuredArticle` for each
+  corpus article. It calls Mistral only for articles without persisted
+  structured payloads, so corpora built from JSON decomposition uploads skip
+  decomposition during rank/select/compare runs.
+- Execution loading normalizes structured payload `article_id` to the DB
+  `Article.id` before passing records to `NewsRanker`.
 - Execution endpoints can run synchronously under `asyncio.to_thread` while
   still exposing the pending/running/succeeded/failed lifecycle through
   persisted status fields.

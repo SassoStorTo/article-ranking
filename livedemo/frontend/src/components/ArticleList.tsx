@@ -15,23 +15,29 @@ export function ArticleList({
 
   return (
     <div className="article-list">
-      {articles.map((article) => (
-        <button
-          className={article.id === selectedArticleId ? "selected" : ""}
-          key={article.id}
-          onClick={() => onSelectArticle(article.id)}
-          type="button"
-        >
-          <strong>{article.title}</strong>
-          <span>{article.filename}</span>
-          <small>
-            {article.body_length.toLocaleString()} chars ·{" "}
-            {article.decomposition_status === "decomposed"
-              ? "Decomposed"
-              : "Pending"}
-          </small>
-        </button>
-      ))}
+      {articles.map((article) => {
+        const isJsonUpload = article.filename.toLowerCase().endsWith(".json");
+        const statusText = isJsonUpload
+          ? "Precomputed decomposition"
+          : article.decomposition_status === "decomposed"
+            ? "Decomposed"
+            : "Pending decomposition";
+
+        return (
+          <button
+            className={article.id === selectedArticleId ? "selected" : ""}
+            key={article.id}
+            onClick={() => onSelectArticle(article.id)}
+            type="button"
+          >
+            <strong>{article.title}</strong>
+            <span>{article.filename}</span>
+            <small>
+              {article.body_length.toLocaleString()} chars · {statusText}
+            </small>
+          </button>
+        );
+      })}
     </div>
   );
 }

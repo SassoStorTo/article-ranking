@@ -56,8 +56,9 @@ export function ArticleManagementPage({
             <p className="eyebrow">Articles</p>
             <h2 id="articles-title">{selectedCorpus?.name ?? "Add Articles"}</h2>
             <p className="notes">
-              Upload `.txt` files, then inspect each article body and structured
-              decomposition.
+              Upload `.txt` articles for Mistral decomposition or `.json`
+              StructuredArticle files to skip decomposition. Use one upload mode per
+              batch for easier review.
             </p>
           </div>
         </header>
@@ -67,7 +68,7 @@ export function ArticleManagementPage({
           <>
             <label className="upload-zone">
               <input
-                accept=".txt,text/plain"
+                accept=".txt,.json,text/plain,application/json"
                 multiple
                 onChange={(event) => {
                   if (event.target.files?.length) {
@@ -77,12 +78,14 @@ export function ArticleManagementPage({
                 }}
                 type="file"
               />
-              <span>Upload .txt Articles</span>
+              <span>Upload .txt Articles or .json Decompositions</span>
             </label>
             {uploadMutation.error && (
               <p className="error-line">{uploadMutation.error.message}</p>
             )}
-            {uploadMutation.isPending && <p className="muted">Uploading articles</p>}
+            {uploadMutation.isPending && (
+              <p className="muted">Uploading articles and decompositions</p>
+            )}
             {corpus.isLoading && <p className="muted">Loading articles</p>}
             {corpus.error && <p className="error-line">{corpus.error.message}</p>}
             {corpus.data && (
