@@ -57,6 +57,8 @@ export function ArticleBody({
   if (!article.data) {
     return null;
   }
+  const isJsonUpload = article.data.filename.toLowerCase().endsWith(".json");
+
   return (
     <div className="article-inspector">
       <article className="article-body">
@@ -64,14 +66,23 @@ export function ArticleBody({
           <div>
             <h3>{article.data.title}</h3>
             <p>{article.data.filename}</p>
+            {isJsonUpload && (
+              <span className="source-badge">Precomputed JSON decomposition</span>
+            )}
           </div>
           <div className="row-actions">
             <button
-              disabled={decomposeMutation.isPending || deleteMutation.isPending}
+              disabled={
+                isJsonUpload || decomposeMutation.isPending || deleteMutation.isPending
+              }
               onClick={() => decomposeMutation.mutate()}
               type="button"
             >
-              {decomposeMutation.isPending ? "Running" : "Decompose"}
+              {isJsonUpload
+                ? "Precomputed"
+                : decomposeMutation.isPending
+                  ? "Running"
+                  : "Decompose"}
             </button>
             {onDeleted && (
               <button
