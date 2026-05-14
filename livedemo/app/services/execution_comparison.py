@@ -123,8 +123,7 @@ def _sections(
                 ExecutionComparisonWarning(
                     code="invalid_result_payload",
                     message=(
-                        f"Execution {execution.id} result {result.id} "
-                        f"is invalid: {exc}"
+                        f"Execution {execution.id} result {result.id} is invalid: {exc}"
                     ),
                 )
             )

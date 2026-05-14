@@ -101,13 +101,9 @@ def test_compare_profiles_vs_compare_profiles_expands_and_warns_unmatched_profil
     assert representative["left"]["profile"] == "representative"
     assert representative["right"]["profile"] == "representative"
     assert representative["metrics"]["top_m_overlap"]["overlap_count"] == 2
-    unmatched = [
-        pair for pair in comparison["section_pairs"] if pair["warnings"]
-    ]
+    unmatched = [pair for pair in comparison["section_pairs"] if pair["warnings"]]
     assert {pair["key"] for pair in unmatched} == {"comprehensive", "concise"}
-    assert {pair["warnings"][0]["code"] for pair in unmatched} == {
-        "unmatched_section"
-    }
+    assert {pair["warnings"][0]["code"] for pair in unmatched} == {"unmatched_section"}
 
 
 def test_rank_vs_compare_profiles_pairs_single_section_against_each_profile(
