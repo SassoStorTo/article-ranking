@@ -64,8 +64,8 @@ export function CorpusPanel({
           <p className="eyebrow">Article Set Workspace</p>
           <h2 id="corpus-title">{heading}</h2>
           <p className="workspace-intro">
-            Upload articles, inspect source text, decompose facts, run rankings,
-            and evaluate results from one workspace.
+            Upload articles, inspect source text, decompose facts, run rank,
+            select, and compare jobs, and evaluate results from one workspace.
           </p>
           {detail?.notes && <p className="notes">{detail.notes}</p>}
         </div>
