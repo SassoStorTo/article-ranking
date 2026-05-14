@@ -5,7 +5,13 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import React, {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import ReactDOM from "react-dom/client";
 import "./styles.css";
 
@@ -179,6 +185,31 @@ function App() {
     null,
   );
   const corpora = useQuery({ queryKey: ["corpora"], queryFn: listCorpora });
+  const navigate = useCallback(
+    (
+      nextRoute: AppRoute,
+      options?: { clearSelection?: boolean; replace?: boolean },
+    ) => {
+      const nextPath = pathForRoute(nextRoute);
+      const currentPath = pathForRoute(routeForPathname(window.location.pathname));
+      if (nextPath !== currentPath) {
+        if (options?.replace) {
+          window.history.replaceState(null, "", nextPath);
+        } else {
+          window.history.pushState(null, "", nextPath);
+        }
+      }
+      if (options?.clearSelection) {
+        setSelectedCorpusId(null);
+        setSelectedArticleId(null);
+        setSelectedExecutionId(null);
+      }
+      setRoute((currentRoute) =>
+        routeEquals(currentRoute, nextRoute) ? currentRoute : nextRoute,
+      );
+    },
+    [],
+  );
 
   useEffect(() => {
     const currentPath = window.location.pathname;
@@ -229,10 +260,7 @@ function App() {
         })
         .catch(() => {
           if (isCurrent) {
-            setSelectedCorpusId(null);
-            setSelectedArticleId(null);
-            setRoute({ page: "articles" });
-            window.history.replaceState(null, "", "/articles");
+            navigate({ page: "articles" }, { replace: true });
           }
         });
       return () => {
@@ -258,10 +286,7 @@ function App() {
         })
         .catch(() => {
           if (isCurrent) {
-            setSelectedCorpusId(null);
-            setSelectedExecutionId(null);
-            setRoute({ page: "executions" });
-            window.history.replaceState(null, "", "/executions");
+            navigate({ page: "executions" }, { replace: true });
           }
         });
       return () => {
@@ -275,7 +300,7 @@ function App() {
     return () => {
       isCurrent = false;
     };
-  }, [route]);
+  }, [navigate, route]);
 
   const selectedCorpus = useMemo(() => {
     return corpora.data?.find((corpus) => corpus.id === selectedCorpusId) ?? null;
@@ -285,7 +310,9 @@ function App() {
     <main className="app-shell" data-theme={theme}>
       <TopNavigation
         currentPage={page}
-        onNavigate={(nextPage) => setRoute(routeForPage(nextPage))}
+        onNavigate={(nextPage) =>
+          navigate(routeForPage(nextPage), { clearSelection: true })
+        }
         onToggleTheme={() =>
           setTheme((current) => (current === "light" ? "dark" : "light"))
         }
@@ -296,25 +323,15 @@ function App() {
         <HomePage
           corpora={corpora.data ?? []}
           isLoading={corpora.isLoading}
-          onCreateCorpus={() => setRoute({ page: "new-corpus" })}
-          onOpenCorpus={(id) => {
-            setSelectedCorpusId(id);
-            setSelectedArticleId(null);
-            setSelectedExecutionId(null);
-            setRoute({ corpusId: id, page: "corpora" });
-          }}
-          onOpenExecutions={() => setRoute({ page: "executions" })}
+          onCreateCorpus={() => navigate({ page: "new-corpus" })}
+          onOpenCorpus={(id) => navigate({ corpusId: id, page: "corpora" })}
+          onOpenExecutions={() => navigate({ page: "executions" })}
         />
       ) : null}
 
       {page === "new-corpus" ? (
         <NewCorpusPage
-          onCreated={(id) => {
-            setSelectedCorpusId(id);
-            setSelectedArticleId(null);
-            setSelectedExecutionId(null);
-            setRoute({ page: "articles" });
-          }}
+          onCreated={(id) => navigate({ corpusId: id, page: "corpora" })}
         />
       ) : null}
 
@@ -324,7 +341,11 @@ function App() {
           isLoadingCorpora={corpora.isLoading}
           selectedArticleId={selectedArticleId}
           selectedCorpusId={selectedCorpusId}
-          onSelectArticle={setSelectedArticleId}
+          onSelectArticle={(id) =>
+            navigate(
+              id ? { articleId: id, page: "articles" } : { page: "articles" },
+            )
+          }
           onSelectCorpus={(id) => {
             setSelectedCorpusId(id);
             setSelectedArticleId(null);
@@ -337,13 +358,10 @@ function App() {
         <section className="workspace single-pane" aria-label="Executions workspace">
           <ExecutionsIndex
             corpora={corpora.data ?? []}
-            onClose={() => setRoute({ page: "corpora" })}
-            onOpenExecution={(execution) => {
-              setSelectedCorpusId(execution.corpus_id);
-              setSelectedArticleId(null);
-              setSelectedExecutionId(execution.id);
-              setRoute({ corpusId: execution.corpus_id, page: "corpora" });
-            }}
+            onClose={() => navigate({ page: "corpora" })}
+            onOpenExecution={(execution) =>
+              navigate({ executionId: execution.id, page: "executions" })
+            }
           />
         </section>
       ) : null}
@@ -356,11 +374,7 @@ function App() {
               isLoading={corpora.isLoading}
               error={corpora.error}
               selectedCorpusId={selectedCorpusId}
-              onSelect={(id) => {
-                setSelectedCorpusId(id);
-                setSelectedArticleId(null);
-                setSelectedExecutionId(null);
-              }}
+              onSelect={(id) => navigate({ corpusId: id, page: "corpora" })}
             />
           </aside>
           <div className="corpus-workspace">
@@ -369,14 +383,18 @@ function App() {
                 corpusId={selectedCorpusId}
                 fallbackCorpus={selectedCorpus}
                 selectedArticleId={selectedArticleId}
-                onSelectArticle={setSelectedArticleId}
+                onSelectArticle={(id) =>
+                  navigate(
+                    id ? { articleId: id, page: "articles" } : { page: "corpora" },
+                  )
+                }
                 selectedExecutionId={selectedExecutionId}
-                onSelectExecution={setSelectedExecutionId}
-                onDeleted={() => {
-                  setSelectedCorpusId(null);
-                  setSelectedArticleId(null);
-                  setSelectedExecutionId(null);
-                }}
+                onSelectExecution={(id) =>
+                  navigate(
+                    id ? { executionId: id, page: "executions" } : { page: "corpora" },
+                  )
+                }
+                onDeleted={() => navigate({ page: "corpora" }, { replace: true })}
               />
             ) : (
               <EmptyWorkspace />
