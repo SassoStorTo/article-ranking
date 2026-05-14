@@ -199,6 +199,84 @@ function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
+  useEffect(() => {
+    let isCurrent = true;
+
+    if (route.page === "corpora") {
+      setSelectedCorpusId(route.corpusId ?? null);
+      setSelectedArticleId(null);
+      setSelectedExecutionId(null);
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    if (route.page === "articles") {
+      setSelectedArticleId(route.articleId ?? null);
+      setSelectedExecutionId(null);
+      if (!route.articleId) {
+        setSelectedCorpusId(null);
+        return () => {
+          isCurrent = false;
+        };
+      }
+
+      void getArticle(route.articleId)
+        .then((article) => {
+          if (isCurrent) {
+            setSelectedCorpusId(article.corpus_id);
+          }
+        })
+        .catch(() => {
+          if (isCurrent) {
+            setSelectedCorpusId(null);
+            setSelectedArticleId(null);
+            setRoute({ page: "articles" });
+            window.history.replaceState(null, "", "/articles");
+          }
+        });
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    if (route.page === "executions") {
+      setSelectedArticleId(null);
+      setSelectedExecutionId(route.executionId ?? null);
+      if (!route.executionId) {
+        setSelectedCorpusId(null);
+        return () => {
+          isCurrent = false;
+        };
+      }
+
+      void getExecution(route.executionId)
+        .then((execution) => {
+          if (isCurrent) {
+            setSelectedCorpusId(execution.corpus_id);
+          }
+        })
+        .catch(() => {
+          if (isCurrent) {
+            setSelectedCorpusId(null);
+            setSelectedExecutionId(null);
+            setRoute({ page: "executions" });
+            window.history.replaceState(null, "", "/executions");
+          }
+        });
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    setSelectedCorpusId(null);
+    setSelectedArticleId(null);
+    setSelectedExecutionId(null);
+    return () => {
+      isCurrent = false;
+    };
+  }, [route]);
+
   const selectedCorpus = useMemo(() => {
     return corpora.data?.find((corpus) => corpus.id === selectedCorpusId) ?? null;
   }, [corpora.data, selectedCorpusId]);
@@ -255,7 +333,7 @@ function App() {
         />
       ) : null}
 
-      {page === "executions" ? (
+      {page === "executions" && !route.executionId ? (
         <section className="workspace single-pane" aria-label="Executions workspace">
           <ExecutionsIndex
             corpora={corpora.data ?? []}
@@ -270,7 +348,7 @@ function App() {
         </section>
       ) : null}
 
-      {page === "corpora" ? (
+      {page === "corpora" || (page === "executions" && route.executionId) ? (
         <section className="workspace" aria-label="Article set workspace">
           <aside className="sidebar">
             <CorpusList
