@@ -79,7 +79,7 @@ export default function App() {
 
     if (route.page === "corpora") {
       setSelectedCorpusId(route.corpusId ?? null);
-      setSelectedArticleId(route.articleId ?? null);
+      setSelectedArticleId(null);
       setSelectedExecutionId(null);
 
       if (!route.corpusId || !route.articleId) {
@@ -90,7 +90,11 @@ export default function App() {
 
       void getArticle(route.articleId)
         .then((article) => {
-          if (!isCurrent || article.corpus_id === route.corpusId) {
+          if (!isCurrent) {
+            return;
+          }
+          if (article.corpus_id === route.corpusId) {
+            setSelectedArticleId(route.articleId ?? null);
             return;
           }
           navigate(
