@@ -233,57 +233,60 @@ Utilities for comparing profiles and preparing user-study materials:
 ## 5. Pipeline Workflow
 
 ```
-                    ┌─────────────────────────┐
-                    │  Input: k articles      │
-                    │  [{id, title, body}]    │
-                    └───────────┬─────────────┘
-                                │
-                    ┌───────────▼─────────────┐
-                    │  1. DECOMPOSE           │
-                    │  LLM → StructuredDocs   │
-                    │  cache by text+versions │
-                    └───────────┬─────────────┘
-                                │
-            ┌───────────────────┴────────────────────┐
-            │                                        │
-  ┌─────────▼────────┐                    ┌──────────▼────────┐
-  │  2. EMBED FACTS  │                    │  EXTRACT ENTITIES │
-  │  event/claim vec │                    │  canonical sets   │
-  └─────────┬────────┘                    └──────────┬────────┘
-            │                                        │
-  ┌─────────▼────────┐                               │
-  │  3. CLUSTER      │                               │
-  │  facts → universe│                               │
-  │  cluster vectors │                               │
-  │  coverage matrix │                               │
-  └─────────┬────────┘                               │
-            │                                        │
-  ┌─────────▼────────┐                               │
-  │  4. ARTICLE VECS │                               │
-  │  mean unique     │                               │
-  │  cluster vectors │                               │
-  └─────────┬────────┘                               │
-            │                                        │
-            └───────────────────┬────────────────────┘
-                                │
-                    ┌───────────▼──────────┐
-                    │  5. SCORE            │
-                    │  centrality/coverage │
-                    │  density/entities    │
-                    │  normalize [0, 1]    │
-                    └───────────┬──────────┘
-                                │
-                    ┌───────────▼──────────┐
-                    │  6. RANK / SELECT    │
-                    │  weighted score      │
-                    │  optional MMR top-M  │
-                    └───────────┬──────────┘
-                                │
-                    ┌───────────▼──────────┐
-                    │  7. RETURN           │
-                    │  ranking + selected  │
-                    │  diagnostics/compare │
-                    └──────────────────────┘
+┌─────────────────────────┐        ┌─────────────────────────┐
+│ Input 1: k articles     │        │ Input 2: k decomposed   │
+│ article.txt file        │        │ articles (JSON)         │
+└───────────┬─────────────┘        │ StructuredDocs          │
+            │                      └───────────┬─────────────┘
+            ▼                                  │
+┌─────────────────────────┐                    │
+│ 1. DECOMPOSE            │                    │
+│ LLM → StructuredDocs    │                    │
+│ cache by text+versions  │                    │
+└───────────┬─────────────┘                    │
+            │                                  │
+            ▼                                  ▼
+        ┌─────────────────────────────────────────┐
+        │ 2. EMBED FACTS                          │
+        │ event/claim vec                         │
+        └────────────────────┬────────────────────┘
+                             │
+                             ▼
+        ┌─────────────────────────────────────────┐
+        │ 3. CLUSTER                              │
+        │ facts → universe                        │
+        │ cluster vectors                         │
+        │ coverage matrix                         │
+        └────────────────────┬────────────────────┘
+                             │
+                             ▼
+        ┌─────────────────────────────────────────┐
+        │ 4. ARTICLE VECS                         │
+        │ mean unique                             │
+        │ cluster vectors                         │
+        └────────────────────┬────────────────────┘
+                             │
+                             ▼
+        ┌─────────────────────────────────────────┐
+        │ 5. SCORE                                │
+        │ centrality/coverage                     │
+        │ density/entities                        │
+        │ normalize [0, 1]                        │
+        └────────────────────┬────────────────────┘
+                             │
+                             ▼
+        ┌─────────────────────────────────────────┐
+        │ 6. RANK / SELECT                        │
+        │ weighted score                          │
+        │ optional MMR top-M                      │
+        └────────────────────┬────────────────────┘
+                             │
+                             ▼
+        ┌─────────────────────────────────────────┐
+        │ 7. RETURN                               │
+        │ ranking + selected                      │
+        │ diagnostics/compare                     │
+        └─────────────────────────────────────────┘
 ```
 
 ### Step descriptions
